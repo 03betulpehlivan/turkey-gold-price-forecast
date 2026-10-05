@@ -159,9 +159,12 @@ Always run `git pull` on `main` before starting new work.
 
 ## Contributors
 
-- [Betül Pehlivan](https://github.com/03betulpehlivan)
-- https://github.com/EnesKaraca44
+| Name | GitHub | Focus Area |
+|------|--------|------------|
+| Betül Pehlivan | [@03betulpehlivan](https://github.com/03betulpehlivan) | TBD |
+| Enes Karaca | [@EnesKaraca44](https://github.com/EnesKaraca44) | TBD |
 
+This is a collaborative graduation project developed jointly by the contributors above.
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
