@@ -160,7 +160,7 @@ Always run `git pull` on `main` before starting new work.
 ## Contributors
 
 - [Betül Pehlivan](https://github.com/03betulpehlivan)
-- Your teammate's name (GitHub profile link)
+- https://github.com/EnesKaraca44
 
 ## License
 
