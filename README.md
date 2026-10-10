@@ -129,6 +129,14 @@ python -m src.api.main
 5. **Evaluation:** Assess models with metrics such as MAE, RMSE, and MAPE using time-series-aware validation.
 6. **Deployment:** Serve predictions through a REST API and a web interface.
 
+## Literature Review
+
+A comparative literature review of 23 studies on machine learning-based gold price forecasting, focusing on Turkish gram gold prices, next-day prediction, model comparison, and time-series validation.
+
+The report summarizes existing approaches, evaluation methodologies, research gaps, and the proposed forecasting framework for this project.
+
+📄 **[Read the Literature Review Report](Literatur_Taramasi_Raporu_Gram_Altin.pdf)**
+
 ## Results
 
 > Model performance metrics and forecast charts will be added here.
