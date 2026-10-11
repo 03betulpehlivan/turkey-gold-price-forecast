@@ -27,6 +27,13 @@ Yontem (Gibbs ve Candes 2021 fikrinin carpimsal olcek surumu)
   artikla sinirladigi icin sentetik bir oynaklik soku sonrasi kapsami %86'da
   birakti. Carpimsal surum gercek veride HICBIR sonuc gorulmeden secildi.
 
+Teyit testi: python -m src.models.adaptive --confirm
+----------------------------------------------------
+  Gelistirmede kabul edilen aci_gvzlag_g020, hicbir ayari degismeden, TEST
+  donemi (2023-10-26 .. 2025-12-30) uzerinde tek on kayitli hipotezle sinanir.
+  On kayit hesaplamadan ONCE yazilir; bir kez calisir (--force-rerun kayda gecer);
+  2026 verisi kullanilirsa hesaplama durur.
+
 Kontrol ve adaylar (sonuclardan ONCE sabitlendi)
 ------------------------------------------------
   Kontrol: garch (Adim 2b, uyarlanmasiz).
@@ -49,6 +56,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import argparse
 import hashlib
+import math
 import json
 import sys
 
@@ -69,6 +77,20 @@ LEVEL_TAUS = {80: (0.10, 0.90), 95: (0.025, 0.975)}
 MIN_YEAR_COVERAGE_95 = 0.92
 KUPIEC_MIN_P = 0.05
 ALPHA_TEST = 0.05
+
+# Teyit testi (gelistirme sonuclarindan sonra, test donemine bakmadan sabitlendi)
+CONFIRM_METHOD = "aci_gvzlag_g020"
+CONFIRM_CONTROL = "garch"
+CONFIRM_MIN_YEAR_N = 100
+HOLDOUT_START = "2026-01-01"
+CONFIRM_HYPOTHESIS = (
+    "Gelistirmede kabul edilen aci_gvzlag_g020 (GVZ[t-1] bilesen oynakligi + carpimsal ACI, "
+    "eta = 0.02, olcek degerlendirme basinda 1), hicbir ayari degismeden, test doneminde "
+    "(2023-10-26 .. 2025-12-30): (1) %80 kapsam 0.80 +/- 0.03 ve %95 kapsam 0.95 +/- 0.015, "
+    "(2) Kupiec p > 0.05 her iki seviyede, (3) en az 100 gozlemli yillarda %95 kapsam >= 0.92, "
+    "(4) pinball kaybi garch'tan anlamli olarak kotu degil (iki yonlu DM, p < 0.05 ve kotu ise ret). "
+    "Dort kosul birlikte saglanirsa hipotez desteklenir. Tek yontem, tek karsilastirma."
+)
 
 
 def out_dir() -> Path:
@@ -107,8 +129,12 @@ def _base_sigmas(df: pd.DataFrame, ti: np.ndarray) -> dict:
             "comp_gvz_lag": ivx.component_sigma(ivx.gvz_to_daily(df["gvz_lag1"]), iv.garch_sigma(rf, g_fx), rho)}
 
 
-def walk_forward(df: pd.DataFrame, start: str = DEV_START, end: str = None) -> dict:
-    end = tr.TEST_START if end is None else end
+_DEFAULT_END = object()
+
+
+def walk_forward(df: pd.DataFrame, start: str = DEV_START, end=_DEFAULT_END) -> dict:
+    """end varsayilani TEST_START (gelistirme); end=None verinin sonuna kadar (teyit)."""
+    end = tr.TEST_START if end is _DEFAULT_END else end
     positions = tr.eval_positions(df, start, end)
     windows = tr.make_windows(positions, tr.RETRAIN_EVERY)
     y = df[tr.TARGET].to_numpy(float)
@@ -246,6 +272,113 @@ def run(data_path=None, panel_path: Path = ivx.PANEL_PATH) -> dict:
             "summary": summary, "walk": wf}
 
 
+# ---------------------------------------------------------------------------
+# Teyit testi
+# ---------------------------------------------------------------------------
+class ConfirmAlreadyRun(Exception):
+    """Teyit testi daha once calistirilmis; --force-rerun olmadan tekrarlanmaz."""
+
+
+def confirm_dir() -> Path:
+    return tr.OUTPUT_DIR / "experiments" / "adaptive_confirm"
+
+
+def confirm_verdict(summary_m: dict, summary_c: dict, annual_m: pd.DataFrame, dm: dict) -> dict:
+    cov_ok = all(abs(summary_m[f"coverage_{l}"] - l / 100) <= iv.COVERAGE_TOL[l] for l in iv.LEVELS)
+    kup_ok = bool(summary_m["kupiec_80_p"] > KUPIEC_MIN_P and summary_m["kupiec_95_p"] > KUPIEC_MIN_P)
+    full = annual_m[annual_m["n"] >= CONFIRM_MIN_YEAR_N]
+    years_ok = bool(len(full) > 0 and (full["coverage_95"] >= MIN_YEAR_COVERAGE_95).all())
+    worse = bool(dm["dm_stat"] > 0 and dm["p_value"] < ALPHA_TEST)
+    return {"coverage_ok": cov_ok, "kupiec_ok": kup_ok, "years_ok": years_ok,
+            "years_checked": [int(y) for y in full["year"]], "not_significantly_worse": not worse,
+            "hypothesis_supported": bool(cov_ok and kup_ok and years_ok and not worse)}
+
+
+def confirm_preregistration() -> dict:
+    p = preregistration()
+    p.update({"hypothesis": CONFIRM_HYPOTHESIS, "method": CONFIRM_METHOD, "control": CONFIRM_CONTROL,
+              "period": {"start": tr.TEST_START, "end": "model_dataset.csv sonu (2026 oncesi)"},
+              "min_year_n": CONFIRM_MIN_YEAR_N, "bootstrap": {"block": iv.BOOT_BLOCK, "reps": iv.BOOT_REPS,
+                                                             "seed": iv.BOOT_SEED}})
+    p.pop("candidates", None)
+    return p
+
+
+def run_confirm(data_path=None, panel_path: Path = ivx.PANEL_PATH, force: bool = False) -> dict:
+    target = confirm_dir()
+    result_path, log_path = target / "result.json", target / "run_log.jsonl"
+    if result_path.exists() and not force:
+        raise ConfirmAlreadyRun(f"Teyit testi zaten calistirildi: {result_path}")
+    target.mkdir(parents=True, exist_ok=True)
+    previous = sum(1 for _ in open(log_path, encoding="utf-8")) if log_path.exists() else 0
+    if result_path.exists():
+        result_path.rename(target / f"result_run{previous}.json")
+    prereg = confirm_preregistration()
+    prereg["run_number"] = previous + 1
+    with open(target / "preregistration.json", "w", encoding="utf-8") as f:
+        json.dump(prereg, f, indent=2, ensure_ascii=False)              # hesaplamadan ONCE
+
+    df = ivx.load_inputs(data_path, panel_path)
+    # end=HOLDOUT_START: yalnizca HEDEF tarihi (bir sonraki satir) 2026'dan once olan satirlar.
+    # Hedef tarihi bilinmeyen son satir da disarida kalir (muhafazakar).
+    wf = walk_forward(df, start=tr.TEST_START, end=HOLDOUT_START)
+    pred = wf["predictions"]
+    if pd.to_datetime(pred["prediction_date"]).max() >= pd.Timestamp(HOLDOUT_START):
+        raise ValueError("Teyit testine 2026 (son sinav) verisi girdi; durduruldu.")
+    keep = ["window", "prediction_date", "y", "price_t", "mu"]
+    for m in (CONFIRM_CONTROL, CONFIRM_METHOD):
+        keep += [f"{m}_q{tau}" for tau in iv.QUANTILES]
+    pred = pred[keep]
+    sm, sc = iv.summarize(pred, CONFIRM_METHOD), iv.summarize(pred, CONFIRM_CONTROL)
+    years = pd.to_datetime(pred["prediction_date"]).dt.year
+    annual = pd.DataFrame([{"year": int(y), "method": m, **iv.summarize(g, m)}
+                           for y, g in pred.groupby(years) for m in (CONFIRM_CONTROL, CONFIRM_METHOD)])
+    lm, lc = iv.row_loss(pred, CONFIRM_METHOD), iv.row_loss(pred, CONFIRM_CONTROL)
+    dm = tr.diebold_mariano(lm, lc)
+    ci = iv.block_bootstrap_ci(lm, lc)
+    verdict = confirm_verdict(sm, sc, annual[annual["method"] == CONFIRM_METHOD], dm)
+    result = {"created_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+              "run_number": prereg["run_number"], "hypothesis": CONFIRM_HYPOTHESIS,
+              "n_forecasts": int(len(pred)),
+              "period_first_prediction": str(pd.Timestamp(pred["prediction_date"].min()).date()),
+              "period_last_prediction": str(pd.Timestamp(pred["prediction_date"].max()).date()),
+              "method": {k: sm[k] for k in ("pinball", "coverage_80", "coverage_95", "kupiec_80_p", "kupiec_95_p",
+                                            "christoffersen_95_p", "width_80_TL", "width_95_TL")},
+              "control": {k: sc[k] for k in ("pinball", "coverage_80", "coverage_95", "kupiec_80_p", "kupiec_95_p",
+                                             "christoffersen_95_p", "width_80_TL", "width_95_TL")},
+              "pinball_improvement_pct": float(100 * (1 - lm.mean() / lc.mean())),
+              "pinball_improvement_ci95_block_bootstrap": list(ci), "dm": dm, **verdict,
+              "holdout_2026_used": False}
+    with open(result_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False, default=float)
+    annual.to_csv(target / "annual.csv", index=False)
+    pred.to_csv(target / "predictions.csv", index=False)
+    with open(log_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"run_number": result["run_number"], "created_at_utc": result["created_at_utc"],
+                            "hypothesis_supported": result["hypothesis_supported"],
+                            "code_md5": prereg["code_md5"]}) + "\n")
+    return {"result": result, "annual": annual, "predictions": pred, "preregistration": prereg}
+
+
+def print_confirm(res: dict):
+    r = res["result"]
+    print(f"  Hipotez (on kayitli): {r['hypothesis']}\n")
+    print(f"  Donem: {r['period_first_prediction']} .. {r['period_last_prediction']} | {r['n_forecasts']} tahmin "
+          f"| calistirma no: {r['run_number']}")
+    rows = pd.DataFrame([{"method": CONFIRM_CONTROL, **r["control"]}, {"method": CONFIRM_METHOD, **r["method"]}])
+    print(rows.to_string(index=False, float_format=lambda v: f"{v:.5f}"))
+    print("\n  Yillik:")
+    a = res["annual"][["year", "method", "n", "pinball", "coverage_80", "coverage_95"]]
+    print(a.to_string(index=False, float_format=lambda v: f"{v:.5f}"))
+    lo, hi = r["pinball_improvement_ci95_block_bootstrap"]
+    print(f"\n  Pinball degisimi: %{r['pinball_improvement_pct']:.2f} iyilesme (blok bootstrap %95 GA: %{lo:.2f} .. %{hi:.2f})")
+    print(f"  DM (yontem - kontrol): istatistik={r['dm']['dm_stat']:+.3f}, p={r['dm']['p_value']:.4f}")
+    print(f"  Kosullar: kapsam {r['coverage_ok']} | Kupiec {r['kupiec_ok']} | yillar {r['years_ok']} "
+          f"{r['years_checked']} | kotu degil {r['not_significantly_worse']}")
+    print(f"\n  SONUC: Hipotez {'DESTEKLENDI' if r['hypothesis_supported'] else 'DESTEKLENMEDI'}.")
+    print("  Not: 2026 verisi kullanilmadi. Fiyat teorik gram altindir.")
+
+
 def print_report(res: dict):
     pd.set_option("display.width", 170)
     print(f"  Degerlendirme: {DEV_START} .. {tr.TEST_START} (haric) | {res['summary']['n_forecasts']} tahmin")
@@ -264,9 +397,26 @@ def print_report(res: dict):
 
 
 def main(argv=None) -> int:
-    argparse.ArgumentParser(description="ACI ile uyarlanabilir aralik kalibrasyonu (gelistirme donemi).").parse_args(
-        [] if argv is None else argv)
+    ap = argparse.ArgumentParser(description="ACI ile uyarlanabilir aralik kalibrasyonu.")
+    ap.add_argument("--confirm", action="store_true", help="Dondurulmus aci_gvzlag_g020'yi test doneminde bir kez sina.")
+    ap.add_argument("--force-rerun", action="store_true", help="--confirm ile: onceki sonucu arsivleyip tekrar calistir.")
+    args = ap.parse_args([] if argv is None else argv)
+    if args.force_rerun and not args.confirm:
+        ap.error("--force-rerun yalnizca --confirm ile kullanilabilir.")
     sep = "=" * 72
+    if args.confirm:
+        print(f"\n{sep}\nACI TEYIT TESTI - TEST DONEMI, TEK ON KAYITLI HIPOTEZ\n{sep}")
+        try:
+            res = run_confirm(force=args.force_rerun)
+        except ConfirmAlreadyRun as e:
+            print(f"  {e}\n  Tekrar calistirmak bilimsel olarak gerekceli olmali; gerekiyorsa --force-rerun (kayda gecer).")
+            return 2
+        except (FileNotFoundError, ValueError) as e:
+            print(f"  HATA: {e}")
+            return 1
+        print_confirm(res)
+        print(f"\n  Ciktilar: {confirm_dir()}\n{sep}")
+        return 0
     print(f"\n{sep}\nUYARLANABILIR ARALIK KALIBRASYONU (ACI)\n{sep}")
     try:
         res = run()

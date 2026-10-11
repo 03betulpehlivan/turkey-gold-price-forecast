@@ -170,6 +170,74 @@ class TestProtection(unittest.TestCase):
         self.assertFalse(d.loc["c", "accepted"])       # bir yil 0.91 < 0.92
 
 
+class TestConfirm(unittest.TestCase):
+    """Teyit testi: on kayit, donem ve 2026 sinirlari, tek seferlik calistirma."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="aci_c_"))
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.mpath, self.ppath = write_world(self.tmp, "bilgili", seed=7)
+        pt = mock.patch.object(tr, "OUTPUT_DIR", self.tmp / "results")
+        pt.start()
+        self.addCleanup(pt.stop)
+        self.cdir = self.tmp / "results" / "experiments" / "adaptive_confirm"
+
+    def test_preregistration_written_before_computation(self):
+        with mock.patch.object(ad, "walk_forward", side_effect=RuntimeError("durdu")):
+            with self.assertRaises(RuntimeError):
+                quiet(ad.run_confirm, self.mpath, self.ppath)
+        prereg = json.loads((self.cdir / "preregistration.json").read_text(encoding="utf-8"))
+        self.assertEqual(prereg["method"], ad.CONFIRM_METHOD)
+        self.assertEqual(prereg["hypothesis"], ad.CONFIRM_HYPOTHESIS)
+        self.assertFalse((self.cdir / "result.json").exists())
+
+    def test_test_period_only_and_no_2026_target(self):
+        res = quiet(ad.run_confirm, self.mpath, self.ppath)
+        dates = pd.to_datetime(res["predictions"]["prediction_date"])
+        self.assertGreaterEqual(dates.min(), pd.Timestamp(tr.TEST_START))
+        # Sentetik verinin son satiri 2025-12-31; hedefi 2026'nin ilk gunu -> degerlendirmeye girmemeli
+        model = pd.read_csv(self.mpath, parse_dates=["Date"])
+        self.assertEqual(model["Date"].max(), pd.Timestamp("2025-12-31"))
+        self.assertNotIn(pd.Timestamp("2025-12-31"), set(dates))
+        self.assertFalse([c for c in res["predictions"].columns if c.startswith(("aci_garch", "comp_gvz_lag_q"))])
+
+    def test_frozen_method_matches_development_code(self):
+        res = quiet(ad.run_confirm, self.mpath, self.ppath)
+        from src.models import implied_vol as ivx
+        df = quiet(ivx.load_inputs, self.mpath, self.ppath)
+        ref = ad.walk_forward(df, start=tr.TEST_START, end=ad.HOLDOUT_START)["predictions"]
+        for tau in (0.025, 0.10, 0.90, 0.975):
+            np.testing.assert_array_equal(res["predictions"][f"aci_gvzlag_g020_q{tau}"], ref[f"aci_gvzlag_g020_q{tau}"])
+
+    def test_second_run_refused_and_force_rerun_logged(self):
+        quiet(ad.run_confirm, self.mpath, self.ppath)
+        first = (self.cdir / "result.json").read_bytes()
+        with self.assertRaises(ad.ConfirmAlreadyRun):
+            quiet(ad.run_confirm, self.mpath, self.ppath)
+        self.assertEqual((self.cdir / "result.json").read_bytes(), first)
+        quiet(ad.run_confirm, self.mpath, self.ppath, force=True)
+        self.assertEqual((self.cdir / "result_run1.json").read_bytes(), first)
+        log = (self.cdir / "run_log.jsonl").read_text(encoding="utf-8").strip().splitlines()
+        self.assertEqual(len(log), 2)
+
+    def test_main_flags(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            ad.main(["--force-rerun"])
+        with mock.patch.object(ad, "run_confirm", side_effect=ad.ConfirmAlreadyRun("var")):
+            self.assertEqual(quiet(ad.main, ["--confirm"]), 2)
+
+    def test_verdict_rules(self):
+        good = {"coverage_80": 0.80, "coverage_95": 0.95, "kupiec_80_p": 0.5, "kupiec_95_p": 0.5}
+        annual = pd.DataFrame({"year": [2023, 2024, 2025], "n": [46, 252, 250], "coverage_95": [0.85, 0.93, 0.95]})
+        ok = ad.confirm_verdict(good, good, annual, {"dm_stat": 1.0, "p_value": 0.3})
+        self.assertTrue(ok["hypothesis_supported"])          # 46 gunluk 2023 karara girmez
+        self.assertEqual(ok["years_checked"], [2024, 2025])
+        worse = ad.confirm_verdict(good, good, annual, {"dm_stat": 2.5, "p_value": 0.01})
+        self.assertFalse(worse["hypothesis_supported"])
+        bad_year = annual.assign(coverage_95=[0.95, 0.91, 0.95])
+        self.assertFalse(ad.confirm_verdict(good, good, bad_year, {"dm_stat": 0, "p_value": 1})["hypothesis_supported"])
+
+
 _REAL_DIRS = [PROJECT_ROOT / "data" / "raw", PROJECT_ROOT / "data" / "processed",
               PROJECT_ROOT / "data" / "processed" / "results"]
 _REAL_BEFORE = {}
