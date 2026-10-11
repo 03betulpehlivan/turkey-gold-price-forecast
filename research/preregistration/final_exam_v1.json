@@ -1,0 +1,58 @@
+{
+  "created_at_utc": "2026-10-11T22:43:47+00:00",
+  "parameters": {
+    "protocol_id": "FINAL_EXAM_V1",
+    "snapshot": "20261011T174148Z",
+    "exam_start_target_date": "2026-01-01",
+    "point": {
+      "primary": "Mean-Return",
+      "reference": "Zero-Return",
+      "loss": "mutlak TL hata",
+      "equivalence_margin_pct": 2.0
+    },
+    "interval": {
+      "primary": "aci_gvzlag_g020",
+      "reference": "garch",
+      "aci_scale_start": 1.0,
+      "noninferiority_margin_pct": 2.0,
+      "criteria": [
+        "A1 Kupiec p>0.05 (80, 95)",
+        "A2 Christoffersen p>0.05 (80)",
+        "A3 pinball bootstrap GA ust < +%2"
+      ]
+    },
+    "alpha": 0.05,
+    "dm": "Newey-West + HLN duzeltmesi, t(n-1), iki yonlu",
+    "bootstrap": {
+      "type": "eslestirilmis hareketli blok",
+      "block": 20,
+      "reps": 5000,
+      "seed": 20260101
+    },
+    "retrain_every": 63,
+    "purge": "1 satir",
+    "excluded": {
+      "Bilesen-Gecikme": "zamanlama teshisi KARARSIZ; secim disi"
+    }
+  },
+  "code_md5": {
+    "build_dataset.py": "96a73d43f9e38ae9b9870a7cfbcf5a68",
+    "build_panel.py": "0c8ff36d6b6a7b243dd400842f944a46",
+    "train.py": "afe8275dbfc4ff01cb6b17a19be0d4dc",
+    "intervals.py": "842e1d2aa11e11246d42c9329b1a201a",
+    "adaptive.py": "a5a3c61fd23ebef9af51ae40902baece",
+    "point_eval.py": "0a7c5569f7292a7fa5eefde176a021ca",
+    "final_exam.py": "36f0632812db04ef931466fca66af4df"
+  },
+  "data_md5": {
+    "model_dataset_2015_2026.csv": "b68e0c339fca8bc3d02cc8c135ead8c2",
+    "theoretical_2015_2026.csv": "7dfd5ec566fb313f176e2a0ea29af4a6",
+    "market_panel.csv": "a127d4cf13af82a6fe3edfecc122cb1b",
+    "raw": {
+      "gold": "f2a4864d14a83cad0c4c4af8370dc379",
+      "usdtry": "938501e690a001b6a2921270426a4949",
+      "gvz": "ff6b3852ee75de301564c8b1ddb1604a"
+    }
+  },
+  "expected_forecasts_approx": 194
+}
