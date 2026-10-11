@@ -58,10 +58,33 @@ NY = "America/New_York"
 RULES = {"ny_1700": 17, "ny_1400": 14}
 MATCH_WINDOW_HOURS = 36
 EXIT_NO_DATA = 3
+MIN_DAYS_FOR_INTERPRETATION = 100
+
+
+BAR_HOURS = 1
 
 
 def period_end(include_test: bool) -> pd.Timestamp:
+    """Haric ust sinir (takvim gunu). Varsayilan: TEST_START. Test donemi dahil: HOLDOUT_START.
+
+    Her iki modda da 2026 (HOLDOUT_START ve sonrasi) disarida kalir.
+    """
     return pd.Timestamp(HOLDOUT_START if include_test else tr.TEST_START)
+
+
+def analysis_window(include_test: bool) -> tuple:
+    """Dahil edilen ilk ve son takvim gunu (raporlama icin acik yazim)."""
+    end = period_end(include_test)
+    return (pd.Timestamp(tr.TEST_START) if include_test else None), end - pd.Timedelta(days=1)
+
+
+def bars_closed_before(df: pd.DataFrame, end_utc: pd.Timestamp) -> pd.DataFrame:
+    """Kapanis ani (baslangic + 1 saat) end_utc'den KESIN once olan cubuklar.
+
+    Baslangica gore filtrelemek, 23:00'te baslayan son cubugun (kapanisi ertesi
+    gun 00:00) sinirin otesindeki bir fiyati tasimasina yol acar.
+    """
+    return df[df["ts_utc"] + pd.Timedelta(hours=BAR_HOURS) < end_utc].reset_index(drop=True)
 
 
 def latest_snapshot(root: Path):
@@ -153,11 +176,13 @@ def close_hour_match(daily: pd.DataFrame, col: str, hourly: pd.DataFrame) -> pd.
         cand = h.iloc[i0:i1]
         diff = np.abs(np.log(cand["close"].to_numpy() / value))
         k = int(np.argmin(diff))
+        n_within = int((diff < 1e-4).sum())
         be = cand["bar_end_utc"].iloc[k]
         rows.append({"Date": d, "matched_bar_end_utc": be, "hour_utc": be.hour,
                      "hour_ny": be.tz_convert(NY).hour,
                      "day_offset_ny": (be.tz_convert(NY).normalize().tz_localize(None) - pd.Timestamp(d)).days,
-                     "abs_log_diff": float(diff[k]), "candidates": int(len(cand))})
+                     "abs_log_diff": float(diff[k]), "candidates": int(len(cand)),
+                 "n_within_1bp": n_within})
     return pd.DataFrame(rows)
 
 
@@ -165,11 +190,19 @@ def summarize_match(match: pd.DataFrame) -> dict:
     if match.empty:
         return {"days": 0}
     near = match[match["abs_log_diff"] < 1e-4]
-    mode = near["hour_utc"].mode() if len(near) else pd.Series(dtype=int)
+    unique = match[match["n_within_1bp"] == 1]
+    mode = unique["hour_utc"].mode() if len(unique) else pd.Series(dtype=int)
+    mode_near = near["hour_utc"].mode() if len(near) else pd.Series(dtype=int)
     return {"days": int(len(match)),
+            # Eski anahtar (geriye uyum): 1 bp icindeki TUM eslesmelerin en sik saati; yavas hareket eden
+            # serilerde (kur) birden cok saat 1 bp icinde kalabildigi icin saat belirlemez.
+            "most_common_hour_utc_among_1bp_matches": int(mode_near.iloc[0]) if len(mode_near) else None,
             "share_within_1bp": float((match["abs_log_diff"] < 1e-4).mean()),
+            "share_unique_1bp": float((match["n_within_1bp"] == 1).mean()),
+            "median_candidates_within_1bp": float(match["n_within_1bp"].median()),
             "median_abs_log_diff": float(match["abs_log_diff"].median()),
-            "most_common_hour_utc_among_1bp_matches": int(mode.iloc[0]) if len(mode) else None,
+            "most_common_hour_utc_among_unique": int(mode.iloc[0]) if len(mode) else None,
+            "hour_utc_distribution_unique": {str(k): int(v) for k, v in unique["hour_utc"].value_counts().sort_index().items()},
             "hour_utc_distribution_1bp": {str(k): int(v) for k, v in near["hour_utc"].value_counts().sort_index().items()}}
 
 
@@ -180,9 +213,18 @@ def compare_prices(sync_daily: pd.DataFrame, panel: pd.DataFrame) -> tuple:
     m["gold_diff_pct"] = 100 * (m["gold"] / m["gold_usd_oz"] - 1)
     m["usdtry_diff_pct"] = 100 * (m["usdtry_y"] / m["usdtry_x"] - 1) if "usdtry_y" in m else np.nan
     a = m["diff_pct"].abs()
+    lo, hi = (sync_daily["Date"].min(), sync_daily["Date"].max()) if len(sync_daily) else (None, None)
+    in_cov = panel[(panel["Date"] >= lo) & (panel["Date"] <= hi)] if lo is not None else panel.iloc[:0]
+    panel_only = sorted(set(in_cov["Date"]) - set(sync_daily["Date"]))
+    sync_only = sorted(set(sync_daily["Date"]) - set(panel["Date"]))
     stats = {"days_compared": int(len(m)),
-             "panel_days_without_sync": int(len(set(panel["Date"]) - set(sync_daily["Date"]))),
-             "sync_days_without_panel": int(len(set(sync_daily["Date"]) - set(panel["Date"]))),
+             "coverage_window": [str(lo.date()) if lo is not None else None, str(hi.date()) if hi is not None else None],
+             "panel_days_in_coverage_window": int(len(in_cov)),
+             "panel_days_without_sync_in_window": int(len(panel_only)),
+             "sync_days_without_panel": int(len(sync_only)),
+             "panel_days_without_sync_total": int(len(set(panel["Date"]) - set(sync_daily["Date"]))),
+             "unmatched_dates": {"panel_only": [str(d.date()) for d in panel_only],
+                                 "sync_only": [str(d.date()) for d in sync_only]},
              "abs_diff_tl_mean": float(m["diff_tl"].abs().mean()) if len(m) else None,
              "abs_diff_tl_median": float(m["diff_tl"].abs().median()) if len(m) else None,
              "abs_diff_pct_mean": float(a.mean()) if len(m) else None,
@@ -254,7 +296,7 @@ def run(intraday_snapshot: Path, panel_path: Path, out_dir: Path, include_test: 
     cov = coverage(hourly_full)
     end = period_end(include_test)
     end_utc = end.tz_localize("UTC")
-    hourly = {k: v[v["ts_utc"] < end_utc].reset_index(drop=True) for k, v in hourly_full.items()}
+    hourly = {k: bars_closed_before(v, end_utc) for k, v in hourly_full.items()}
     panel = pd.read_csv(panel_path, parse_dates=["Date"])
     panel["Date"] = panel["Date"].astype("datetime64[ns]")
     panel = panel[panel["Date"] < end].reset_index(drop=True)
@@ -264,6 +306,8 @@ def run(intraday_snapshot: Path, panel_path: Path, out_dir: Path, include_test: 
                "intraday_retrieved_at_utc": manifest.get("retrieved_at_utc"),
                "attempts": {k: v.get("attempts") for k, v in manifest["series"].items()},
                "period_end_exclusive": str(end.date()), "include_test_period": include_test,
+               "last_included_date": str(analysis_window(include_test)[1].date()),
+               "boundary_rule": "cubuk kapanisi (baslangic + 1 saat) period_end_exclusive'den kesin once",
                "holdout_2026_used": False, "coverage": cov, "rules": RULES}
     pairs = synchronous_pairs(hourly["gold"], hourly["usdtry"])
     if pairs.empty:
@@ -280,6 +324,10 @@ def run(intraday_snapshot: Path, panel_path: Path, out_dir: Path, include_test: 
         merged, stats, top = compare_prices(sd, panel)
         results[rule] = {"prices": stats, "returns": compare_returns(merged)}
         merged.to_csv(out_dir / f"sync_vs_daily_{rule}.csv", index=False)
+        um = stats["unmatched_dates"]
+        pd.DataFrame({"Date": um["panel_only"] + um["sync_only"],
+                      "side": ["panel_only_in_window"] * len(um["panel_only"]) + ["sync_only"] * len(um["sync_only"])}
+                     ).to_csv(out_dir / f"unmatched_dates_{rule}.csv", index=False)
         top.to_csv(out_dir / f"top_deviations_{rule}.csv", index=False)
         if rule == "ny_1700":
             plot_frame = merged
@@ -292,6 +340,7 @@ def run(intraday_snapshot: Path, panel_path: Path, out_dir: Path, include_test: 
 
     summary.update(status="ok", synchronous_pairs=int(len(pairs)),
                    pairs_range=[str(pairs["ts_utc"].min()), str(pairs["ts_utc"].max())],
+                   last_bar_close_utc=str(max(v["ts_utc"].max() for v in hourly.values()) + pd.Timedelta(hours=BAR_HOURS)),
                    comparison=results,
                    daily_close_hour_inference={k: summarize_match(v) for k, v in matches.items()})
     with open(out_dir / "summary.json", "w", encoding="utf-8") as f:
@@ -311,31 +360,44 @@ def print_report(res: dict):
     print(f"    ortak     {cc['count']} ayni zaman damgali cubuk (gelistirme {cc['development']}, "
           f"test {cc['test_period']}, 2026 {cc['y2026']})")
     print(f"  Denemeler: {s['attempts']}")
-    print(f"  Analiz donemi: < {s['period_end_exclusive']} (test donemi dahil: {s['include_test_period']}; 2026 asla)")
+    mode = "gelistirme + test donemi" if s["include_test_period"] else "yalnizca gelistirme donemi"
+    print(f"  Analiz donemi: {mode}; dahil edilen son gun {s['last_included_date']} "
+          f"(2026 her iki modda disarida; sinir cubuk KAPANIS anina gore)")
     if res["status"] != "ok":
         print(f"\n  SONUC: {s['message']}")
         print("  Gelistirme doneminde analiz yapilamadi. Test donemini dahil etmek bilincli bir karar gerektirir:")
         print("    python -m src.analysis.sync_prices --include-test-period")
         return
-    print(f"  Esanli cift: {s['synchronous_pairs']} ({s['pairs_range'][0]} .. {s['pairs_range'][1]})")
+    print(f"  Esanli cift: {s['synchronous_pairs']} ({s['pairs_range'][0]} .. {s['pairs_range'][1]}); "
+          f"kullanilan son cubuk kapanisi: {s['last_bar_close_utc']}")
     for rule, r in s["comparison"].items():
         p, q = r["prices"], r["returns"]
-        print(f"\n  Kural {rule}: {p['days_compared']} gun karsilastirildi | panelde olup esanli olmayan: "
-              f"{p['panel_days_without_sync']} | esanli olup panelde olmayan: {p['sync_days_without_panel']}")
+        print(f"\n  Kural {rule}: saatlik kapsam penceresi {p['coverage_window'][0]} .. {p['coverage_window'][1]}")
+        print(f"    paneldeki gun (pencerede): {p['panel_days_in_coverage_window']} | eslesen (karsilastirilan): "
+              f"{p['days_compared']} | panelde olup esanli olmayan: {p['panel_days_without_sync_in_window']} | "
+              f"esanli olup panelde olmayan: {p['sync_days_without_panel']}")
+        um = p["unmatched_dates"]
+        if um["panel_only"] or um["sync_only"]:
+            print(f"    eslesmeyen tarihler -> yalniz panel: {um['panel_only'][:10]} | yalniz esanli: {um['sync_only'][:10]}")
         if p["days_compared"]:
-            print(f"    |fark| TL ort {p['abs_diff_tl_mean']:.2f}, medyan {p['abs_diff_tl_median']:.2f} | "
-                  f"|fark| % ort {p['abs_diff_pct_mean']:.3f}, medyan {p['abs_diff_pct_median']:.3f}, "
-                  f"p90 {p['abs_diff_pct_p90']:.3f}, p99 {p['abs_diff_pct_p99']:.3f}, max {p['abs_diff_pct_max']:.3f}")
+            print(f"    fiyat farki ({p['days_compared']} gun uzerinden): |fark| TL ort {p['abs_diff_tl_mean']:.2f}, "
+                  f"medyan {p['abs_diff_tl_median']:.2f} | |fark| % ort {p['abs_diff_pct_mean']:.3f}, "
+                  f"medyan {p['abs_diff_pct_median']:.3f}, p90 {p['abs_diff_pct_p90']:.3f}, "
+                  f"p99 {p['abs_diff_pct_p99']:.3f}, max {p['abs_diff_pct_max']:.3f}")
         if q.get("days", 0) >= 5:
-            print(f"    getiri korelasyonu (gunluk vs esanli gram): {q['gram_return_corr_daily_vs_sync']:.3f} | "
-                  f"|getiri farki| medyan {q['abs_return_diff_median']:.5f}")
+            print(f"    getiri farki ({q['days']} ardisik ortak gun cifti uzerinden): korelasyon "
+                  f"{q['gram_return_corr_daily_vs_sync']:.3f} | |getiri farki| medyan {q['abs_return_diff_median']:.5f}")
             print(f"    kayma izi corr(altin[t], kur[t+1]): gunluk {q['daily_corr_gold_t_fx_t+1']:+.3f}, "
                   f"esanli {q['sync_corr_gold_t_fx_t+1']:+.3f} (bant +/-{q['band_95']:.3f})")
-    print("\n  Gunluk kapanisin hangi saate ait oldugu (cikarim):")
+        if p["days_compared"] < MIN_DAYS_FOR_INTERPRETATION:
+            print(f"    UYARI: {p['days_compared']} gun, yorum icin yetersiz (< {MIN_DAYS_FOR_INTERPRETATION}).")
+    print("\n  Gunluk kapanisin hangi saate ait oldugu (cikarim; yalnizca TEKIL eslesmeler saat belirler):")
     for name, m in s["daily_close_hour_inference"].items():
         if m.get("days"):
-            print(f"    {name:7s} {m['days']} gun | 1 baz puan icinde eslesen: %{100 * m['share_within_1bp']:.1f} | "
-                  f"en sik saat (UTC): {m['most_common_hour_utc_among_1bp_matches']} | dagilim: {m['hour_utc_distribution_1bp']}")
+            print(f"    {name:7s} {m['days']} gun | 1 bp icinde: %{100 * m['share_within_1bp']:.1f} | tekil 1 bp: "
+                  f"%{100 * m['share_unique_1bp']:.1f} | 1 bp icindeki aday medyani: {m['median_candidates_within_1bp']:.0f} "
+                  f"| tekillerde en sik saat (UTC): {m['most_common_hour_utc_among_unique']}")
+            print(f"            tekil eslesme saat dagilimi (UTC): {m['hour_utc_distribution_unique']}")
 
 
 def main(argv=None) -> int:

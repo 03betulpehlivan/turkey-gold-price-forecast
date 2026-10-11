@@ -244,6 +244,80 @@ class TestRun(Base):
         self.assertGreater(s["coverage"]["common_exact_timestamps"]["test_period"], 0)
 
 
+class TestBoundariesAndCounts(Base):
+    """2026 her iki modda disarida; sinir cubuk KAPANIS anina gore; eslesme sayilari tutarli."""
+
+    def run_mode(self, include_test, drop_panel_dates=()):
+        snap = self.snapshot()
+        panel_path = make_panel(self.tmp / "panel.csv", 13)
+        if drop_panel_dates:
+            p = pd.read_csv(panel_path)
+            p[~p["Date"].isin(drop_panel_dates)].to_csv(panel_path, index=False)
+        out = self.tmp / ("out_test" if include_test else "out_dev")
+        return quiet(sp.run, snap, panel_path, out, include_test), out
+
+    def test_boundary_bar_is_filtered_by_close_time(self):
+        df = pd.DataFrame({"ts_utc": pd.to_datetime(["2025-12-31 21:00", "2025-12-31 22:00", "2025-12-31 23:00",
+                                                     "2026-01-01 00:00"], utc=True), "close": [1.0, 2.0, 3.0, 4.0]})
+        kept = sp.bars_closed_before(df, pd.Timestamp("2026-01-01", tz="UTC"))
+        self.assertEqual(list(kept["close"]), [1.0, 2.0])   # 23:00 cubugu 2026-01-01 00:00'da kapanir: disarida
+
+    def test_2026_excluded_in_both_modes(self):
+        for include_test, limit in ((False, tr.TEST_START), (True, sp.HOLDOUT_START)):
+            with self.subTest(include_test=include_test):
+                res, out = self.run_mode(include_test)
+                s = res["summary"]
+                self.assertLess(pd.Timestamp(s["last_bar_close_utc"]), pd.Timestamp(limit, tz="UTC"))
+                self.assertLess(pd.Timestamp(s["last_included_date"]), pd.Timestamp(limit))
+                self.assertLess(pd.Timestamp(s["last_included_date"]), pd.Timestamp(sp.HOLDOUT_START))
+                for name in ("gold", "usdtry"):
+                    mt = pd.read_csv(out / f"daily_close_hour_match_{name}.csv")
+                    self.assertLess(pd.to_datetime(mt["matched_bar_end_utc"], utc=True).max(),
+                                    pd.Timestamp(limit, tz="UTC"))
+                merged = pd.read_csv(out / "sync_vs_daily_ny_1700.csv", parse_dates=["Date"])
+                self.assertLess(merged["Date"].max(), pd.Timestamp(limit))
+
+    def test_last_included_date_is_explicit(self):
+        self.assertEqual(sp.analysis_window(True)[1], pd.Timestamp("2025-12-31"))
+        self.assertEqual(sp.analysis_window(False)[1], pd.Timestamp(tr.TEST_START) - pd.Timedelta(days=1))
+
+    def test_match_counts_are_consistent_and_unmatched_dates_listed(self):
+        dropped = ["2024-03-05", "2024-07-10", "2025-02-12"]
+        res, out = self.run_mode(True, drop_panel_dates=dropped)
+        for rule in sp.RULES:
+            with self.subTest(rule=rule):
+                p = res["summary"]["comparison"][rule]["prices"]
+                self.assertEqual(p["days_compared"] + p["panel_days_without_sync_in_window"],
+                                 p["panel_days_in_coverage_window"])
+                self.assertEqual(p["unmatched_dates"]["sync_only"], dropped)
+                self.assertEqual(p["sync_days_without_panel"], 3)
+                merged = pd.read_csv(out / f"sync_vs_daily_{rule}.csv")
+                self.assertEqual(len(merged), p["days_compared"])
+                um = pd.read_csv(out / f"unmatched_dates_{rule}.csv")
+                self.assertEqual(sorted(um.loc[um["side"] == "sync_only", "Date"]), dropped)
+
+    def test_panel_days_before_hourly_coverage_are_not_counted_as_missing(self):
+        # Gercek durum: panel 2015'ten, saatlik veri 2024'ten baslar. Kapsam oncesi gunler "eksik" sayilmamali.
+        snap = self.snapshot()
+        panel_path = make_panel(self.tmp / "panel.csv", 13)
+        early = pd.DataFrame({"Date": pd.bdate_range("2022-01-03", "2022-12-30").strftime("%Y-%m-%d"),
+                              "gold_usd_oz": 1800.0, "usdtry": 15.0, "theoretical_gram_try": 1800 * 15 / 31.1035})
+        pd.concat([early, pd.read_csv(panel_path)]).to_csv(panel_path, index=False)
+        res = quiet(sp.run, snap, panel_path, self.tmp / "o", True)
+        p = res["summary"]["comparison"]["ny_1700"]["prices"]
+        self.assertEqual(p["panel_days_without_sync_in_window"], 0)
+        self.assertEqual(p["panel_days_without_sync_total"], len(early))
+        self.assertEqual(p["days_compared"], p["panel_days_in_coverage_window"])
+
+    def test_unique_match_detects_ambiguous_slow_series(self):
+        hourly = {"usdtry": pd.DataFrame({"ts_utc": IDX[:2000], "close": np.full(2000, 19.0)})}
+        panel = pd.DataFrame({"Date": pd.bdate_range("2023-03-02", periods=40), "usdtry": 19.0})
+        m = sp.summarize_match(sp.close_hour_match(panel, "usdtry", hourly["usdtry"]))
+        self.assertEqual(m["share_within_1bp"], 1.0)
+        self.assertEqual(m["share_unique_1bp"], 0.0)          # her saat esit: saat belirlenemez
+        self.assertIsNone(m["most_common_hour_utc_among_unique"])
+
+
 _REAL_DIRS = [PROJECT_ROOT / "data" / "raw", PROJECT_ROOT / "data" / "processed",
               PROJECT_ROOT / "data" / "processed" / "results"]
 _REAL_BEFORE = {}
