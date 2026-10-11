@@ -72,6 +72,8 @@ SERIES = {
                 "description": "Brent petrol vadeli, surekli kontrat (USD/varil)"},
     "eurtry":  {"ticker": "EURTRY=X", "required": False,
                 "description": "EUR/TRY doviz kuru"},
+    "gvz":     {"ticker": "^GVZ",     "required": False,
+                "description": "CBOE altin ETF oynaklik endeksi (opsiyon zimni oynakligi, yillik %)"},
 }
 
 

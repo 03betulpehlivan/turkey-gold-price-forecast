@@ -30,6 +30,7 @@ gerçek durumunu, satır sayısını ve tarih aralığını kayda geçirir.
 | bist100 | XU100.IS | BIST 100 (TRY) | Hayır |
 | brent | BZ=F | Brent petrol vadeli (USD/varil) | Hayır |
 | eurtry | EURTRY=X | EUR/TRY kuru | Hayır |
+| gvz | ^GVZ | CBOE altın ETF oynaklık endeksi (opsiyon zımni oynaklığı, yıllık %); kapanış saati altından sonra olabilir | Hayır |
 
 ## Dosya düzeni
 

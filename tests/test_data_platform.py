@@ -73,9 +73,11 @@ def fake_series():
         "XU100.IS": (DAYS.delete(range(80, 88)), None),              # ~12 takvim gunu tatil
         "BZ=F": (DAYS, None),
         "EURTRY=X": (DAYS, None),
+        "^GVZ": (DAYS, None),
     }
     levels = {"GC=F": 1800, "USDTRY=X": 13.5, "SI=F": 23, "DX-Y.NYB": 96, "^TNX": 1.6,
-              "^VIX": 18, "^GSPC": 4700, "XU100.IS": 2000, "BZ=F": 80, "EURTRY=X": 15.3}
+              "^VIX": 18, "^GSPC": 4700, "XU100.IS": 2000, "BZ=F": 80, "EURTRY=X": 15.3,
+              "^GVZ": 15.0}
     out = {}
     for t, (d, _) in data.items():
         full = pd.Series(walk(levels[t], 0.01), index=DAYS)
