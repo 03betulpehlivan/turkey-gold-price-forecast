@@ -5,13 +5,18 @@
 # Kullanim (proje kokunden):
 #   powershell -ExecutionPolicy Bypass -File scripts\gunluk_tahmin.ps1
 #   powershell -ExecutionPolicy Bypass -File scripts\gunluk_tahmin.ps1 -YedekKlasoru "D:\altin_yedek"
+#   powershell -ExecutionPolicy Bypass -File scripts\gunluk_tahmin.ps1 -TahminYok
+#
+# -TahminYok: yalnizca 1) arsiv ve 2) seriler calisir (saatlik arsiv, canli panel, esanli seri).
+#   Puanlama, tahmin ve git commit ATLANIR; research/live/forecast_log.csv'ye dokunulmaz.
+#   Verilmezse davranis aynidir (tum adimlar).
 #
 # Git'e GIREN: yalnizca research/live/forecast_log.csv (kucuk, degistirilemezlik kaniti).
 # Git'e GIRMEYEN (data/ .gitignore): ham anlik goruntuler ve saatlik arsiv. Yahoo saatlik veriyi
 #   ~730 gun tuttugu icin bunlarin YEDEGI onemlidir: -YedekKlasoru verilirse data\raw altindaki
 #   anlik goruntu klasorleri oraya SILMEDEN kopyalanir (robocopy /E, /MIR KULLANILMAZ).
 # Ana data\processed\market_panel.csv ve FINAL_EXAM_V1 dosyalari DEGISTIRILMEZ.
-param([string]$YedekKlasoru = "")
+param([string]$YedekKlasoru = "", [switch]$TahminYok)
 $ErrorActionPreference = "Stop"
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $py = ".\.venv\Scripts\python.exe"
@@ -43,6 +48,11 @@ $canli = "data\processed\live"
 Remove-Item "$canli\market_panel.csv", "$canli\market_panel_report.json" -ErrorAction SilentlyContinue
 Adim "Canli panel (GVZ)" @("-m", "src.data.build_panel", "--write", "--processed-dir", $canli) | Out-Null
 Adim "Esanli gunluk seri" @("-m", "src.data.sync_dataset") | Out-Null
+
+if ($TahminYok) {
+    Write-Host "`nSonuc: -TahminYok: arsiv ve seriler guncellendi; puanlama, tahmin ve commit ATLANDI (kayit degismedi)." -ForegroundColor Yellow
+    exit 0
+}
 
 # 3) PUANLAMA, 4) TAHMIN
 Adim "Puanlama" @("-m", "src.live.forecast", "score") | Out-Null
