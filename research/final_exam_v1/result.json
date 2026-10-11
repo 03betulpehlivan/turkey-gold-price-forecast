@@ -1,0 +1,201 @@
+{
+  "protocol_id": "FINAL_EXAM_V1",
+  "created_at_utc": "2026-10-11T22:51:18+00:00",
+  "git_commit": "50ea32fbbaf3d846e90b14a5dc4d7b21e1ad2d71",
+  "prereg_md5": "0dc2587e2264c0432bb5533c9c8029e8",
+  "n_forecasts": 194,
+  "first_target": "2026-01-02",
+  "last_target": "2026-10-09",
+  "alignment_check": {
+    "rows_checked": 2934,
+    "max_relative_diff": 4.440892098500626e-16
+  },
+  "window_audit": [
+    {
+      "train_last_date": "2025-12-29",
+      "train_last_target_date": "2025-12-30",
+      "eval_first_date": "2025-12-31",
+      "n_eval": 63
+    },
+    {
+      "train_last_date": "2026-03-31",
+      "train_last_target_date": "2026-04-01",
+      "eval_first_date": "2026-04-02",
+      "n_eval": 63
+    },
+    {
+      "train_last_date": "2026-07-01",
+      "train_last_target_date": "2026-07-02",
+      "eval_first_date": "2026-07-06",
+      "n_eval": 63
+    },
+    {
+      "train_last_date": "2026-09-30",
+      "train_last_target_date": "2026-10-01",
+      "eval_first_date": "2026-10-02",
+      "n_eval": 5
+    }
+  ],
+  "point": {
+    "metrics": {
+      "Zero-Return": {
+        "n": 194,
+        "MAE_TL": 90.12331189565765,
+        "MedAE_TL": 66.81280560425785,
+        "RMSE_TL": 127.25956716399575,
+        "MAPE_pct": 1.3468032312267166,
+        "MdAPE_pct": 1.012028107415293,
+        "MAE_return": 0.01344312158846696,
+        "bias_TL": -3.560165318677953,
+        "direction_accuracy_pct": NaN,
+        "up_day_recall_pct": 0.0,
+        "down_day_recall_pct": 0.0,
+        "MAE_TL_up_days": 87.37785855567839,
+        "MAE_TL_down_days": 93.29583575518924,
+        "up_fraction_pct": 53.608247422680414,
+        "MAE_TL_large_moves": 272.7808429068682,
+        "MAE_TL_normal_days": 69.12819338862195,
+        "share_err_le_0.4TL_pct": 1.0309278350515463,
+        "share_err_le_1TL_pct": 2.5773195876288657,
+        "share_err_le_5TL_pct": 5.670103092783505,
+        "share_err_le_10TL_pct": 6.701030927835052,
+        "share_err_le_25TL_pct": 22.164948453608247,
+        "share_err_le_0.1pct_pct": 5.670103092783505,
+        "share_err_le_0.25pct_pct": 13.402061855670103,
+        "share_err_le_0.5pct_pct": 29.381443298969074,
+        "share_err_le_1pct_pct": 48.96907216494845
+      },
+      "Mean-Return": {
+        "n": 194,
+        "MAE_TL": 89.93262587296063,
+        "MedAE_TL": 71.64843737108913,
+        "RMSE_TL": 127.48397257920116,
+        "MAPE_pct": 1.3451169589092185,
+        "MdAPE_pct": 1.0554661409041999,
+        "MAE_return": 0.013406286300479561,
+        "bias_TL": 6.354995841409454,
+        "direction_accuracy_pct": 53.608247422680414,
+        "up_day_recall_pct": 100.0,
+        "down_day_recall_pct": 0.0,
+        "MAE_TL_up_days": 78.3575253410044,
+        "MAE_TL_down_days": 103.3082975987767,
+        "up_fraction_pct": 53.608247422680414,
+        "MAE_TL_large_moves": 275.0065879504137,
+        "MAE_TL_normal_days": 68.65975666865567,
+        "share_err_le_0.4TL_pct": 0.5154639175257731,
+        "share_err_le_1TL_pct": 0.5154639175257731,
+        "share_err_le_5TL_pct": 3.0927835051546393,
+        "share_err_le_10TL_pct": 8.24742268041237,
+        "share_err_le_25TL_pct": 22.68041237113402,
+        "share_err_le_0.1pct_pct": 3.608247422680412,
+        "share_err_le_0.25pct_pct": 15.463917525773196,
+        "share_err_le_0.5pct_pct": 27.835051546391753,
+        "share_err_le_1pct_pct": 48.45360824742268
+      }
+    },
+    "bootstrap": {
+      "diff": -0.1906860226970224,
+      "pct": -0.21158346124451333,
+      "diff_ci95": [
+        -1.249005637271693,
+        1.033990396991251
+      ],
+      "pct_ci95": [
+        -1.340633243975262,
+        1.1667374906411858
+      ]
+    },
+    "dm": {
+      "n": 194,
+      "mean_loss_diff": -0.1906860226970249,
+      "dm_stat_nw": -0.3043912197594951,
+      "dm_stat_hln": -0.3036056927215422,
+      "p_value": 0.7617553577438816,
+      "hac_lag": 4
+    },
+    "verdict": "PRATIKTE_ESDEGER"
+  },
+  "interval": {
+    "summary": {
+      "garch": {
+        "n": 194,
+        "pinball": 0.002343901607235154,
+        "coverage_80": 0.7422680412371134,
+        "width_80": 0.0385298323419415,
+        "width_80_TL": 258.2777951334515,
+        "kupiec_80_p": 0.051599736632000084,
+        "christoffersen_80_p": 0.06677354874276231,
+        "coverage_95": 0.9226804123711341,
+        "width_95": 0.0644799889114149,
+        "width_95_TL": 432.4063034575053,
+        "kupiec_95_p": 0.10475435902095866,
+        "christoffersen_95_p": 0.11162304485350968,
+        "coverage_80_wilson95": [
+          0.6764354617599317,
+          0.7986924539536275
+        ],
+        "coverage_95_wilson95": [
+          0.8763605613089301,
+          0.952586015042386
+        ]
+      },
+      "aci_gvzlag_g020": {
+        "n": 194,
+        "pinball": 0.0022583768821048938,
+        "coverage_80": 0.7938144329896907,
+        "width_80": 0.04247512343416851,
+        "width_80_TL": 285.6362453425327,
+        "kupiec_80_p": 0.8301050012401511,
+        "christoffersen_80_p": 0.04508451837540669,
+        "coverage_95": 0.9381443298969072,
+        "width_95": 0.0717486811017516,
+        "width_95_TL": 482.7738905007535,
+        "kupiec_95_p": 0.46427794621886875,
+        "christoffersen_95_p": 0.20699385338388296,
+        "coverage_80_wilson95": [
+          0.7314476515983874,
+          0.8447713100116736
+        ],
+        "coverage_95_wilson95": [
+          0.8950085337587133,
+          0.9642653563615533
+        ]
+      }
+    },
+    "bootstrap_pinball": {
+      "diff": -8.552472513026011e-05,
+      "pct": -3.648818912289764,
+      "diff_ci95": [
+        -0.00021279032626022739,
+        2.058964370674757e-05
+      ],
+      "pct_ci95": [
+        -7.186124045209294,
+        1.0236350380036976
+      ]
+    },
+    "dm_pinball": {
+      "n": 194,
+      "mean_loss_diff": -8.552472513025966e-05,
+      "dm_stat_nw": -1.5440246021964625,
+      "dm_stat_hln": -1.540040015935242,
+      "p_value": 0.12518853029407107,
+      "hac_lag": 4
+    },
+    "verdict": {
+      "A1_kupiec": true,
+      "A2_christoffersen_80": false,
+      "A3_pinball_noninferior": true,
+      "all_passed": false,
+      "statement": "On kayitli araliga iliskin kosullardan en az biri saglanmadi."
+    }
+  },
+  "environment": {
+    "python": "3.11.9",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "scipy": "1.17.1",
+    "arch": "8.0.0",
+    "scikit-learn": "1.9.1"
+  }
+}
