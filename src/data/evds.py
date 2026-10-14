@@ -13,7 +13,9 @@ Protokol (evds 0.4.0 istemcisinin kaynak kodundan dogrulandi, Subat 2026):
   Uclar  : categories/type=json | datagroups/mode=0&code=&type=json (tum gruplar)
            serieList/type=json&code=<grup> | series=A-B&startDate=gg-aa-yyyy&endDate=...&type=json
   SSL    : sunucu eski TLS yeniden anlasma istiyor; OP_LEGACY_SERVER_CONNECT gerekli.
-  Bu ortamdan EVDS'ye ERISILEMEDI: serilerin varligi, adlari ve kapsamlari ilk calistirmada belirlenir.
+  Gercek calistirmada dogrulanan (14.10.2026): endDate BOS olursa 400 doner; her yanit EN FAZLA
+  1000 satir icerir (fazlasi sessizce kesilir, son 1000 satir gelir). Bu nedenle indirme tarih
+  araligini parcalara boler; 1000 satira ulasan parca otomatik olarak yeniden bolunur.
 
 Kurallar:
   - Anahtar hicbir dosyaya, manifest'e veya ekrana yazilmaz.
@@ -23,7 +25,7 @@ Kurallar:
     temsil ettigine metadata incelenerek karar verilir. Teorik ve fiziki fiyatlar ayri seridir.
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import argparse
 import hashlib
@@ -41,6 +43,9 @@ BASE_URL = "https://evds3.tcmb.gov.tr/igmevdsms-dis/"
 OUT_ROOT = ROOT / "data" / "raw" / "evds"
 DEFAULT_TERMS = ("altin", "gold")
 DATE_KEYS = ("Tarih", "TARIH", "Date", "DATE")
+ROW_LIMIT = 1000          # EVDS yanit basina satir siniri (gercek calistirmada gozlendi)
+CHUNK_DAYS = 3 * 365      # ilk parca boyu (~750 is gunu < 1000)
+DATE_FMT = "%d-%m-%Y"
 
 
 class EVDSError(Exception):
@@ -92,7 +97,8 @@ class Client:
         self.calls.append(url)
         status, content = self._get(url, {"key": self._key})
         if status != 200:
-            raise EVDSError(f"EVDS {status}: {endpoint} (anahtar veya istek hatali olabilir)")
+            detail = content[:300].decode("utf-8", errors="replace").strip() if content else ""
+            raise EVDSError(f"EVDS {status}: {endpoint or 'veri'} {detail} (anahtar veya istek hatali olabilir)")
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
@@ -134,6 +140,40 @@ def discover(client: Client, terms=DEFAULT_TERMS) -> pd.DataFrame:
                                        "SERIE_NAME_ENG", "FREQUENCY", "START_DATE", "END_DATE", "DEFAULT_AGG"])
 
 
+def _d(s: str) -> date:
+    return datetime.strptime(s, DATE_FMT).date()
+
+
+def fetch_chunked(client: Client, codes: list, start: str, end: str, chunk_days: int = CHUNK_DAYS) -> tuple:
+    """Araligi parcalara bolerek indirir. 1000 satira ulasan parca ikiye bolunur (kesilme olmasin).
+
+    Dondurur: (items listesi, parca raporu). Parcalar ortusmez; tarih tekrarinda deger farki hata verir.
+    """
+    a, b = _d(start), _d(end)
+    if b < a:
+        raise EVDSError("Bitis tarihi baslangictan once.")
+    queue, chunks, items = [], [], []
+    cur = a
+    while cur <= b:
+        nxt = min(cur + timedelta(days=chunk_days - 1), b)
+        queue.append((cur, nxt))
+        cur = nxt + timedelta(days=1)
+    while queue:
+        s, e = queue.pop(0)
+        res = client.data(codes, s.strftime(DATE_FMT), e.strftime(DATE_FMT))
+        got = res["items"]
+        if len(got) >= ROW_LIMIT:
+            if (e - s).days < 1:
+                raise EVDSError(f"Tek gunluk parca bile {ROW_LIMIT} satir dondurdu: {s}")
+            mid = s + timedelta(days=(e - s).days // 2)
+            queue[:0] = [(s, mid), (mid + timedelta(days=1), e)]
+            chunks.append({"start": str(s), "end": str(e), "rows": len(got), "split": True})
+            continue
+        chunks.append({"start": str(s), "end": str(e), "rows": len(got), "split": False})
+        items.extend(got)
+    return items, chunks
+
+
 def parse_items(items: list, codes: list) -> pd.DataFrame:
     """EVDS 'items' -> Date + seri sutunlari (kod: '.' -> '_'). Bos/'ND' degerler NaN."""
     if not items:
@@ -150,7 +190,14 @@ def parse_items(items: list, codes: list) -> pd.DataFrame:
     for c in codes:
         col = c.replace(".", "_")
         out[c] = pd.to_numeric(df[col], errors="coerce") if col in df.columns else float("nan")
-    return out.sort_values("Date").reset_index(drop=True)
+    out = out.sort_values("Date").reset_index(drop=True)
+    dup = out["Date"].duplicated(keep=False)
+    if dup.any():
+        g = out[dup].groupby("Date")[codes].nunique(dropna=False)
+        if (g > 1).any().any():
+            raise EVDSError("Ayni tarih icin farkli degerler geldi (parca ortusmesi tutarsiz).")
+        out = out.drop_duplicates("Date").reset_index(drop=True)
+    return out
 
 
 def coverage(df: pd.DataFrame, codes: list) -> dict:
@@ -165,8 +212,8 @@ def coverage(df: pd.DataFrame, codes: list) -> dict:
     return rep
 
 
-def save_snapshot(kind: str, payload, extra: dict, root: Path = OUT_ROOT, now: datetime = None) -> Path:
-    snap = co.new_snapshot_dir(Path(root), now)
+def save_snapshot(kind: str, payload, extra: dict, root: Path = None, now: datetime = None) -> Path:
+    snap = co.new_snapshot_dir(Path(root or OUT_ROOT), now)          # OUT_ROOT calisma aninda okunur
     raw = snap / f"{kind}_raw.json"
     raw.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     manifest = {"retrieved_at_utc": (now or datetime.now(timezone.utc)).isoformat(timespec="seconds"),
@@ -176,7 +223,7 @@ def save_snapshot(kind: str, payload, extra: dict, root: Path = OUT_ROOT, now: d
     return snap
 
 
-def run_discover(client: Client, terms, root: Path = OUT_ROOT, now=None) -> tuple:
+def run_discover(client: Client, terms, root: Path = None, now=None) -> tuple:
     cat = discover(client, terms)
     snap = save_snapshot("catalog", cat.to_dict(orient="records"), {"terms": list(terms), "series": int(len(cat))},
                          root, now)
@@ -184,11 +231,13 @@ def run_discover(client: Client, terms, root: Path = OUT_ROOT, now=None) -> tupl
     return cat, snap
 
 
-def run_download(client: Client, codes: list, start: str, end: str = "", root: Path = OUT_ROOT, now=None) -> tuple:
-    res = client.data(codes, start, end)
-    df = parse_items(res["items"], codes)
+def run_download(client: Client, codes: list, start: str, end: str = "", root: Path = None, now=None) -> tuple:
+    end = end or (now or datetime.now(timezone.utc)).strftime(DATE_FMT)       # bos bitis -> bugun (EVDS zorunlu)
+    items, chunks = fetch_chunked(client, codes, start, end)
+    df = parse_items(items, codes)
     rep = coverage(df, codes)
-    snap = save_snapshot("data", res, {"series": codes, "start": start, "end": end, "coverage": rep}, root, now)
+    snap = save_snapshot("data", {"items": items}, {"series": codes, "start": start, "end": end, "chunks": chunks,
+                                                    "coverage": rep}, root, now)
     df.to_csv(snap / "data.csv", index=False, date_format="%Y-%m-%d")
     return df, rep, snap
 
@@ -201,7 +250,7 @@ def main(argv=None) -> int:
     d = sub.add_parser("indir")
     d.add_argument("--seri", required=True, help="Virgulle ayrilmis EVDS seri kodlari.")
     d.add_argument("--baslangic", default="01-01-2015", help="gg-aa-yyyy")
-    d.add_argument("--bitis", default="", help="gg-aa-yyyy (bos: bugune kadar)")
+    d.add_argument("--bitis", default="", help="gg-aa-yyyy (bos: bugun)")
     args = ap.parse_args([] if argv is None else argv)
     print("=" * 66 + "\nTCMB EVDS - " + args.cmd.upper() + "\n" + "=" * 66)
     try:
@@ -219,7 +268,7 @@ def main(argv=None) -> int:
             return 0
         codes = [c.strip() for c in args.seri.split(",") if c.strip()]
         df, rep, snap = run_download(client, codes, args.baslangic, args.bitis)
-        print(f"  Satir: {rep['rows']} | tekrarlanan tarih: {rep['duplicate_dates']}")
+        print(f"  Satir: {rep['rows']} | parca: {len(json.loads((snap / 'manifest.json').read_text(encoding='utf-8'))['chunks'])}")
         for c in codes:
             r = rep[c]
             print(f"  {c}: {r['observations']} gozlem, {r['first_date']} .. {r['last_date']}, bos {r['missing_or_empty']}, "
