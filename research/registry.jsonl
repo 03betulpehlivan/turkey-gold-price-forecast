@@ -1,3 +1,6 @@
 {"protocol_id": "FINAL_EXAM_V1", "event": "prepared", "at_utc": "2026-10-11T22:43:47+00:00", "prereg_md5": "0dc2587e2264c0432bb5533c9c8029e8"}
 {"protocol_id": "FINAL_EXAM_V1", "event": "started", "at_utc": "2026-10-11T22:51:17+00:00", "commit": "50ea32fbbaf3d846e90b14a5dc4d7b21e1ad2d71", "prereg_md5": "0dc2587e2264c0432bb5533c9c8029e8"}
 {"protocol_id": "FINAL_EXAM_V1", "event": "completed", "at_utc": "2026-10-11T22:51:18+00:00", "result_md5": "2a8cde181576dc00738575f9b7590a91", "commit": "50ea32fbbaf3d846e90b14a5dc4d7b21e1ad2d71", "point_verdict": "PRATIKTE_ESDEGER", "interval_all_passed": false}
+{"protocol_id": "FINAL_EXAM_PHYS_V1", "event": "prepared", "at_utc": "2026-10-14T14:21:54+00:00", "prereg_md5": "9bedf0f030ad99e363f13d198cbdadb5"}
+{"protocol_id": "FINAL_EXAM_PHYS_V1", "event": "started", "at_utc": "2026-10-14T14:22:27+00:00", "commit": "e07c0643d5e2f810dbdb1ae2e7ba027f26e90810"}
+{"protocol_id": "FINAL_EXAM_PHYS_V1", "event": "completed", "at_utc": "2026-10-14T14:22:28+00:00", "result_md5": "c6498e63474ea4ba35d0d6e6a7a451a4", "verdict": "DAHA_KOTU"}
