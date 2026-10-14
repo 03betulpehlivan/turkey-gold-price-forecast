@@ -17,6 +17,10 @@ Ne olcer: Turkiye'deki organize fiziki altin piyasasinin (EVDS kategori adlarina
 Borsasi arsivi ve Borsa Istanbul kiymetli madenler piyasasi; urun/ayar EVDS metaverisinden ayrica
 dogrulanmali) gunluk TOPTAN fiyati. Kuyumcu alis/satis fiyati DEGILDIR (iscilik ve marj icermez).
 
+Sifir degerler: arsivde bazi gunlerde (2009-2010, cogu yarim gun/arife) TL fiyati 0, USD/ons fiyati dolu
+geldi (gercek calistirmada gozlendi). 0 "o gun TL islemi yok" olarak BOS sayilir, gunleri raporlanir.
+Negatif deger veri hatasidir ve durdurur.
+
 Teorik fiyat (ons x USD/TRY / 31.1035) ile AYNI DEGISKEN SAYILMAZ: ayri seri olarak tutulur.
 Prim = fiziki / teorik - 1. Iki fiyatin saatleri farkli oldugundan gunluk prim zaman farkini da icerir.
 
@@ -67,7 +71,13 @@ def build(archive: pd.DataFrame, current: pd.DataFrame) -> tuple:
     both = pd.concat([a, c], ignore_index=True).sort_values("Date")
     if both["Date"].duplicated().any():
         raise PhysicalError("Arsiv ve guncel seri ayni tarihte cakisiyor.")
-    holidays = int(both["kapanis_tl_kg"].isna().sum())
+    price_cols = ["kapanis_tl_kg", "agort_tl_kg", "kapanis_usd_ons"]
+    if (both[price_cols] < 0).any().any():
+        raise PhysicalError("Negatif fiyat var (veri hatasi).")
+    zero_tl = both["kapanis_tl_kg"] == 0
+    zero_dates = both.loc[zero_tl, "Date"].dt.strftime("%Y-%m-%d").tolist()
+    both[price_cols] = both[price_cols].mask(both[price_cols] == 0)          # 0 = islem yok -> bos
+    holidays = int(both["kapanis_tl_kg"].isna().sum()) - len(zero_dates)
     both = both.dropna(subset=["kapanis_tl_kg"]).reset_index(drop=True)
     if (both["kapanis_tl_kg"] <= 0).any():
         raise PhysicalError("Sifir veya negatif kapanis fiyati var.")
@@ -87,7 +97,8 @@ def build(archive: pd.DataFrame, current: pd.DataFrame) -> tuple:
                     "archive_last_tl_gr": float(last_a["kapanis_tl_gr"].iat[0]),
                     "current_first_tl_gr": float(first_c["kapanis_tl_gr"].iat[0]),
                     "change_pct": 100 * ratio, "within_tolerance": bool(abs(ratio) <= BOUNDARY_TOL)}
-    report = {"rows": int(len(out)), "date_range": [str(out["Date"].min().date()), str(out["Date"].max().date())] if len(out) else None,
+    report = {"zero_tl_no_trade_days": zero_dates,
+              "rows": int(len(out)), "date_range": [str(out["Date"].min().date()), str(out["Date"].max().date())] if len(out) else None,
               "rows_by_source": out["kaynak"].value_counts().to_dict(), "empty_days_dropped": holidays,
               "boundary": boundary, "large_daily_moves": jumps,
               "missing_agort": int(out["agort_tl_gr"].isna().sum()), "missing_usd_ons": int(out["kapanis_usd_ons"].isna().sum())}
@@ -159,6 +170,7 @@ def main(argv=None) -> int:
     if b:
         print(f"  Birlesme: {b['archive_last']} {b['archive_last_tl_gr']:.3f} -> {b['current_first']} "
               f"{b['current_first_tl_gr']:.3f} TL/gr ({b['change_pct']:+.2f}%) | tolerans icinde: {b['within_tolerance']}")
+    print(f"  TL fiyati 0 (islem yok, bos sayildi): {len(r['zero_tl_no_trade_days'])} gun {r['zero_tl_no_trade_days']}")
     print(f"  Buyuk gunluk hareket (>%{100 * JUMP_FLAG:.0f}): {r['large_daily_moves'] or 'yok'}")
     for name, c in r["comparisons"].items():
         if not c.get("common_days"):

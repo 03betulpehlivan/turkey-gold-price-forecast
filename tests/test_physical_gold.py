@@ -25,12 +25,15 @@ from src.data import physical_gold as pg  # noqa: E402
 
 DAYS = pd.bdate_range("1995-07-27", "2026-10-13")
 HOLIDAYS = set(DAYS[::97])                                   # bazi gunler bos (tatil)
+ZERO_TL = {pd.Timestamp("2009-10-28"), pd.Timestamp("2010-11-15")} - HOLIDAYS   # TL islemi yok: 0, USD dolu
 LEVEL = pd.Series(np.exp(np.linspace(np.log(9000), np.log(7_000_000), len(DAYS))), index=DAYS)   # TL/kg
 
 
 def value(code, d):
     if d in HOLIDAYS:
         return None
+    if d in ZERO_TL and ("T.KAP" in code or "T.AOF" in code):
+        return "0"
     base = LEVEL[d]
     if code.endswith("AOF.Y") or code.endswith("AGORT02"):
         return f"{base * 0.999:.2f}"
@@ -120,7 +123,7 @@ class TestPhysicalGold(unittest.TestCase):
         r = self.run_pg()
         s, rep = r["series"], r["report"]
         all_days = DAYS[DAYS <= "2026-10-13"]
-        self.assertEqual(len(s), len(all_days) - len(HOLIDAYS))
+        self.assertEqual(len(s), len(all_days) - len(HOLIDAYS) - len(ZERO_TL))
         self.assertEqual(rep["empty_days_dropped"], len(HOLIDAYS))
         first = min(d for d in all_days if d not in HOLIDAYS)
         self.assertEqual(rep["date_range"], [str(first.date()), "2026-10-13"])
@@ -130,6 +133,22 @@ class TestPhysicalGold(unittest.TestCase):
         self.assertEqual(d.loc["2018-06-29", "kaynak"], "IAB_arsiv")
         self.assertEqual(d.loc["2018-07-02", "kaynak"], "BIST_KMP")
         self.assertTrue(rep["boundary"]["within_tolerance"])
+
+    def test_zero_tl_price_is_no_trade_not_a_price(self):
+        r = self.run_pg()
+        rep, s = r["report"], r["series"]
+        self.assertEqual(sorted(rep["zero_tl_no_trade_days"]), sorted(d.strftime("%Y-%m-%d") for d in ZERO_TL))
+        self.assertFalse(s["Date"].isin(ZERO_TL).any())                 # o gunler seride yok
+        self.assertTrue((s["kapanis_tl_gr"] > 0).all())
+        self.assertEqual(rep["empty_days_dropped"], len(HOLIDAYS))       # tatil sayisi karismaz
+
+    def test_negative_price_stops(self):
+        a = pd.DataFrame({"Date": pd.to_datetime(["2010-01-04"]), "TP.MK.T.KAP.Y": [-1.0], "TP.MK.T.AOF.Y": [1.0],
+                          "TP.MK.D.KAP.Y": [1.0]})
+        c = pd.DataFrame({"Date": pd.to_datetime(["2019-01-02"]), "TP.ALTINPIYASA.KAP02": [1.0],
+                          "TP.ALTINPIYASA.AGORT02": [1.0], "TP.ALTINPIYASA.KAP03": [1.0]})
+        with self.assertRaisesRegex(pg.PhysicalError, "Negatif"):
+            pg.build(a, c)
 
     def test_premium_vs_theoretical(self):
         c = self.run_pg()["report"]["comparisons"]["teorik_gunluk_yahoo"]
