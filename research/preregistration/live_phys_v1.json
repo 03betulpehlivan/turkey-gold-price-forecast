@@ -1,0 +1,28 @@
+{
+  "created_at_utc": "2026-10-14T20:26:09+00:00",
+  "parameters": {
+    "protocol_id": "LIVE_PHYS_V1",
+    "models": [
+      "RW",
+      "Bosluk",
+      "Bosluk-Kayan",
+      "Prim-Capa"
+    ],
+    "train_start": "2011-01-01",
+    "roll_n": 250,
+    "ewma_halflife": 20,
+    "fx_bar_end_utc": 5,
+    "cutoff_utc": 11,
+    "max_age_days": 4,
+    "eval_n": 120,
+    "reference": "RW",
+    "multiple": "Holm (3)",
+    "alpha": 0.05,
+    "bootstrap": {
+      "block": 20,
+      "reps": 5000,
+      "seed": 20260101
+    }
+  },
+  "code_md5": "95b49469009c34a87334a416c60c70cd"
+}
