@@ -1,0 +1,36 @@
+{
+  "created_at_utc": "2026-10-14T14:21:54+00:00",
+  "parameters": {
+    "protocol_id": "FINAL_EXAM_PHYS_V1",
+    "exam_start_target_date": "2023-01-01",
+    "primary": "Bosluk",
+    "reference": "Zero-Return",
+    "secondary": [
+      "Bosluk-Ihtiyatli",
+      "Bosluk+Prim",
+      "XGBoost",
+      "Mean-Return"
+    ],
+    "equivalence_margin_pct": 2.0,
+    "alpha": 0.05,
+    "bootstrap": {
+      "block": 20,
+      "reps": 5000,
+      "seed": 20260101
+    },
+    "freshness": "kur cubugu tarihi == hedef gun; ons kaynagi >= onceki fiziki gun",
+    "retrain_every": 63,
+    "purge": "1 satir"
+  },
+  "code_md5": {
+    "physical_eval.py": "db88f94c6a1e862b9a89fde662d5f3a3",
+    "point_eval.py": "0a7c5569f7292a7fa5eefde176a021ca",
+    "train.py": "afe8275dbfc4ff01cb6b17a19be0d4dc",
+    "final_exam.py": "36f0632812db04ef931466fca66af4df",
+    "physical_exam.py": "f35cca90a5063b62ac918c78b28f68e9"
+  },
+  "data_md5": {
+    "physical_gold_daily.csv": "e43279dd143ccd6a0ad5bb8ee89e9330",
+    "market_panel.csv": "a127d4cf13af82a6fe3edfecc122cb1b"
+  }
+}
