@@ -104,17 +104,21 @@ def audit_timing(df: pd.DataFrame):
         raise PhysicalEvalError("Kur bilgisi hedef gunden sonradan geliyor (sizinti).")
 
 
-def positions(df: pd.DataFrame) -> list:
+def positions(df: pd.DataFrame, start: str = DEV_START, end: str = LOCK_START) -> list:
+    """Hedef tarihi [start, end) araligindaki satirlar. end=None: verinin sonuna kadar (yalnizca son sinav)."""
     td = pd.to_datetime(df["target_date"])
-    pos = df.index[(td >= pd.Timestamp(DEV_START)) & (td < pd.Timestamp(LOCK_START)) & df["y"].notna()].tolist()
+    upper = (td < pd.Timestamp(end)) if end else True
+    pos = df.index[(td >= pd.Timestamp(start)) & upper & df["y"].notna()].tolist()
     if not pos or pos != list(range(pos[0], pos[-1] + 1)):
         raise PhysicalEvalError("Degerlendirme satirlari kesintisiz degil.")
     return pos
 
 
-def generate(df: pd.DataFrame) -> pd.DataFrame:
+def generate(df: pd.DataFrame, start: str = DEV_START, end: str = LOCK_START) -> pd.DataFrame:
+    """Varsayilan: gelistirme donemi; kilitli doneme tahmin URETMEZ. Kilitli donem yalnizca
+    physical_exam.py (on kayitli tek seferlik sinav) tarafindan start=LOCK_START, end=None ile cagrilir."""
     from xgboost import XGBRegressor
-    pos = positions(df)
+    pos = positions(df, start, end)
     y = df["y"].to_numpy(float)
     feats = ["gap", "prim", "r_onceki"]
     X = df[feats].to_numpy(float)
@@ -137,8 +141,8 @@ def generate(df: pd.DataFrame) -> pd.DataFrame:
             "pred_Bosluk+Prim": lr.predict(X[win]), "pred_XGBoost": xg.predict(X[win]),
             "beta_gap": float(b1.coef_[0])}))
     pred = pd.concat(rows, ignore_index=True)
-    if pd.to_datetime(pred["target_date"]).max() >= pd.Timestamp(LOCK_START):
-        raise PhysicalEvalError("Kilitli doneme tahmin uretildi; durduruldu.")
+    if end and pd.to_datetime(pred["target_date"]).max() >= pd.Timestamp(end):
+        raise PhysicalEvalError("Istenen donemin disina tahmin uretildi; durduruldu.")
     return pred
 
 
