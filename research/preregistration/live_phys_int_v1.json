@@ -1,0 +1,20 @@
+{
+  "created_at_utc": "2026-10-15T10:49:11+00:00",
+  "parameters": {
+    "protocol_id": "LIVE_PHYS_INT_V1",
+    "method": "Olcekli+ACI",
+    "n_cal": 500,
+    "min_cal": 300,
+    "levels": [
+      80,
+      95
+    ],
+    "ewma_lambda": 0.94,
+    "window": 250,
+    "eta": 0.02,
+    "eval_n": 120,
+    "calibrated_if": "Kupiec p > 0.05 ve Christoffersen p > 0.05",
+    "fx_bar": "saatlik, D 04:00 UTC baslangic"
+  },
+  "code_md5": "f01515c09d704ccd4bc5e6e10e0d5919"
+}
