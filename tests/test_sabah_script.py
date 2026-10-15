@@ -51,7 +51,7 @@ class TestSabah(unittest.TestCase):
         self.assertNotRegex("\n".join(lines()), r"EVDS_API_KEY\s*=")
 
     def test_only_log_committed_and_main_files_untouched(self):
-        gits = [l for l in lines() if l.startswith("git ")]
+        gits = [l for l in lines() if l.startswith("git ") and l != "git push"]
         self.assertTrue(gits and all("research/live/physical_log.csv" in g for g in gits))
         panel = [a for m, a, _ in steps() if m == "src.data.build_panel"][0]
         self.assertEqual(panel[panel.index("--processed-dir") + 1], "$canli")
@@ -59,6 +59,14 @@ class TestSabah(unittest.TestCase):
             if l.startswith("Remove-Item"):
                 self.assertIn("$canli", l)
             self.assertNotIn("physical\\physical_gold_daily.csv", l.replace("Write-Host", ""))
+
+    def test_push_after_commit_and_checked(self):
+        ls = lines()
+        c = next(k for k, l in enumerate(ls) if l.startswith("git commit"))
+        p = ls.index("git push")
+        self.assertGreater(p, c)
+        self.assertIn("$LASTEXITCODE -ne 0", ls[p + 1])
+        self.assertIn("exit 1", ls[p + 1])
 
     def test_commit_failure_reported(self):
         ls = lines()

@@ -6,7 +6,7 @@
 #        setx EVDS_API_KEY "anahtariniz"     (yeni PowerShell penceresinde gecerli olur)
 # Kullanim (proje kokunden):
 #   powershell -ExecutionPolicy Bypass -File scripts\sabah_fiziki.ps1
-# Git'e GIREN: yalnizca research/live/physical_log.csv
+# Git'e GIREN: yalnizca research/live/physical_log.csv (commit + push)
 # Ana data\processed\physical\physical_gold_daily.csv ve market_panel.csv DEGISTIRILMEZ.
 $ErrorActionPreference = "Stop"
 Set-Location (Split-Path $PSScriptRoot -Parent)
@@ -49,4 +49,6 @@ git diff --cached --quiet -- research/live/physical_log.csv
 if ($LASTEXITCODE -eq 0) { Write-Host "`nSonuc: $durum; kayitta commit edilecek degisiklik yok." -ForegroundColor Yellow; exit 0 }
 git commit -m "Sabah fiziki tahmin $(Get-Date -Format 'yyyy-MM-dd'): $durum" -- research/live/physical_log.csv
 if ($LASTEXITCODE -ne 0) { Write-Host "HATA: git commit basarisiz; kayit commit EDILMEDI." -ForegroundColor Red; exit 1 }
-Write-Host "`nSonuc: $durum; kayit commit edildi." -ForegroundColor Green
+git push
+if ($LASTEXITCODE -ne 0) { Write-Host "HATA: git push basarisiz; kayit yerelde commit edildi, sonra 'git push' calistirin." -ForegroundColor Red; exit 1 }
+Write-Host "`nSonuc: $durum; kayit commit edildi ve GitHub'a gonderildi." -ForegroundColor Green
