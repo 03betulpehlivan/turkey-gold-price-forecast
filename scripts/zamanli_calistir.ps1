@@ -14,6 +14,15 @@ try {
     if (-not $env:EVDS_API_KEY -and $Gorev -eq "sabah") { Write-Host "UYARI: EVDS_API_KEY tanimli degil." }
     & ".\$betik"
     $kod = $LASTEXITCODE
+    # Veri yedegi: tahmin sonucunu ve cikis kodunu ETKILEMEZ; yalnizca uyari yazar.
+    if ($env:ALTIN_YEDEK) {
+        try {
+            & ".\scripts\yedekle.ps1" -Hedef $env:ALTIN_YEDEK
+            if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: yedekleme basarisiz (tahmin kaydi etkilenmedi)." }
+        }
+        catch { Write-Host "UYARI: yedekleme hatasi (tahmin kaydi etkilenmedi): $_" }
+    }
+    else { Write-Host "UYARI: ALTIN_YEDEK tanimli degil; veri yedegi alinmadi." }
     Write-Host "Bitis: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | cikis kodu: $kod"
 }
 catch {
