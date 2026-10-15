@@ -1,17 +1,29 @@
-# Durum Notu (12 Ekim 2026)
+# Durum Notu (15 Ekim 2026)
+
+Ayrıntılı ara rapor: [danisman_raporu.md](danisman_raporu.md). Bu not yalnızca güncel durumu özetler.
 
 ## Tamamlanan
-- **FINAL_EXAM_V1 (2026, bağımsız, tek seferlik):** nokta tahmini "yarın = bugün" ile **pratikte eşdeğer** (MAPE ~%1,35); aralık tahmininde A1 ve A3 geçti, **A2 (Christoffersen %80) geçmedi**, yani taşmalar kümelendi. Sonuçlar `research/final_exam_v1/` altında.
-- **Zamanlama bulgusu:** Yahoo günlük serisinde altın ~18:00 UTC'ye, USD/TRY ~02–05 UTC'ye ait (`fx_close_time`). Eski "teorik gram" bu yüzden ~13–16 saat farklı anların çarpımı.
-- **Eşzamanlı seri (LIVE_V1 altyapısı):** saatlik arşiv ve tam 14:00 NY kuralı; 498 gün (2024-10-11 – 2026-10-09). `-TahminYok` modu gerçek veride doğrulandı; ana panel ve sınav dosyaları değişmedi.
 
-## Açık sorun: vadeli kontrat değişimi
-- GC=F (sürekli vadeli) saatlik ve günlük serilerde kontratı **farklı günlerde** değiştiriyor. Örnekler: 2025-07-30 / 08-01 ve 2026-07-29 / 07-31; sıçrama ~%1,5–1,9.
-- Eşzamanlı seride sahte getiriler oluşuyor; vadeli fiyat ayrıca spottan taşıma maliyeti kadar yüksek.
-- 2026-01-30 (~−%9–11'lik çok büyük hareket) belirsiz: aşırı oynaklık mı, kontrat değişimi mi, ayırt edilemedi.
-- **Canlı tahmin bu çözülene kadar BEKLETİLİYOR.** Arşiv her gün `-TahminYok` ile toplanmaya devam etmeli.
+- **Bağımsız sınavlar (tek seferlik, tekrar çalıştırılmaz):**
+  - `FINAL_EXAM_V1` (teorik, 2026): nokta tahmini "yarın = bugün" ile **pratikte eşdeğer**. Aralıklarda Christoffersen %80 koşulu **sağlanmadı**.
+  - `FINAL_EXAM_PHYS_V1` (fiziki, 2023-01 – 2026-10): Boşluk modeli RW'den **%9,1 daha kötü** (p = 0,03).
+- **Canlı protokoller (ön kayıtlı, 15.10.2026'dan beri):**
+  - `LIVE_PHYS_V1` ve `LIVE_PHYS_INT_V1`: sabah fiziki tahmin ve aralıklar.
+  - `LIVE_V1`: akşam eşanlı teorik tahmin. Değerlendirme kuralı, ilk sonuç görülmeden önce `research/preregistration/live_v1.json` ile donduruldu (`src/live/forecast_eval.py`). Aynı ön kayıtla `forecast.py`, `sync_dataset.py`, `adaptive.py`, `intervals.py`, `implied_vol.py` ve `train.py` kilitlendi. Bunlardan biri değişirse sonraki teorik tahminler değerlendirmeye girmez.
+- **Otomasyon:** Windows Görev Zamanlayıcı ile hafta içi 12:30 / 13:30 (sabah) ve 22:30 (akşam).
+- **Veri yedeği:** Her zamanlanmış çalışmanın sonunda `data\raw`, `data\processed` ve `logs` klasörleri `ALTIN_YEDEK` hedefine kopyalanır (`scripts/yedekle.ps1`). Hedefte hiçbir şey silinmez.
+- **Sürekli test:** GitHub Actions her kod değişikliğinde bütün birim testlerini Ubuntu'da çalıştırır.
 
-## Sıradaki adım
-1. `python -m src.analysis.spot_probe`: XAUUSD=X, GLD ve IAU taraması (yalnızca teşhis). Ön kayıtlı kural: kontrat günlerinde z ≥ 3 ve korelasyon > 0,95.
-2. Uygun aday çıkarsa eşzamanlı seriyi spot kaynakla yeniden tanımlamak (yeni sürüm, testlerle). Çıkmazsa kontrat günlerini işaretleyip dışlamak.
-3. Ardından ilk canlı tahmin (TSİ 21:00 sonrası, aynı NY günü içinde).
+## Açık sorun: vadeli kontrat değişimi (teorik seri)
+
+- GC=F kontrat değişim günlerinde %1,5–1,9'luk sahte sıçrama gösteriyor (örneğin 2025-07-30 ve 2026-07-29).
+- Bir sonraki değişim Kasım sonunda bekleniyor. `LIVE_V1` ön kaydı bu günleri yalnızca ikincil duyarlılık analizinde dışlıyor; birincil sonuç bütün günleri kapsıyor.
+- **Karar adımı:** `python -m src.analysis.spot_probe`. Spot kaynağa geçilirse yeni protokol kimliği gerekir (`LIVE_V2`); `LIVE_V1` kodu değişmez.
+
+## Sıradaki adımlar
+
+1. Spot ons taraması (Kasım sonundan önce).
+2. 2001–2004 geriye dönük bağımsız sınav ("yalnız ons" modeli; daha önce hiçbir seçimde kullanılmamış dönem).
+3. SQL Server, REST API ve web arayüzü.
+4. Haftalık/aylık trend, makro göstergeler, sızıntı gösterimi ve LSTM (keşif).
+5. Nisan 2027: canlı protokollerin tek seferlik değerlendirmesi.
