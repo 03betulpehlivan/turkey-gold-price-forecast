@@ -34,11 +34,14 @@ class TestSabah(unittest.TestCase):
         self.assertEqual(mods, [("src.data.collect", None), ("src.data.build_panel", "--write"),
                                 ("src.data.collect_intraday", None), ("src.live.physical_forecast", "refresh"),
                                 ("src.live.physical_forecast", "score"), ("src.live.physical_forecast", "issue"),
-                                ("src.live.physical_forecast", "card")])
+                                ("src.live.physical_forecast", "card"), ("src.live.physical_intervals", "score"),
+                                ("src.live.physical_intervals", "issue"), ("src.live.physical_intervals", "card")])
 
     def test_refusal_is_not_failure_but_errors_are(self):
-        issue = [s for s in steps() if s[1][:1] == ["issue"]][0]
-        self.assertEqual(issue[2].replace(" ", ""), "0,3")
+        issues = [s for s in steps() if s[1][:1] == ["issue"]]
+        self.assertEqual(len(issues), 2)
+        for issue in issues:
+            self.assertEqual(issue[2].replace(" ", ""), "0,3")
         text = SCRIPT.read_text(encoding="utf-8")
         body = text[text.index("function Adim"):text.index("# 1) VERI")]
         self.assertIn("$kabul -notcontains $kod", body)
@@ -52,7 +55,8 @@ class TestSabah(unittest.TestCase):
 
     def test_only_log_committed_and_main_files_untouched(self):
         gits = [l for l in lines() if l.startswith("git ") and l != "git push"]
-        self.assertTrue(gits and all("research/live/physical_log.csv" in g for g in gits))
+        self.assertTrue(gits and all("research/live/physical_log.csv" in g and "research/live/physical_intervals_log.csv" in g
+                                     for g in gits))
         panel = [a for m, a, _ in steps() if m == "src.data.build_panel"][0]
         self.assertEqual(panel[panel.index("--processed-dir") + 1], "$canli")
         for l in lines():

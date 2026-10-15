@@ -1,12 +1,13 @@
-# Canli sabah fiziki altin tahmini (LIVE_PHYS_V1)
+# Canli sabah fiziki altin tahmini (LIVE_PHYS_V1) + tahmin araliklari (LIVE_PHYS_INT_V1)
 # ZAMAN: hedef gunun sabahi, 08:00-14:00 TSI (05:00-11:00 UTC). Disinda tahmin REDDEDILIR.
 # On kosullar (bir kez):
-#   1) python -m src.live.physical_forecast prepare  ve on kaydi commit edin
+#   1) python -m src.live.physical_forecast prepare ve python -m src.live.physical_intervals prepare;
+#      iki on kaydi da commit edin
 #   2) EVDS anahtarini KULLANICI ortam degiskeni yapin (Git'e girmez):
 #        setx EVDS_API_KEY "anahtariniz"     (yeni PowerShell penceresinde gecerli olur)
 # Kullanim (proje kokunden):
 #   powershell -ExecutionPolicy Bypass -File scripts\sabah_fiziki.ps1
-# Git'e GIREN: yalnizca research/live/physical_log.csv (commit + push)
+# Git'e GIREN: yalnizca research/live/physical_log.csv ve physical_intervals_log.csv (commit + push)
 # Ana data\processed\physical\physical_gold_daily.csv ve market_panel.csv DEGISTIRILMEZ.
 $ErrorActionPreference = "Stop"
 Set-Location (Split-Path $PSScriptRoot -Parent)
@@ -40,14 +41,18 @@ Adim "EVDS fiziki seri (canli kopya)" @("-m", "src.live.physical_forecast", "ref
 Adim "Puanlama" @("-m", "src.live.physical_forecast", "score") | Out-Null
 $t = Adim "Tahmin" @("-m", "src.live.physical_forecast", "issue") @(0, 3)
 Adim "Karne" @("-m", "src.live.physical_forecast", "card") | Out-Null
+Adim "Aralik puanlama" @("-m", "src.live.physical_intervals", "score") | Out-Null
+$a = Adim "Araliklar" @("-m", "src.live.physical_intervals", "issue") @(0, 3)
+Adim "Aralik karnesi" @("-m", "src.live.physical_intervals", "card") | Out-Null
 $durum = switch ($t) { 0 { "yeni tahmin kaydedildi" } 3 { "tahmin REDDEDILDI (kural geregi; ustteki nedene bakin)" } }
+if ($a -eq 3) { $durum = "$durum; araliklar REDDEDILDI" }
 
 # 4) COMMIT (yalnizca kayit)
-git add research/live/physical_log.csv
+git add research/live/physical_log.csv research/live/physical_intervals_log.csv
 if ($LASTEXITCODE -ne 0) { Write-Host "HATA: git add basarisiz." -ForegroundColor Red; exit 1 }
-git diff --cached --quiet -- research/live/physical_log.csv
+git diff --cached --quiet -- research/live/physical_log.csv research/live/physical_intervals_log.csv
 if ($LASTEXITCODE -eq 0) { Write-Host "`nSonuc: $durum; kayitta commit edilecek degisiklik yok." -ForegroundColor Yellow; exit 0 }
-git commit -m "Sabah fiziki tahmin $(Get-Date -Format 'yyyy-MM-dd'): $durum" -- research/live/physical_log.csv
+git commit -m "Sabah fiziki tahmin $(Get-Date -Format 'yyyy-MM-dd'): $durum" -- research/live/physical_log.csv research/live/physical_intervals_log.csv
 if ($LASTEXITCODE -ne 0) { Write-Host "HATA: git commit basarisiz; kayit commit EDILMEDI." -ForegroundColor Red; exit 1 }
 git push
 if ($LASTEXITCODE -ne 0) { Write-Host "HATA: git push basarisiz; kayit yerelde commit edildi, sonra 'git push' calistirin." -ForegroundColor Red; exit 1 }
