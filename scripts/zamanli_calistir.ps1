@@ -14,6 +14,14 @@ try {
     if (-not $env:EVDS_API_KEY -and $Gorev -eq "sabah") { Write-Host "UYARI: EVDS_API_KEY tanimli degil." }
     & ".\$betik"
     $kod = $LASTEXITCODE
+    # LIVE_V2 (GLD tabanli teorik): yalnizca aksam; LIVE_V1'in cikis kodunu ETKILEMEZ.
+    if ($Gorev -eq "aksam") {
+        try {
+            & ".\scripts\teorik_v2.ps1"
+            if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: LIVE_V2 adimi basarisiz (LIVE_V1 etkilenmedi)." }
+        }
+        catch { Write-Host "UYARI: LIVE_V2 hatasi (LIVE_V1 etkilenmedi): $_" }
+    }
     # Veri yedegi: tahmin sonucunu ve cikis kodunu ETKILEMEZ; yalnizca uyari yazar.
     if ($env:ALTIN_YEDEK) {
         try {

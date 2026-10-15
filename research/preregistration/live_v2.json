@@ -1,0 +1,61 @@
+{
+  "created_at_utc": "2026-10-15T21:11:44+00:00",
+  "parameters": {
+    "protocol_id": "LIVE_V2",
+    "model": "LIVE_V1 ile ayni (src/live/forecast.py build_frame + compute)",
+    "gold_source": "GLD saatlik, bitisi 13:30 NY",
+    "fx_source": "LIVE_V1 esanli serisi USD/TRY (14:00 NY)",
+    "k_window": 60,
+    "eval_n": 120,
+    "alpha": 0.05,
+    "point": {
+      "primary": "Mean-Return",
+      "reference": "yarin=bugun (RW)",
+      "loss": "mutlak TL hata",
+      "test": "DM Newey-West + HLN, t(n-1), iki yonlu",
+      "equivalence_margin_pct": 2.0
+    },
+    "interval": {
+      "criteria": [
+        "A1 Kupiec p>0.05 (80, 95)",
+        "A2 Christoffersen p>0.05 (80)"
+      ]
+    },
+    "bootstrap": {
+      "block": 20,
+      "reps": 5000,
+      "seed": 20260101,
+      "type": "eslestirilmis hareketli blok"
+    },
+    "eligibility": [
+      "system_version == LIVE_V2",
+      "puanlanmis",
+      "issued_at > on kayit zamani",
+      "satirdaki code_md5 == code_md5_combined"
+    ],
+    "secondary": "kontrat penceresi disi satirlar (forecast_eval.in_roll_window); hukmu degistirmez"
+  },
+  "K": {
+    "K": 11.006433497342025,
+    "first": "2026-07-02",
+    "last": "2026-10-15",
+    "n": 60
+  },
+  "history": {
+    "v2_days": 496,
+    "first": "2024-10-16",
+    "last": "2026-10-15"
+  },
+  "code_md5": {
+    "src/live/forecast_v2.py": "65a2f64909b6d63a10d007cdbbb299fa",
+    "src/live/forecast.py": "ac879151385f7e91ca08dcc04ff2d095",
+    "src/data/sync_dataset.py": "15fe8b203f07a46ea88b9ab6f3b7f3ec",
+    "src/models/adaptive.py": "a5a3c61fd23ebef9af51ae40902baece",
+    "src/models/intervals.py": "842e1d2aa11e11246d42c9329b1a201a",
+    "src/models/implied_vol.py": "cf3d259dc8f89436d9f1a2d2158ba6ec",
+    "src/models/train.py": "11dcd001b7ad4d926e19cb8a240af5f6",
+    "src/live/forecast_eval.py": "61d5464601f65e2a97d6e039b85b502e",
+    "src/models/final_exam.py": "36f0632812db04ef931466fca66af4df"
+  },
+  "code_md5_combined": "faaea5a82e3928ab9913336c4ad0073a"
+}

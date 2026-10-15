@@ -10,3 +10,4 @@
 {"protocol_id": "BACK_EXAM_ONS_V1", "event": "prepared", "at_utc": "2026-10-15T20:42:30+00:00", "prereg_md5": "9830833ef37b45c848f3517e5beda130"}
 {"protocol_id": "BACK_EXAM_ONS_V1", "event": "started", "at_utc": "2026-10-15T20:45:22+00:00", "commit": "56333db8c115cd1780a766888cd3c56ea53f7e22"}
 {"protocol_id": "BACK_EXAM_ONS_V1", "event": "completed", "at_utc": "2026-10-15T20:45:22+00:00", "result_md5": "eb266e5285d79eb42297332793bb8cf8", "supported": false}
+{"protocol_id": "LIVE_V2", "event": "prepared", "at_utc": "2026-10-15T21:11:44+00:00", "prereg_md5": "6b61cc3ec70fee94fc8c8998cf02851f"}
