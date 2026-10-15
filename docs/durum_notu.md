@@ -14,16 +14,20 @@ Ayrıntılı ara rapor: [danisman_raporu.md](danisman_raporu.md). Bu not yalnız
 - **Veri yedeği:** Her zamanlanmış çalışmanın sonunda `data\raw`, `data\processed` ve `logs` klasörleri `ALTIN_YEDEK` hedefine kopyalanır (`scripts/yedekle.ps1`). Hedefte hiçbir şey silinmez.
 - **Sürekli test:** GitHub Actions her kod değişikliğinde bütün birim testlerini Ubuntu'da çalıştırır.
 
-## Açık sorun: vadeli kontrat değişimi (teorik seri)
+## Vadeli kontrat değişimi (teorik seri) ve spot ons taraması
 
-- GC=F kontrat değişim günlerinde %1,5–1,9'luk sahte sıçrama gösteriyor (örneğin 2025-07-30 ve 2026-07-29).
-- Bir sonraki değişim Kasım sonunda bekleniyor. `LIVE_V1` ön kaydı bu günleri yalnızca ikincil duyarlılık analizinde dışlıyor; birincil sonuç bütün günleri kapsıyor.
-- **Karar adımı:** `python -m src.analysis.spot_probe`. Spot kaynağa geçilirse yeni protokol kimliği gerekir (`LIVE_V2`); `LIVE_V1` kodu değişmez.
+- GC=F kontrat değişim günlerinde %1,5–1,9'luk sahte sıçrama gösteriyor (örneğin 2025-07-30 ve 2026-07-29). Bir sonraki değişim Kasım sonunda bekleniyor. `LIVE_V1` ön kaydı bu günleri yalnızca ikincil duyarlılık analizinde dışlıyor; birincil sonuç bütün günleri kapsıyor.
+- **Spot ons taraması (15.10.2026, teşhis; `research/diagnostics/spot_probe_20261015.json`):**
+  - XAUUSD=X: Yahoo'da veri yok.
+  - GLD ve IAU önceden sabitlenen kuralı geçti: kontrat günlerinde z = +8,7 / +9,2 (sıçrama ETF'de yok), diğer günlerde getiri korelasyonu 0,982, ortak gün 496 (kapsam %98,8).
+  - Kural kapsamı en yüksek adayı seçiyor; kapsamlar eşit olduğundan listede önce gelen **GLD** seçildi.
+  - Sınırlamalar: ETF çubuğu 14:00 yerine **13:30 NY**'de kapanıyor (kurla 30 dakika fark); günlük getiri farkının medyanı 13 baz puan; GLD bir ETF olduğu için ons fiyatına oranı yönetim ücreti ve taşıma farkıyla zamanla kayıyor (GC=F / GLD oranı 10,89 → 10,98).
+- **Karar:** `LIVE_V1` değişmeden devam ediyor. GLD tabanlı teorik tahmin yeni protokol kimliğiyle (`LIVE_V2`) Kasım ortasından önce başlatılacak; böylece Kasım sonundaki kontrat değişiminde iki protokol yan yana kaydedilecek.
 
 ## Sıradaki adımlar
 
-1. Spot ons taraması (Kasım sonundan önce).
-2. 2001–2004 geriye dönük bağımsız sınav ("yalnız ons" modeli; daha önce hiçbir seçimde kullanılmamış dönem).
+1. 2001–2004 geriye dönük bağımsız sınav ("yalnız ons" modeli; daha önce hiçbir seçimde kullanılmamış dönem).
+2. `LIVE_V2` (GLD tabanlı teorik tahmin; Kasım ortasından önce).
 3. SQL Server, REST API ve web arayüzü.
 4. Haftalık/aylık trend, makro göstergeler, sızıntı gösterimi ve LSTM (keşif).
 5. Nisan 2027: canlı protokollerin tek seferlik değerlendirmesi.

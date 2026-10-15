@@ -1,0 +1,70 @@
+{
+  "snapshot": "20261015T202128Z",
+  "rule": {
+    "min_z": 3.0,
+    "min_corr": 0.95,
+    "roll_days": [
+      "2025-07-30",
+      "2026-07-29"
+    ]
+  },
+  "results": {
+    "xauusd": {
+      "eligible": false,
+      "note": "veri yok",
+      "attempts": [
+        {
+          "period": "max",
+          "rows": 0
+        },
+        {
+          "period": "730d",
+          "rows": 0
+        }
+      ]
+    },
+    "gld": {
+      "common_days": 496,
+      "coverage_of_gc_days": 0.9880478087649402,
+      "offset_min_counts": {
+        "-30": 496
+      },
+      "roll_day_z": {
+        "2025-07-30": 8.719445003322605,
+        "2026-07-29": 9.242694568317342
+      },
+      "roll_ok": true,
+      "corr_non_roll": 0.9818834094545859,
+      "median_abs_return_diff_bp": 13.044234887056305,
+      "gc_to_candidate_ratio_first_last": [
+        10.892719616864904,
+        10.979824941153502
+      ],
+      "eligible": true
+    },
+    "iau": {
+      "common_days": 496,
+      "coverage_of_gc_days": 0.9880478087649402,
+      "offset_min_counts": {
+        "-30": 496
+      },
+      "roll_day_z": {
+        "2025-07-30": 8.783344376941667,
+        "2026-07-29": 9.221206619553424
+      },
+      "roll_ok": true,
+      "corr_non_roll": 0.9816408835295556,
+      "median_abs_return_diff_bp": 12.929498283034135,
+      "gc_to_candidate_ratio_first_last": [
+        53.26944982338211,
+        53.54971595552616
+      ],
+      "eligible": true
+    }
+  },
+  "decision": {
+    "selected": "gld",
+    "ticker": "GLD",
+    "decision": "GLD spot kaynak adayi"
+  }
+}
