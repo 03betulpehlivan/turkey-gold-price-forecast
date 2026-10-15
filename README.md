@@ -1,11 +1,12 @@
 # Turkey Gold Price Forecast
 
-Machine learning-based forecasting and analysis of gram gold prices in Turkey, built on ounce gold, USD/TRY and market indicators, with a strong emphasis on **leakage-free, independently tested evaluation**.
+Machine learning-based forecasting and analysis of **physical** and **theoretical** gram gold prices in Turkey, built on ounce gold, USD/TRY, market indicators and official TCMB EVDS data, with a strong emphasis on **leakage-free, pre-registered and independently tested evaluation**.
 
 > **Status:** Work in progress (graduation project, Selçuk University, Computer Engineering).
-> The research and data pipeline are well advanced; the database, REST API and web interface are planned.
+> Research, data pipeline and live forecasting are running; the database, REST API and web interface are planned.
+> 📄 **Detailed interim report (Turkish):** [docs/danisman_raporu.md](docs/danisman_raporu.md)
 
-> **Türkçe özet:** Bu proje, Türkiye'de gram altın fiyatı için makine öğrenmesi tabanlı tahmin ve analiz sistemi geliştirir. Ons altın, USD/TRY ve piyasa göstergeleri kullanılır. Modeller kronolojik, sızıntısız testlerle ve önceden kayıtlı bağımsız sınavlarla değerlendirilir. Temel bulgular: (1) Günlük nokta tahmininde karmaşık modeller "yarın = bugün" referansından anlamlı biçimde daha isabetli değildir; bu, 2026 bağımsız testinde de doğrulanmıştır. (2) Fiyatın hangi aralıkta olacağına dair olasılıklı tahminler, oynaklık modelleri ve uyarlanabilir kalibrasyon ile ölçülebilir biçimde iyileştirilmiştir. (3) Yaygın kullanılan veri kaynağında ons ve kur fiyatlarının ~13–16 saat farklı anlara ait olduğu tespit edilmiş ve eşzamanlı bir veri hattı kurulmuştur.
+> **Türkçe özet:** Proje, Türkiye'deki fiziki gram altın fiyatı (Borsa İstanbul, TCMB EVDS, 1995–2026) ile ons × USD/TRY'den hesaplanan teorik fiyat için kısa vadeli tahmin ve tahmin aralıkları üretir. Bütün sonuçlar kronolojik, sızıntısız testlerle ve önceden kayıtlı, tek seferlik bağımsız sınavlarla değerlendirilir. Temel bulgular: (1) Günlük fiyat seviyesini "yarın = bugün" yönteminden anlamlı biçimde daha iyi tahmin etmek iki bağımsız sınavda da başarılamadı. Teorik fiyatta model bu yöntemle pratikte eşdeğer çıktı; fiziki fiyatta 2023–2026 sınavında daha kötü sonuç verdi. (2) Borsa İstanbul kapandıktan sonraki gece ons hareketi, ertesi günün fiziki fiyatına yansıyor. 2012–2022 geliştirme döneminde bu bilgi, veri zamanlamasından bağımsız olarak %5 daha az hata sağladı; kur bilgisiyle birlikte kazanç %22. (3) Yaygın veri kaynağında ciddi zamanlama sorunları tespit edildi. (4) Sistem 15 Ekim 2026'dan itibaren canlı tahminleri değiştirilemez biçimde kaydediyor.
 
 ---
 
@@ -13,7 +14,7 @@ Machine learning-based forecasting and analysis of gram gold prices in Turkey, b
 
 - [Overview](#overview)
 - [Key Findings](#key-findings)
-- [What the System Produces](#what-the-system-produces)
+- [Live System](#live-system)
 - [Methodology](#methodology)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -29,70 +30,83 @@ Machine learning-based forecasting and analysis of gram gold prices in Turkey, b
 
 ## Overview
 
-Gram gold is one of the most widely held savings instruments in Turkey. Its price is driven mainly by the global ounce gold price and the USD/TRY exchange rate. This project:
+Gram gold is one of the most widely held savings instruments in Turkey. Its price is driven mainly by the global ounce gold price and the USD/TRY exchange rate, but the domestic physical market can trade at a premium or discount. This project keeps two price series **separate**:
 
-1. collects and validates daily and hourly market data (gold, USD/TRY and 9 additional market series),
-2. builds a theoretical gram gold price, `ounce (USD) × USD/TRY / 31.1035`,
-3. compares baseline, statistical and machine learning models for next-day **point forecasts**,
-4. develops calibrated **probabilistic forecasts** (80% and 95% prediction intervals),
-5. evaluates everything with chronological walk-forward validation, pre-registered decision rules and one-shot independent tests.
+| | Theoretical gram price | Physical gram price |
+|---|---|---|
+| Definition | ounce (USD) × USD/TRY / 31.1035 | Daily close of the Borsa Istanbul precious metals market (TL/kg / 1000) |
+| Source | Yahoo Finance | TCMB EVDS (Istanbul Gold Exchange archive 1995–2018, Borsa Istanbul 2018–) |
+| Coverage | 2005 – today | 1995-07 – today (7,039 trading days) |
 
-The current price definition is the **theoretical** gram price, not a jeweller's buy/sell price. Physical market prices and the jeweller premium are on the roadmap.
+The physical price is a **wholesale** market price, not a jeweller's buy/sell price.
 
 ## Key Findings
 
-All figures below come from real-data runs; experiment records are in `research/` and `data/processed/results/` (the latter is not tracked by git).
+Every result is labelled as **exploratory** (development data; model selection happens here), **independent** (pre-registered, one-shot, unseen data) or **live** (prospective record).
 
-### 1. Next-day point forecasts: no model beats the simple reference
+### 1. Theoretical price, next-day point forecasts
 
-| Evaluation | Forecasts | "Tomorrow = today" | Best/selected model | Result |
-|---|---:|---|---|---|
-| Development, 2018-01 – 2023-10 (exploratory) | 1,461 | MAE 6.06 TL, MAPE 1.07% | Best model within ~1% of the reference | No model significantly better (Holm-adjusted DM, block bootstrap) |
-| **Independent 2026 test (FINAL_EXAM_V1)** | 194 | MAE 90.12 TL, MAPE 1.347% | Mean-Return: MAE 89.93 TL, MAPE 1.345% | **Practically equivalent**: difference −0.21% [95% CI −1.34%, +1.17%] |
+| Evaluation | Type | Result |
+|---|---|---|
+| 2018-01 – 2023-10, 6 models and 8 factor groups | Exploratory | No model significantly better than "tomorrow = today" (RW); RW MAPE 1.07% |
+| **2026, 194 forecasts (`FINAL_EXAM_V1`)** | **Independent** | Mean-Return MAPE 1.345% vs. RW 1.347%: **practically equivalent** (difference −0.21% [−1.34%, +1.17%]) |
 
-Linear Regression, Random Forest, XGBoost and factor-augmented models (dollar index, US yields, VIX, S&P 500, silver, Brent, BIST 100, EUR/TRY) were tested under the same protocol. Errors in TL scale with the price level; the percentage error (~1–1.35%) reflects daily market volatility rather than model choice.
+### 2. Theoretical price, prediction intervals (GARCH, GVZ, adaptive conformal calibration)
 
-### 2. Probabilistic forecasts: volatility is predictable
+| Evaluation | Type | Result |
+|---|---|---|
+| 2023-10 – 2025-12 confirmation | **Independent** | 80% / 95% coverage 0.788 / 0.940; **hypothesis supported** |
+| 2026 | **Independent** | Coverage 0.794 / 0.938, but 80% violations clustered (Christoffersen p ≈ 0.05); **not supported** |
 
-- Volatility clustering is strong (Ljung-Box on |returns|, p ≈ 10⁻¹⁶³).
-- Development period: GARCH-based intervals reduced pinball loss by ~10% versus constant volatility and removed the clustering of interval violations.
-- Combining option-implied gold volatility (CBOE GVZ, lagged one day) with **adaptive conformal calibration (ACI)** raised the worst-year 95% coverage from 0.888 (GARCH, 2018) to 0.920.
-- **Pre-registered confirmation (2023-10 – 2025-12, 547 forecasts):** 80% / 95% coverage 0.788 / 0.940; all four pre-registered criteria were met.
-- **Independent 2026 test:** coverage 0.794 / 0.938 with correct unconditional calibration (Kupiec p = 0.83 / 0.46), but violations of the 80% interval **clustered** (Christoffersen p ≈ 0.05). The pre-registered interval hypothesis was therefore **not supported** in 2026.
+### 3. Physical price, morning nowcast of the day's close
 
-### 3. Data timing problem found and addressed
+| Evaluation | Type | Result |
+|---|---|---|
+| 2016–2022, 1,741 forecasts | Exploratory | "Gap" model 22.8% lower error than RW; direction hit rate 71% |
+| **2023-01 – 2026-10, 874 forecasts (`FINAL_EXAM_PHYS_V1`)** | **Independent** | Gap model **9.1% worse than RW** [−20.8%, −0.3%], p = 0.03: **not supported**. Direction hit rate 65%. Main explanation: a domestic premium regime in 2023–2024 (physical gold traded 1–5% above the international price) |
+| 2012–2022, source of the gain | Exploratory | Overnight **gold** move alone: **+5.1%** [+3.0%, +7.6%], 11 of 11 years, **independent of FX timestamp assumptions**. With overnight FX: +21.7% [+17.9%, +25.2%] |
 
-Diagnostics on hourly data showed that in the commonly used daily source the gold close corresponds to ~18:00 UTC (COMEX settlement), while the USD/TRY close corresponds to ~02:00–05:00 UTC. The usual "theoretical gram price" therefore multiplies prices taken **13–16 hours apart**. A synchronized series was built in which ounce gold and USD/TRY come from the **same hourly bar** (14:00 New York), with an archive of immutable hourly snapshots.
+Volatility-scaled intervals with adaptive calibration (2012–2022, exploratory) reached 80% / 95% coverage of 0.800 / 0.949 and removed most violation clustering. Their Winkler score was 27% better than static RW intervals.
 
-An open issue: the continuous gold futures series rolls contracts on different days in the hourly and daily data, creating artificial jumps of ~1.5–1.9%. Spot-tracking sources (spot XAU/USD, gold ETFs) are being evaluated.
+### 4. Data findings
 
-## What the System Produces
+- **Timestamp mismatch in Yahoo daily data:** the gold close corresponds to ~18:00 UTC, the USD/TRY close to ~02:00–05:00 UTC. The usual "theoretical gram price" multiplies prices taken 13–16 hours apart. A synchronized hourly pipeline was built.
+- **Look-ahead in 2005–2010 FX data:** tested against the FX rate implied by Borsa Istanbul's own simultaneous TL and USD closes. Yahoo's daily USD/TRY bar belonged to a time **after** the Borsa Istanbul close in 2005–2010 (lead correlation 0.25 vs. band 0.06), so those years were excluded from training.
+- **Futures roll artifacts:** the continuous gold futures series (GC=F) rolls contracts on different days in hourly and daily data, creating artificial jumps of ~1.5–1.9%.
+- **EVDS 1,000-row limit:** responses are silently truncated; downloads are split automatically.
 
-For each day, the live module (`src/live/forecast.py`) records:
+## Live System
 
-- the synchronized theoretical gram price and the exact timestamp of the underlying bar,
-- a next-day point forecast (Mean-Return) and the "tomorrow = today" reference,
-- 80% and 95% prediction intervals,
-- after the outcome is known: the TL error and whether each interval contained the realized price.
+| Protocol | What it records | Status |
+|---|---|---|
+| `LIVE_PHYS_V1` | Physical close forecast each morning: RW, Gap, Gap-Rolling, Premium-Anchor | First forecast 2026-10-15 |
+| `LIVE_PHYS_INT_V1` | 80% / 95% intervals around each model; calibrated by replaying the live code with **real hourly FX bars** | First intervals 2026-10-15 |
+| `LIVE_V1` | Evening forecast of the synchronized theoretical price | Scheduled from 2026-10-15 |
 
-Forecast records are append-only, integrity-checked (per-row hash) and committed to git. Live forecasting is **paused** until the futures roll issue above is resolved.
+- **Pre-registration:** rules, models and code hashes were committed before the first forecast.
+- **Forecast window:** forecasts are accepted only within a fixed time window on the target day; stale or missing data is refused with a reason.
+- **Integrity:** records are append-only and integrity-checked per row, scored automatically when the realized price is published, and committed to git.
+- **Automation:** Windows Task Scheduler on weekdays at 12:30 (retry 13:30) and 22:30. Installed and verified with a manually triggered run on 2026-10-15.
+- **Evaluation:** a one-shot, pre-registered evaluation after 120 scored forecasts (expected around April 2027).
 
 ## Methodology
 
 - **Chronological walk-forward evaluation:** expanding window, retraining every 63 trading days, 1-row purge; no random splits.
-- **Leakage controls:** truncation-invariance tests, target and price alignment checks on real data, explicit timestamps for every input.
-- **Pre-registration:** hypotheses, decision rules, code and data hashes are written before each confirmatory run. Confirmatory runs execute once; repeated attempts are refused and logged in `research/registry.jsonl`.
-- **Statistics:** Diebold-Mariano with Newey-West variance and HLN small-sample correction, Holm correction for multiple comparisons, paired moving-block bootstrap confidence intervals, Kupiec and Christoffersen tests for interval calibration.
-- **Software quality:** 332 unit tests on synthetic data, including mutation checks to verify that the tests detect deliberate errors.
+- **Leakage controls:** explicit timestamps for every input, truncation-invariance tests, and invariance tests that corrupt all information unknown at forecast time.
+- **Pre-registration:** hypotheses, decision rules, code and data hashes are written before each confirmatory run. Confirmatory runs execute once; every attempt is logged in `research/registry.jsonl`.
+- **Statistics:**
+  - Point forecasts: Diebold-Mariano test (HLN small-sample correction), Holm correction for multiple comparisons, paired moving-block bootstrap confidence intervals.
+  - Intervals: Kupiec and Christoffersen tests, Winkler score.
+- **Software quality:** 429 unit tests on synthetic data, all passing. Mutation checks verify that the tests detect deliberate errors. Tests do not prove market performance.
 
 ## Tech Stack
 
 | Area | Technologies |
 |------|--------------|
 | Language | Python 3.11 |
-| Data | pandas, NumPy, yfinance |
-| Modelling | scikit-learn (Linear Regression, Random Forest), XGBoost, arch (GARCH), SciPy |
-| Visualization | Matplotlib |
+| Data | pandas, NumPy, yfinance, TCMB EVDS API (requests) |
+| Modelling | scikit-learn, XGBoost, arch (GARCH), SciPy |
+| Automation | PowerShell, Windows Task Scheduler, git |
 | Testing | unittest |
 | Planned | Microsoft SQL Server, REST API (FastAPI), web interface, LSTM benchmark |
 
@@ -101,15 +115,18 @@ Forecast records are append-only, integrity-checked (per-row hash) and committed
 ```
 turkey-gold-price-forecast/
 ├── data/                  # raw snapshots and processed data (not tracked by git)
-├── docs/                  # data platform notes, status notes
-├── research/              # pre-registrations, registry, independent test results, live log
+├── docs/                  # interim report, data platform and status notes
+├── research/              # pre-registrations, registry, independent test results, live logs
 ├── scripts/
-│   └── gunluk_tahmin.ps1  # daily pipeline (archive -> series -> scoring -> forecast)
+│   ├── sabah_fiziki.ps1       # morning physical forecast + intervals
+│   ├── gunluk_tahmin.ps1      # evening theoretical forecast
+│   ├── zamanli_calistir.ps1   # scheduled-run wrapper with logging
+│   └── gorev_kur.ps1          # registers the Windows scheduled tasks
 ├── src/
-│   ├── data/              # collection, validation, dataset/panel building, synchronized series
-│   ├── analysis/          # diagnostics, timing and data-source analyses
-│   ├── models/            # point, interval, factor, implied-volatility, ACI models; final exam
-│   └── live/              # live forecasting and scoring
+│   ├── data/              # Yahoo and EVDS collection, validation, panels, physical and synchronized series
+│   ├── analysis/          # diagnostics: timing, error analysis, gain decomposition
+│   ├── models/            # point and interval models, independent exams, backtests
+│   └── live/              # live forecasting, intervals and scoring
 ├── tests/                 # unit tests (synthetic data)
 ├── Literatur_Taramasi_Raporu_Gram_Altin.pdf
 ├── requirements.txt
@@ -127,29 +144,31 @@ pip install -r requirements.txt
 python -m unittest discover -s tests
 ```
 
-Data files are not included in the repository; the collection commands below download them from Yahoo Finance.
+Data files are not included in the repository. Market data is downloaded from Yahoo Finance. Physical gold data requires a free TCMB EVDS API key, kept **only** in an environment variable and never committed:
+
+```powershell
+setx EVDS_API_KEY "your-key"      # Windows, applies to new terminals
+```
 
 ## Usage
 
 ```bash
 # Data
-python -m src.data.collect                 # daily series (11 series incl. GVZ), immutable snapshot
-python -m src.data.build_panel --write     # aligned market panel
-python -m src.data.collect_intraday        # hourly snapshot (Yahoo keeps ~730 days)
-python -m src.data.sync_dataset            # synchronized daily series (14:00 New York)
+python -m src.data.collect --start 2005-01-01                       # daily market series
+python -m src.data.build_panel --write --processed-dir data/processed/history
+python -m src.data.collect_intraday                                 # hourly snapshot (Yahoo keeps ~730 days)
+python -m src.data.physical_gold                                    # physical gold series from EVDS
 
-# Models and evaluation (development period)
-python -m src.models.train                 # baseline and ML models
-python -m src.models.point_eval            # point forecasts in TL, vs. "tomorrow = today"
-python -m src.models.intervals             # GARCH-based prediction intervals
-python -m src.models.adaptive              # adaptive conformal calibration
+# Research (exploratory, development periods only)
+python -m src.models.physical_eval                                  # physical nowcast, 2016-2022
+python -m src.models.live_backtest                                  # live protocol replayed over 2012-2022
+python -m src.analysis.gain_decomposition                           # overnight gold vs. FX contribution
+python -m src.models.interval_study                                 # volatility-scaled intervals
 
-# Diagnostics
-python -m src.analysis.fx_close_time       # which hour each daily close belongs to
-python -m src.analysis.spot_probe          # spot-tracking gold source candidates
-
-# Daily pipeline (Windows)
-powershell -ExecutionPolicy Bypass -File scripts\gunluk_tahmin.ps1 -TahminYok
+# Live (normally run by the scheduled tasks)
+powershell -ExecutionPolicy Bypass -File scripts\sabah_fiziki.ps1
+python -m src.live.physical_forecast card                           # live scorecard
+python -m src.live.physical_intervals card
 ```
 
 ## Literature Review
@@ -164,11 +183,12 @@ A comparative literature review of 23 studies on machine learning-based gold pri
 - [x] Baseline and machine learning models (LR, RF, XGBoost)
 - [x] Leakage-free evaluation, statistical tests, pre-registered confirmations
 - [x] Probabilistic forecasts (GARCH, GVZ, adaptive conformal calibration)
-- [x] Independent 2026 test (FINAL_EXAM_V1)
+- [x] Independent tests (`FINAL_EXAM_V1`, `FINAL_EXAM_PHYS_V1`)
 - [x] Data timing diagnosis and synchronized hourly pipeline
-- [ ] Spot-tracking gold source (resolve futures roll artifacts)
-- [ ] Live forecasting with public track record
-- [ ] Physical gold prices in Turkey and jeweller premium analysis
+- [x] Physical gold prices in Turkey (EVDS, 1995–2026) and premium analysis
+- [x] Live forecasting with pre-registered protocols and automation
+- [ ] One-shot evaluation of the live protocols (after 120 forecasts)
+- [ ] Spot-tracking gold source for the theoretical series (futures roll artifacts)
 - [ ] Macroeconomic indicators (policy rate, inflation)
 - [ ] Weekly and monthly trend forecasts; LSTM benchmark
 - [ ] Microsoft SQL Server storage
@@ -178,9 +198,11 @@ A comparative literature review of 23 studies on machine learning-based gold pri
 
 ## Limitations
 
-- Prices are **theoretical** (ounce × USD/TRY); they are not jeweller or Grand Bazaar prices.
-- Data comes from Yahoo Finance; hourly history is limited to roughly the last two years.
-- Daily point forecasts are not more accurate than "tomorrow = today"; the project does not claim otherwise.
+- The physical price is a **wholesale** market price; jeweller prices and workmanship are not covered.
+- Most of the physical nowcast gain in 2012–2022 depends on an FX timestamp assumption that could only be verified for 2024–2025. The timing-independent part is 5%. The live record will settle this prospectively.
+- Post-2022 physical data was consumed by the independent exam. Models proposed after it (Gap-Rolling, Premium-Anchor) can only be evaluated prospectively.
+- Yahoo hourly history covers only about the last two years; the live system archives it daily.
+- Daily point forecasts are not claimed to be more accurate than "tomorrow = today" outside the reported conditions.
 - **This project is for research and education only and is not financial advice.**
 
 ## Contributors
