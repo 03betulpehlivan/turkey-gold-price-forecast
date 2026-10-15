@@ -13,7 +13,7 @@ Bu proje, Türkiye'deki **fiziki** gram altın fiyatı ile ons altın ve USD/TRY
 Ana sonuçlar:
 
 1. **Günlük fiyat seviyesini basit "yarın = bugün" yönteminden (Random Walk, RW) daha iyi tahmin etmek zordur.** Teorik fiyatta 2026 bağımsız sınavında model RW ile pratikte eşdeğer çıktı. Fiziki fiyatta ise geliştirme döneminde güçlü görünen model, 2023–2026 bağımsız sınavında RW'den daha kötü sonuç verdi.
-2. **Fiziki fiyat için sabah tahmininde gerçek bir bilgi kaynağı bulundu.** Borsa İstanbul kapandıktan sonra gece boyunca ons ve kurda olan hareket, ertesi günün fiziki kapanışına büyük ölçüde yansıyor. 2012–2022 geliştirme döneminde yalnızca ons bilgisi, veri zamanlaması varsayımından bağımsız olarak RW'ye göre %5 daha az hata sağladı (11 yılın 11'inde). Kur bilgisiyle birlikte kazanç %22'ye çıkıyor.
+2. **Fiziki fiyat için sabah tahmininde gerçek bir bilgi kaynağı bulundu.** Borsa İstanbul kapandıktan sonra gece boyunca ons ve kurda olan hareket, ertesi günün fiziki kapanışına büyük ölçüde yansıyor. 2012–2022 geliştirme döneminde yalnızca ons bilgisi, veri zamanlaması varsayımından bağımsız olarak RW'ye göre %5 daha az hata sağladı (11 yılın 11'inde). Kur bilgisiyle birlikte kazanç %22'ye çıkıyor. **Ancak** daha önce hiç kullanılmamış 2001–2004 verisinde yapılan geriye dönük bağımsız sınavda yalnız ons kazancı doğrulanamadı (+%0,5, anlamsız; Bölüm 6.4).
 3. **Yaygın kullanılan veri kaynağında ciddi zamanlama sorunları tespit edildi.** Yahoo Finance günlük verisinde ons ve kur 13–16 saat farklı anlara ait. 2005–2010 kur verisi ise sabah tahmini için geleceği sızdırıyor. Vadeli ons serisinde kontrat değişimlerinden kaynaklanan sahte sıçramalar var.
 4. **Oynaklığa duyarlı tahmin aralıkları** geliştirme döneminde iyi kalibre edildi (%80 aralıkta kapsam 0,800, kümelenme testi geçti).
 5. **Canlı sistem kuruldu ve ilk gerçek tahminini üretti.** 15 Ekim 2026'da ilk canlı tahmin ve tahmin aralıkları değiştirilemez kayda geçti. Sistem, her tahmini ertesi gün gerçekleşen fiyatla puanlayacak şekilde tasarlandı ve hafta içi otomatik çalışacak biçimde zamanlandı. Önceden kaydedilmiş değerlendirme, 120 tahmin dolunca (yaklaşık Nisan 2027) bir kez yapılacak.
@@ -81,7 +81,7 @@ Araştırma soruları:
 - **İstatistik:**
   - Nokta tahminleri: Diebold–Mariano testi (küçük örneklem düzeltmesiyle), çoklu karşılaştırma için Holm düzeltmesi, eşleştirilmiş blok bootstrap güven aralıkları.
   - Tahmin aralıkları: Kupiec ve Christoffersen testleri, Winkler skoru.
-- **Yazılım kalitesi:** 429 otomatik test, tamamı geçiyor (tam paket, 15.10.2026). Testlerin gerçekten hata yakaladığı, koda bilinçli hatalar sokularak (mutasyon testi) doğrulandı. Testler sentetik veriyle çalışır; piyasa başarısının kanıtı değildir.
+- **Yazılım kalitesi:** 477 otomatik test, tamamı geçiyor (15.10.2026); GitHub Actions bunları her kod değişikliğinde kendiliğinden çalıştırıyor. Testlerin gerçekten hata yakaladığı, koda bilinçli hatalar sokularak (mutasyon testi) doğrulandı. Testler sentetik veriyle çalışır; piyasa başarısının kanıtı değildir.
 
 **Modeller.** Random Walk, Mean-Return, Linear Regression, Random Forest, XGBoost, faktör modelleri, GARCH, GVZ ile bileşen oynaklığı, uyarlanabilir konformal çıkarım (ACI). Fiziki fiyat için "boşluk" modelleri: sabah teorik fiyat ile dünkü fiziki fiyat arasındaki farka dayanıyor.
 
@@ -133,6 +133,15 @@ Canlı protokolün kodu, geçmişin her günü için birebir çalıştırıldı.
 
 Gece ons hareketinin katkısı, verinin saat damgasından bağımsız olarak kanıtlanmıştır. Kur katkısının geçmişteki büyüklüğü ise Yahoo kur verisinin eski yıllarda da sabah saatine ait olduğu varsayımına dayanıyor; bu varsayım yalnızca 2024–2025 için doğrulanabildi. Canlı sistem kuru, saati açıkça belli bir çubuktan (05:00 UTC) aldığı için bu soruyu ileriye dönük olarak cevaplayacak.
 
+**Geriye dönük bağımsız sınav (`BACK_EXAM_ONS_V1`, 15.10.2026).** Yalnız ons modeli, hiçbir seçimde kullanılmamış 2001–2004 fiziki verisinde, önceden kayıtlı ve tek seferlik olarak sınandı. TL'nin o yıllardaki hızlı değer kaybı tek başına bir kazanç gibi görünebileceği için model hem RW ile hem de yalnız eğilim (sabit terim) modeliyle karşılaştırıldı; p değerleri Holm ile düzeltildi.
+
+| Karşılaştırma (n = 497, 2001-04 – 2004-12) | İyileşme | Güven aralığı | p (Holm) | Hüküm |
+| --- | --- | --- | --- | --- |
+| Ons vs RW | +%0,5 | [−3,8, +5,1] | 0,81 | Ayırt edilemedi |
+| Ons vs yalnız eğilim | +%3,0 | [−0,6, +7,3] | 0,29 | Ayırt edilemedi |
+
+**Hipotez desteklenmedi.** Yıllara göre sonuç tutarsız (2001: −%3,8, 2002: +%5,4, 2003–2004: yaklaşık sıfır). İAB arşivinin o yıllarda seyrek olması (yılda ~170 gün) testin gücünü sınırladı; güven aralığının üst ucu geliştirme dönemindeki etkiye (+%5,1) ancak ulaşıyor. Sonradan yapılan, iddia olarak kullanılamayacak gözlemler: yalnız eğilim modeli RW'den anlamlı biçimde kötüydü (−%2,5), yani 2001 krizinde öğrenilen sürüklenme sonraki yıllarda zarar verdi; walk-forward eğimi 0,93'ten 0,56'ya inerek geliştirme dönemindeki 0,52'ye yaklaştı.
+
 ### 6.5 Fiziki tahmin aralıkları (2012–2022, keşif)
 
 Boşluk modeli, %80 aralık:
@@ -155,14 +164,14 @@ Boşluk modeli, %80 aralık:
 | --- | --- | --- |
 | `LIVE_PHYS_V1` | Bugünün fiziki kapanışı için 4 model: RW, Boşluk, Boşluk-Kayan, Prim-Çapa | 120 tahmin sonra bir kez; DM testi ve Holm düzeltmesi |
 | `LIVE_PHYS_INT_V1` | Her modelin etrafında oynaklığa duyarlı %80 ve %95 aralıkları. Kalibrasyon, canlı kodun gerçek saatlik kur arşiviyle geçmişe dönük çalıştırılmasıyla yapılıyor | 120 gün sonra bir kez; kapsam, Kupiec, Christoffersen |
-| `LIVE_V1` | Eşzamanlı teorik gram için akşam tahmini | Canlı karne |
+| `LIVE_V1` | Eşzamanlı teorik gram için akşam tahmini | 120 tahmin sonra bir kez; kural ilk sonuçtan önce ön kayda alındı (DM testi; Kupiec ve Christoffersen) |
 
 **Güvenceler:**
 
 - **Zaman penceresi:** tahmin, yalnızca hedef günün sabahı ve belirli bir saat aralığında kabul ediliyor. Veri eski ya da eksikse sistem tahmin üretmiyor ve nedenini yazıyor.
 - **Değiştirilemez kayıt:** her tahmin satırının özeti tutuluyor ve sonradan yapılan değişiklikler reddediliyor. Kayıtlar her gün Git'e gönderiliyor.
 - **Kilitli kod:** ön kayıttaki kod özeti değişirse, o tahminler değerlendirmeye sayılmıyor.
-- **Otomasyon:** Windows Görev Zamanlayıcı; hafta içi 12:30 (yedek 13:30) ve 22:30. Görevler kuruldu ve **elle tetiklenen** bir çalıştırmayla arka planda doğru çalıştıkları doğrulandı (15.10.2026; bütün adımlar çalıştı, çıkış kodu 0). Zamanlanmış saatte kendiliğinden çalışma ilk kez 15.10 22:30 ve 16.10 12:30'da gözlenecek.
+- **Otomasyon:** Windows Görev Zamanlayıcı; hafta içi 12:30 (yedek 13:30) ve 22:30. Görevler kuruldu ve **elle tetiklenen** bir çalıştırmayla arka planda doğru çalıştıkları doğrulandı (15.10.2026; bütün adımlar çalıştı, çıkış kodu 0). Akşam görevi 15.10 22:30'da ilk kez **kendiliğinden** çalıştı ve tahmini kaydetti (Git zaman damgası 22:30:26). Sabah görevinin ilk kendiliğinden çalışması 16.10 12:30. Her çalışma, Git'e girmeyen veriyi ayrıca bir yedek klasörüne kopyalıyor.
 - **Kayıt bütünlüğü kontrolü (15.10.2026):** iki kaydın satır özetleri doğrulandı; bu bölümdeki değerler doğrudan kayıt dosyalarından okundu.
 
 **İlk canlı tahmin (15.10.2026).** Son bilinen fiziki kapanış 14.10.2026: 6.500,00 TL. Ons 4.107,90 $, kur 49,3968 (05:00 UTC çubuğu), sabah teorik fiyat 6.523,93 TL.
@@ -179,13 +188,13 @@ Boşluk modeli, %80 aralık:
 1. **Veri ve doğrulama:** `python -m src.data.physical_gold --snapshots ...` çıktısı. 1995–2026 serisi, birleşme noktası, prim tablosu.
 2. **Canlı kayıt:** `python -m src.live.physical_forecast card` ve `python -m src.live.physical_intervals card`. Kaç tahmin yapıldı, kaçı puanlandı, hata ve kapsam.
 3. **Kaydın değiştirilemezliği:** `git log --oneline -- research/live/` ile her günün tahmininin zaman damgalı commit'leri. Ayrıca `research/preregistration/` altındaki ön kayıtlar.
-4. **Bağımsız sınavlar:** `research/final_exam_v1/result.json` ve `research/final_exam_phys_v1/result.json`. Olumsuz sonuçların da kayıtlı olduğunun gösterilmesi.
+4. **Bağımsız sınavlar:** `research/final_exam_v1/result.json`, `research/final_exam_phys_v1/result.json` ve `research/back_exam_ons_v1/result.json`. Olumsuz sonuçların da kayıtlı olduğunun gösterilmesi.
 5. **Bir günün tahmini:** `logs\` klasöründeki son sabah kaydı. Girdiler, zaman damgaları, dört model ve aralıklar.
 
 ## 9. Sınırlılıklar
 
 - **Fiziki fiyat toptan piyasa fiyatıdır;** kuyumcu alış/satış fiyatı ve işçilik bu çalışmanın kapsamında değil.
-- **Fiziki tahmindeki kazancın büyük kısmı** geçmişte doğrulanamayan bir kur zamanlama varsayımına dayanıyor. Zamanlamadan bağımsız kısım %5. Kesin sonuç canlı kayıtla belli olacak.
+- **Fiziki tahmindeki kazancın büyük kısmı** geçmişte doğrulanamayan bir kur zamanlama varsayımına dayanıyor. Zamanlamadan bağımsız kısım geliştirme döneminde %5'ti, ancak 2001–2004 geriye dönük bağımsız sınavında doğrulanamadı. Kesin sonuç canlı kayıtla belli olacak.
 - **Kilitli dönemin kullanımı:** 2023 sonrası fiziki veri bağımsız sınavda tüketildi. Sınavdan sonra önerilen modeller (Boşluk-Kayan, Prim-Çapa) yalnızca ileriye dönük olarak değerlendirilebilir.
 - **Kaynak sınırları:** saatlik veri Yahoo'da yalnızca son ~2 yıl için var; canlı sistem bu yüzden her gün arşivliyor.
 - **Teknik not (gözlendi ve doğrulandı):** puanlama adımı kaydı okuyup yeniden yazarken, pandas'ın varsayılan CSV okuyucusu bazı ondalık sayıların yalnızca son basamaklarını farklı geri okuyabiliyor. 15.10.2026 kaydında üç ara değişkenin (boşluk, prim, katsayı) gösterimi 16.–17. anlamlı basamakta değişti; tahmin değerleri ve satır özeti birebir aynı kaldı. Satır özetleri 10 anlamlı basamakla hesaplandığı için bütünlük kontrolü bu farktan etkilenmiyor. Sentetik denemede fark en fazla iki yeniden yazımda duruyor.
@@ -193,7 +202,7 @@ Boşluk modeli, %80 aralık:
 ## 10. Sonraki adımlar
 
 1. **Canlı kaydın birikmesi:** Nisan 2027'de iki protokolün tek seferlik değerlendirmesi.
-2. **Teorik seri için spot ons kaynağı:** vadeli kontrat sorununun çözümü, Kasım sonundan önce.
+2. **Teorik seri için spot ons kaynağı:** önceden kayıtlı taramada GLD uygun bulundu (15.10.2026). GLD tabanlı yeni protokol (`LIVE_V2`) Kasım sonundaki kontrat değişiminden önce başlatılacak.
 3. **Makro göstergeler ve uzun ufuk:** TCMB politika faizi, enflasyon; haftalık ve aylık trend analizi; LSTM karşılaştırması.
 4. **Sistem katmanı:** Microsoft SQL Server, REST API ve web arayüzü.
 5. **Kuyumcu fiyatları:** veri bulunabilirse fiziki toptan fiyat ile perakende fiyat arasındaki farkın analizi.

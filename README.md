@@ -6,7 +6,7 @@ Machine learning-based forecasting and analysis of **physical** and **theoretica
 > Research, data pipeline and live forecasting are running; the database, REST API and web interface are planned.
 > 📄 **Detailed interim report (Turkish):** [docs/danisman_raporu.md](docs/danisman_raporu.md)
 
-> **Türkçe özet:** Proje, Türkiye'deki fiziki gram altın fiyatı (Borsa İstanbul, TCMB EVDS, 1995–2026) ile ons × USD/TRY'den hesaplanan teorik fiyat için kısa vadeli tahmin ve tahmin aralıkları üretir. Bütün sonuçlar kronolojik, sızıntısız testlerle ve önceden kayıtlı, tek seferlik bağımsız sınavlarla değerlendirilir. Temel bulgular: (1) Günlük fiyat seviyesini "yarın = bugün" yönteminden anlamlı biçimde daha iyi tahmin etmek iki bağımsız sınavda da başarılamadı. Teorik fiyatta model bu yöntemle pratikte eşdeğer çıktı; fiziki fiyatta 2023–2026 sınavında daha kötü sonuç verdi. (2) Borsa İstanbul kapandıktan sonraki gece ons hareketi, ertesi günün fiziki fiyatına yansıyor. 2012–2022 geliştirme döneminde bu bilgi, veri zamanlamasından bağımsız olarak %5 daha az hata sağladı; kur bilgisiyle birlikte kazanç %22. (3) Yaygın veri kaynağında ciddi zamanlama sorunları tespit edildi. (4) Sistem 15 Ekim 2026'dan itibaren canlı tahminleri değiştirilemez biçimde kaydediyor.
+> **Türkçe özet:** Proje, Türkiye'deki fiziki gram altın fiyatı (Borsa İstanbul, TCMB EVDS, 1995–2026) ile ons × USD/TRY'den hesaplanan teorik fiyat için kısa vadeli tahmin ve tahmin aralıkları üretir. Bütün sonuçlar kronolojik, sızıntısız testlerle ve önceden kayıtlı, tek seferlik bağımsız sınavlarla değerlendirilir. Temel bulgular: (1) Günlük fiyat seviyesini "yarın = bugün" yönteminden anlamlı biçimde daha iyi tahmin etmek iki bağımsız sınavda da başarılamadı. Teorik fiyatta model bu yöntemle pratikte eşdeğer çıktı; fiziki fiyatta 2023–2026 sınavında daha kötü sonuç verdi. (2) Borsa İstanbul kapandıktan sonraki gece ons hareketi, ertesi günün fiziki fiyatına yansıyor. 2012–2022 geliştirme döneminde bu bilgi, veri zamanlamasından bağımsız olarak %5 daha az hata sağladı; kur bilgisiyle birlikte kazanç %22. Ancak daha önce hiç kullanılmamış 2001–2004 verisindeki geriye dönük bağımsız sınavda yalnız ons kazancı doğrulanamadı (+%0,5, anlamsız). (3) Yaygın veri kaynağında ciddi zamanlama sorunları tespit edildi. (4) Sistem 15 Ekim 2026'dan itibaren canlı tahminleri değiştirilemez biçimde kaydediyor.
 
 ---
 
@@ -65,6 +65,7 @@ Every result is labelled as **exploratory** (development data; model selection h
 | 2016–2022, 1,741 forecasts | Exploratory | "Gap" model 22.8% lower error than RW; direction hit rate 71% |
 | **2023-01 – 2026-10, 874 forecasts (`FINAL_EXAM_PHYS_V1`)** | **Independent** | Gap model **9.1% worse than RW** [−20.8%, −0.3%], p = 0.03: **not supported**. Direction hit rate 65%. Main explanation: a domestic premium regime in 2023–2024 (physical gold traded 1–5% above the international price) |
 | 2012–2022, source of the gain | Exploratory | Overnight **gold** move alone: **+5.1%** [+3.0%, +7.6%], 11 of 11 years, **independent of FX timestamp assumptions**. With overnight FX: +21.7% [+17.9%, +25.2%] |
+| **2001-04 – 2004-12, 497 forecasts (`BACK_EXAM_ONS_V1`)** | **Independent** (backward, never-used data) | Overnight-gold model vs RW **+0.5%** [−3.8%, +5.1%], Holm p = 0.81; vs drift-only model +3.0% [−0.6%, +7.3%], p = 0.29: **not supported**. Year-to-year results inconsistent. The sparse 2001–2004 exchange archive (~170 days/year) limited power |
 
 Volatility-scaled intervals with adaptive calibration (2012–2022, exploratory) reached 80% / 95% coverage of 0.800 / 0.949 and removed most violation clustering. Their Winkler score was 27% better than static RW intervals.
 
@@ -81,12 +82,12 @@ Volatility-scaled intervals with adaptive calibration (2012–2022, exploratory)
 |---|---|---|
 | `LIVE_PHYS_V1` | Physical close forecast each morning: RW, Gap, Gap-Rolling, Premium-Anchor | First forecast 2026-10-15 |
 | `LIVE_PHYS_INT_V1` | 80% / 95% intervals around each model; calibrated by replaying the live code with **real hourly FX bars** | First intervals 2026-10-15 |
-| `LIVE_V1` | Evening forecast of the synchronized theoretical price | Scheduled from 2026-10-15 |
+| `LIVE_V1` | Evening forecast of the synchronized theoretical price | First forecast 2026-10-15; evaluation rule pre-registered before the first outcome |
 
 - **Pre-registration:** rules, models and code hashes were committed before the first forecast.
 - **Forecast window:** forecasts are accepted only within a fixed time window on the target day; stale or missing data is refused with a reason.
 - **Integrity:** records are append-only and integrity-checked per row, scored automatically when the realized price is published, and committed to git.
-- **Automation:** Windows Task Scheduler on weekdays at 12:30 (retry 13:30) and 22:30. Installed and verified with a manually triggered run on 2026-10-15.
+- **Automation:** Windows Task Scheduler on weekdays at 12:30 (retry 13:30) and 22:30. Verified with a manually triggered run and the first unattended evening run on 2026-10-15. Each run also copies the untracked data to a backup folder.
 - **Evaluation:** a one-shot, pre-registered evaluation after 120 scored forecasts (expected around April 2027).
 
 ## Methodology
@@ -97,7 +98,7 @@ Volatility-scaled intervals with adaptive calibration (2012–2022, exploratory)
 - **Statistics:**
   - Point forecasts: Diebold-Mariano test (HLN small-sample correction), Holm correction for multiple comparisons, paired moving-block bootstrap confidence intervals.
   - Intervals: Kupiec and Christoffersen tests, Winkler score.
-- **Software quality:** 429 unit tests on synthetic data, all passing. Mutation checks verify that the tests detect deliberate errors. Tests do not prove market performance.
+- **Software quality:** 477 unit tests on synthetic data, all passing; GitHub Actions runs them on every code change. Mutation checks verify that the tests detect deliberate errors. Tests do not prove market performance.
 
 ## Tech Stack
 
@@ -183,12 +184,13 @@ A comparative literature review of 23 studies on machine learning-based gold pri
 - [x] Baseline and machine learning models (LR, RF, XGBoost)
 - [x] Leakage-free evaluation, statistical tests, pre-registered confirmations
 - [x] Probabilistic forecasts (GARCH, GVZ, adaptive conformal calibration)
-- [x] Independent tests (`FINAL_EXAM_V1`, `FINAL_EXAM_PHYS_V1`)
+- [x] Independent tests (`FINAL_EXAM_V1`, `FINAL_EXAM_PHYS_V1`, backward `BACK_EXAM_ONS_V1`)
 - [x] Data timing diagnosis and synchronized hourly pipeline
 - [x] Physical gold prices in Turkey (EVDS, 1995–2026) and premium analysis
 - [x] Live forecasting with pre-registered protocols and automation
 - [ ] One-shot evaluation of the live protocols (after 120 forecasts)
-- [ ] Spot-tracking gold source for the theoretical series (futures roll artifacts)
+- [x] Spot-tracking source diagnosis for the theoretical series (GLD passed the pre-registered rule)
+- [ ] `LIVE_V2`: GLD-based theoretical forecast (before the late-November futures roll)
 - [ ] Macroeconomic indicators (policy rate, inflation)
 - [ ] Weekly and monthly trend forecasts; LSTM benchmark
 - [ ] Microsoft SQL Server storage
@@ -199,7 +201,7 @@ A comparative literature review of 23 studies on machine learning-based gold pri
 ## Limitations
 
 - The physical price is a **wholesale** market price; jeweller prices and workmanship are not covered.
-- Most of the physical nowcast gain in 2012–2022 depends on an FX timestamp assumption that could only be verified for 2024–2025. The timing-independent part is 5%. The live record will settle this prospectively.
+- Most of the physical nowcast gain in 2012–2022 depends on an FX timestamp assumption that could only be verified for 2024–2025. The timing-independent part was 5% in development, but it was not confirmed in the 2001–2004 backward independent test. The live record will settle this prospectively.
 - Post-2022 physical data was consumed by the independent exam. Models proposed after it (Gap-Rolling, Premium-Anchor) can only be evaluated prospectively.
 - Yahoo hourly history covers only about the last two years; the live system archives it daily.
 - Daily point forecasts are not claimed to be more accurate than "tomorrow = today" outside the reported conditions.
