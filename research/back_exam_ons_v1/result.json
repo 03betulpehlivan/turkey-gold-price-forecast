@@ -1,0 +1,123 @@
+{
+  "protocol_id": "BACK_EXAM_ONS_V1",
+  "nature": "BAGIMSIZ (geriye donuk, tek seferlik)",
+  "period": [
+    "2001-04-19",
+    "2004-12-31"
+  ],
+  "n": 497,
+  "primary_walk_forward": {
+    "Ons_vs_RW": {
+      "n": 497,
+      "MAE_TL": 0.17209801288778437,
+      "ref_MAE_TL": 0.17303802816901415,
+      "improvement_pct": 0.5432420209456001,
+      "improvement_ci95": [
+        -3.8012977054850956,
+        5.119891596939091
+      ],
+      "dm_stat_hln": -0.23840401298841818,
+      "p_value": 0.8116662160549319,
+      "p_used": 0.8116662160549319,
+      "verdict": "AYIRT_EDILEMEDI"
+    },
+    "Ons_vs_Egilim": {
+      "n": 497,
+      "MAE_TL": 0.17209801288778437,
+      "ref_MAE_TL": 0.1773916040344528,
+      "improvement_pct": 2.984127222639199,
+      "improvement_ci95": [
+        -0.5945993954788518,
+        7.249080926091453
+      ],
+      "dm_stat_hln": -1.4540966581580503,
+      "p_value": 0.1465519749718568,
+      "p_used": 0.2931039499437136,
+      "verdict": "AYIRT_EDILEMEDI"
+    }
+  },
+  "direction_hit_pct": 56.33802816901409,
+  "descriptive_Egilim_vs_RW": {
+    "n": 497,
+    "MAE_TL": 0.1773916040344528,
+    "ref_MAE_TL": 0.17303802816901415,
+    "improvement_pct": -2.515964791962566,
+    "improvement_ci95": [
+      -4.550649726501903,
+      -1.0016795288533415
+    ],
+    "dm_stat_hln": 2.8763200815302947,
+    "p_value": 0.00419661593499373,
+    "p_used": 0.00419661593499373,
+    "verdict": "DAHA_KOTU"
+  },
+  "b_first_last": [
+    0.9312042803996694,
+    0.5557575813970198
+  ],
+  "secondary_frozen_dev": {
+    "Donuk_vs_RW": {
+      "n": 497,
+      "MAE_TL": 0.16897025412656333,
+      "ref_MAE_TL": 0.17303802816901415,
+      "improvement_pct": 2.35079773243696,
+      "improvement_ci95": [
+        -0.8638766952669307,
+        6.2700245912125885
+      ],
+      "dm_stat_hln": -1.2813937827886093,
+      "p_value": 0.20065411194827057,
+      "p_used": 0.20065411194827057,
+      "verdict": "AYIRT_EDILEMEDI"
+    },
+    "Donuk_vs_Egilim": {
+      "n": 497,
+      "MAE_TL": 0.16897025412656333,
+      "ref_MAE_TL": 0.1773916040344528,
+      "improvement_pct": 4.747321584765585,
+      "improvement_ci95": [
+        1.9566791108518933,
+        8.704871262636313
+      ],
+      "dm_stat_hln": -2.730987613649657,
+      "p_value": 0.006539360705770762,
+      "p_used": 0.006539360705770762,
+      "verdict": "DAHA_IYI"
+    }
+  },
+  "yearly": [
+    {
+      "year": 2001,
+      "n": 101,
+      "Ons_vs_RW_pct": -3.8414750786120555,
+      "Ons_vs_Egilim_pct": -1.486377557039309,
+      "Egilim_vs_RW_pct": -2.3206045759679217,
+      "Donuk_vs_RW_pct": -1.5379486120225883
+    },
+    {
+      "year": 2002,
+      "n": 121,
+      "Ons_vs_RW_pct": 5.4219295884077034,
+      "Ons_vs_Egilim_pct": 7.8546995947181175,
+      "Egilim_vs_RW_pct": -2.6401455045568234,
+      "Donuk_vs_RW_pct": 6.250636671392662
+    },
+    {
+      "year": 2003,
+      "n": 140,
+      "Ons_vs_RW_pct": 0.8195940027550419,
+      "Ons_vs_Egilim_pct": 3.0261969625734797,
+      "Egilim_vs_RW_pct": -2.2754629505112867,
+      "Donuk_vs_RW_pct": 3.1561467334823012
+    },
+    {
+      "year": 2004,
+      "n": 135,
+      "Ons_vs_RW_pct": -0.14215539090165485,
+      "Ons_vs_Egilim_pct": 2.6539479416876177,
+      "Egilim_vs_RW_pct": -2.8723335702554698,
+      "Donuk_vs_RW_pct": 1.5442274339306228
+    }
+  ],
+  "hypothesis_supported": false
+}
