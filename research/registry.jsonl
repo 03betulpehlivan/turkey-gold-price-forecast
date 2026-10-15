@@ -6,3 +6,4 @@
 {"protocol_id": "FINAL_EXAM_PHYS_V1", "event": "completed", "at_utc": "2026-10-14T14:22:28+00:00", "result_md5": "c6498e63474ea4ba35d0d6e6a7a451a4", "verdict": "DAHA_KOTU"}
 {"protocol_id": "LIVE_PHYS_V1", "event": "prepared", "at_utc": "2026-10-14T20:26:09+00:00"}
 {"protocol_id": "LIVE_PHYS_INT_V1", "event": "prepared", "at_utc": "2026-10-15T10:49:11+00:00"}
+{"protocol_id": "LIVE_V1", "event": "prepared", "at_utc": "2026-10-15T19:53:47+00:00", "prereg_md5": "b2154e52e56c62748f212f0d29c3449d"}
