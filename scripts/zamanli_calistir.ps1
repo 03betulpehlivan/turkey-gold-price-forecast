@@ -22,6 +22,12 @@ try {
         }
         catch { Write-Host "UYARI: LIVE_V2 hatasi (LIVE_V1 etkilenmedi): $_" }
     }
+    # Veritabani aynasi (SQL Server / SQLite): kayitlari okur; tahmin sonucunu ve cikis kodunu ETKILEMEZ.
+    try {
+        & ".\.venv\Scripts\python.exe" -m src.db.store load
+        if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: veritabani yuklemesi basarisiz (kayitlar etkilenmedi)." }
+    }
+    catch { Write-Host "UYARI: veritabani yukleme hatasi (kayitlar etkilenmedi): $_" }
     # Veri yedegi: tahmin sonucunu ve cikis kodunu ETKILEMEZ; yalnizca uyari yazar.
     if ($env:ALTIN_YEDEK) {
         try {

@@ -14,3 +14,8 @@ matplotlib==3.11.2
 yfinance==1.7.0
 scipy==1.17.1          # intervals.py dogrudan kullaniyor (zaten scikit-learn ile kuruluydu)
 arch==8.0.0           # Adim 2b: GARCH oynaklik modeli (statsmodels ve scipy ile birlikte kurulur)
+fastapi==0.142.4       # REST API (src/api/app.py)
+uvicorn==0.53.0        # API sunucusu
+sqlalchemy==2.0.54     # veritabani katmani (SQL Server / SQLite)
+pyodbc==5.2.0          # SQL Server surucusu; yalnizca mssql baglantisinda kullanilir
+httpx==0.28.1          # API testleri (TestClient)
