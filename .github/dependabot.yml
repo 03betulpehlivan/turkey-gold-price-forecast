@@ -1,0 +1,9 @@
+# Yalnizca GitHub Actions surumleri izlenir (onerileri birlestirmek kullanicinin kararidir).
+# Python kutuphaneleri BILEREK izlenmez: canli protokoller boyunca sabit kalmalari gerekir;
+# guvenlik aciklari security.yml (pip-audit) ile raporlanir.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

@@ -1,0 +1,32 @@
+# Butunluk denetimi (src/audit.py): kilitli kodlar, on kayitlar, canli kayitlar ve Git gecmisi.
+# Gunluk canli kayit commit'leri DAHIL her push'ta ve her gun bir kez calisir; hicbir dosyayi degistirmez.
+name: integrity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd   # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c   # v6.0.0
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Bagimliliklar
+        run: python -m pip install -r requirements.txt
+      - name: Butunluk denetimi
+        run: python -m src.audit

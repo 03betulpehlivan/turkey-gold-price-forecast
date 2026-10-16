@@ -28,6 +28,7 @@ from pathlib import Path
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -123,6 +124,8 @@ def init_db(url: str = None) -> str:
     url = url or db_url()
     u = sa.engine.make_url(url)
     if u.get_backend_name() == "mssql" and u.database:
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", u.database):
+            raise StoreError(f"Gecersiz veritabani adi: {u.database!r} (harf, rakam, alt cizgi).")
         master = sa.create_engine(u.set(database="master"), isolation_level="AUTOCOMMIT")
         with master.connect() as c:
             if c.execute(sa.text("SELECT DB_ID(:n)"), {"n": u.database}).scalar() is None:

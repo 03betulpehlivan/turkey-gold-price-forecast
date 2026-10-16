@@ -6,6 +6,9 @@ Calistirma (proje kokunden):
   python -m uvicorn src.api.app:app --port 8000     # sonra http://127.0.0.1:8000  (belgeler: /docs)
 
 Ilke: API yalnizca OKUR (GET). Tahmin uretmez, kayit degistirmez; veriyi src/db/store.py aynasindan alir.
+Guvenlik: yalnizca 127.0.0.1 / localhost Host basligi kabul edilir (DNS rebinding'e karsi; ALTIN_ALLOWED_HOSTS
+  ile genisletilebilir); her yanitta guvenlik basliklari; pano icin siki Content-Security-Policy (yalnizca
+  ayni kaynaktan betik/stil; satir ici betik yok). Sunucuyu scripts/pano.ps1 ile baslatin (127.0.0.1'e baglanir).
 Veritabani baglantisi ALTIN_DB_URL ortam degiskeninden her istekte okunur (yoksa yerel SQLite).
 Ara karneler BETIMLEYICIDIR; on kayitli degerlendirmenin yerine gecmez ve model secimi icin kullanilmaz.
 Bu sistem arastirma ve egitim amaclidir; yatirim tavsiyesi degildir.
@@ -13,9 +16,12 @@ Bu sistem arastirma ve egitim amaclidir; yatirim tavsiyesi degildir.
 
 from datetime import date
 from pathlib import Path
+import os
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from src.db import store
 
@@ -24,8 +30,32 @@ PROTOCOLS = ("LIVE_PHYS_V1", "LIVE_V1", "LIVE_V2")
 SERIES = tuple(store.PRICE_SOURCES)
 DISCLAIMER = "Arastirma ve egitim amaclidir; yatirim tavsiyesi degildir."
 
+DEFAULT_HOSTS = "127.0.0.1,localhost"
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; "
+       "font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+DOC_PATHS = ("/docs", "/redoc", "/openapi.json")
+SECURITY_HEADERS = {"X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
+                    "Cross-Origin-Resource-Policy": "same-origin", "Cache-Control": "no-store"}
+
+
+def allowed_hosts() -> list:
+    return [h.strip() for h in os.environ.get("ALTIN_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",") if h.strip()]
+
+
 app = FastAPI(title="Turkiye Gram Altin Tahmin Sistemi", version="1.0",
               description="Canli, on kayitli tahmin kayitlarinin salt okunur API'si. " + DISCLAIMER)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts())
+app.mount("/static", StaticFiles(directory=WEB_DIR, html=False), name="static")
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    for k, v in SECURITY_HEADERS.items():
+        response.headers.setdefault(k, v)
+    if not request.url.path.startswith(DOC_PATHS):          # /docs, harici Swagger dosyalarini kullanir
+        response.headers["Content-Security-Policy"] = CSP
+    return response
 
 
 def _conn():

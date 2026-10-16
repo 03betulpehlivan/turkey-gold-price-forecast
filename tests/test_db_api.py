@@ -10,6 +10,7 @@ from unittest import mock
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -212,7 +213,7 @@ class TestConfig(unittest.TestCase):
 class TestApi(Base):
     def setUp(self):
         super().setUp()
-        self.c = TestClient(api.app)
+        self.c = TestClient(api.app, base_url="http://127.0.0.1")
 
     def test_empty_database(self):
         r = self.c.get("/api/health").json()
@@ -241,12 +242,61 @@ class TestApi(Base):
         self.assertEqual(methods - {"GET", "HEAD"}, set())
         self.assertIn("yatirim tavsiyesi degildir", api.app.description)
 
+    def test_foreign_host_rejected(self):
+        evil = TestClient(api.app, base_url="http://evil.example")             # DNS rebinding denemesi
+        self.assertEqual(evil.get("/api/health").status_code, 400)
+        self.assertEqual(TestClient(api.app, base_url="http://localhost").get("/api/health").status_code, 200)
+        with mock.patch.dict(os.environ, {"ALTIN_ALLOWED_HOSTS": "a.local, b.local"}):
+            self.assertEqual(api.allowed_hosts(), ["a.local", "b.local"])
+
+    def test_security_headers_and_csp(self):
+        self.load()
+        for path in ("/", "/api/health", "/static/app.js"):
+            h = self.c.get(path).headers
+            with self.subTest(path):
+                self.assertEqual(h["x-content-type-options"], "nosniff")
+                self.assertEqual(h["x-frame-options"], "DENY")
+                self.assertEqual(h["referrer-policy"], "no-referrer")
+                self.assertIn("script-src 'self';", h["content-security-policy"])
+                self.assertNotIn("unsafe-inline", h["content-security-policy"])
+                self.assertIn("frame-ancestors 'none'", h["content-security-policy"])
+        self.assertNotIn("content-security-policy", self.c.get("/docs").headers)    # Swagger harici dosya kullanir
+
+    def test_static_files_and_no_inline_code(self):
+        self.assertEqual(self.c.get("/static/app.js").status_code, 200)
+        self.assertEqual(self.c.get("/static/app.css").status_code, 200)
+        for bad in ("/static/../db/store.py", "/static/%2e%2e/db/store.py", "/static/missing.js"):
+            self.assertEqual(self.c.get(bad).status_code, 404, bad)
+        html = (PROJECT_ROOT / "src" / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertIsNone(re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html))       # satir ici betik yok
+        self.assertNotIn("<style", html)
+        self.assertNotIn(" style=", html)
+        self.assertIsNone(re.search(r"\son[a-z]+=", html))                        # satir ici olay isleyici yok
+        js = (PROJECT_ROOT / "src" / "web" / "app.js").read_text(encoding="utf-8")
+        for bad in ("innerHTML", "outerHTML", "insertAdjacentHTML", "eval(", "new Function", "document.write"):
+            self.assertNotIn(bad, js)
+
     def test_dashboard_served(self):
         r = self.c.get("/")
         self.assertEqual(r.status_code, 200)
         self.assertIn("text/html", r.headers["content-type"])
-        self.assertIn("/api/forecasts/latest", r.text)
+        self.assertIn("/static/app.js", r.text)
         self.assertIn("yat\u0131r\u0131m tavsiyesi de\u011fildir", r.text)
+        self.assertIn("/api/forecasts/latest", self.c.get("/static/app.js").text)
+
+
+class TestHardening(unittest.TestCase):
+    def test_invalid_database_name_refused(self):
+        for bad in ("Altin]; DROP DATABASE x--", "1abc", "a b"):
+            with self.assertRaises(store.StoreError):
+                store.init_db(f"mssql+pyodbc://@srv/{bad}?driver=X")
+
+    def test_launcher_binds_localhost_only(self):
+        ps = (PROJECT_ROOT / "scripts" / "pano.ps1").read_text(encoding="utf-8")
+        ps.encode("ascii")
+        self.assertIn("--host 127.0.0.1", ps)
+        self.assertIn("--no-server-header", ps)
+        self.assertNotIn("0.0.0.0", ps)
 
 
 class TestScheduledLoad(unittest.TestCase):
