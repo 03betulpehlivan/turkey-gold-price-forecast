@@ -1,0 +1,13 @@
+ufuk,tur,n,model,mae_tl,vs_rw_pct,vs_ortalama_pct,dm_p_vs_rw,dm_p_vs_ortalama,brier,brier_skill_vs_iklim,hit_pct,logloss,dm_p_vs_iklim
+hafta,returns,571,RW,6.47652,0,-1.95253,,,,,,,
+hafta,returns,571,Ortalama,6.35248,1.91514,0,0.0262629,,,,,,
+hafta,returns,571,Dogrusal,6.50281,-0.405968,-2.36643,0.906373,0.462168,,,,,
+hafta,direction,571,Iklim,,,,,,0.247514,0,55.5166,0.68817,
+hafta,direction,571,Lojistik,,,,,,0.253033,-0.0222966,54.1156,0.702087,0.218714
+hafta,direction,571,Hep_yukari,,,,,,0.444834,-0.797205,55.5166,,
+ay,returns,120,RW,14.7942,0,-6.01893,,,,,,,
+ay,returns,120,Ortalama,13.9543,5.67722,0,0.054689,,,,,,
+ay,returns,120,Dogrusal,15.3153,-3.52184,-9.75274,0.564439,0.156315,,,,,
+ay,direction,120,Iklim,,,,,,0.241502,0,60,0.676086,
+ay,direction,120,Lojistik,,,,,,0.252879,-0.0471122,54.1667,0.699794,0.0842156
+ay,direction,120,Hep_yukari,,,,,,0.4,-0.656304,60,,

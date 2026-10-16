@@ -1,0 +1,144 @@
+{
+  "nature": "KESIF (betimleyici); model secimi icin KULLANILMAZ",
+  "config": {
+    "features": [
+      "mom1",
+      "momk",
+      "fx1",
+      "ons1",
+      "us10y_d",
+      "reel",
+      "reel_d3"
+    ],
+    "cpi_available_day": 5,
+    "policy_rate_lag_months": 1,
+    "eval_years": [
+      2012,
+      2013,
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022
+    ],
+    "horizons": {
+      "hafta": {
+        "rule": "W-FRI",
+        "k": 13
+      },
+      "ay": {
+        "rule": "M",
+        "k": 12
+      }
+    }
+  },
+  "hafta": {
+    "n": 571,
+    "up_rate_pct": 55.51663747810858,
+    "returns": [
+      {
+        "model": "RW",
+        "mae_tl": 6.476518388791591,
+        "vs_rw_pct": 0.0,
+        "vs_ortalama_pct": -1.9525305681277194
+      },
+      {
+        "model": "Ortalama",
+        "mae_tl": 6.352484193086103,
+        "vs_rw_pct": 1.9151369340685398,
+        "vs_ortalama_pct": 0.0,
+        "dm_p_vs_rw": 0.026262913398549376
+      },
+      {
+        "model": "Dogrusal",
+        "mae_tl": 6.502811006654626,
+        "vs_rw_pct": -0.4059683966703087,
+        "vs_ortalama_pct": -2.3664256218399515,
+        "dm_p_vs_rw": 0.9063732716139362,
+        "dm_p_vs_ortalama": 0.46216799275466647
+      }
+    ],
+    "direction": [
+      {
+        "model": "Iklim",
+        "brier": 0.24751417751695107,
+        "brier_skill_vs_iklim": 0.0,
+        "hit_pct": 55.51663747810858,
+        "logloss": 0.6881700826059451
+      },
+      {
+        "model": "Lojistik",
+        "brier": 0.2530328988822463,
+        "brier_skill_vs_iklim": -0.022296586889117842,
+        "hit_pct": 54.115586690017516,
+        "logloss": 0.7020869454820652,
+        "dm_p_vs_iklim": 0.21871427784250677
+      },
+      {
+        "model": "Hep_yukari",
+        "brier": 0.4448336252189142,
+        "brier_skill_vs_iklim": -0.7972046275549192,
+        "hit_pct": 55.51663747810858
+      }
+    ],
+    "first": "2012-01-06",
+    "last": "2022-12-30"
+  },
+  "ay": {
+    "n": 120,
+    "up_rate_pct": 60.0,
+    "returns": [
+      {
+        "model": "RW",
+        "mae_tl": 14.79424999999999,
+        "vs_rw_pct": 0.0,
+        "vs_ortalama_pct": -6.018925616284454
+      },
+      {
+        "model": "Ortalama",
+        "mae_tl": 13.954348163784449,
+        "vs_rw_pct": 5.677218082806101,
+        "vs_ortalama_pct": 0.0,
+        "dm_p_vs_rw": 0.05468903311385396
+      },
+      {
+        "model": "Dogrusal",
+        "mae_tl": 15.315279825167238,
+        "vs_rw_pct": -3.5218400741318323,
+        "vs_ortalama_pct": -9.752742624802767,
+        "dm_p_vs_rw": 0.5644386010748293,
+        "dm_p_vs_ortalama": 0.15631461097337232
+      }
+    ],
+    "direction": [
+      {
+        "model": "Iklim",
+        "brier": 0.24150157299717653,
+        "brier_skill_vs_iklim": 0.0,
+        "hit_pct": 60.0,
+        "logloss": 0.676086399531251
+      },
+      {
+        "model": "Lojistik",
+        "brier": 0.252879240513078,
+        "brier_skill_vs_iklim": -0.04711218802717476,
+        "hit_pct": 54.166666666666664,
+        "logloss": 0.6997942287216344,
+        "dm_p_vs_iklim": 0.08421564751080031
+      },
+      {
+        "model": "Hep_yukari",
+        "brier": 0.4,
+        "brier_skill_vs_iklim": -0.6563039115470959,
+        "hit_pct": 60.0
+      }
+    ],
+    "first": "2013-01-31",
+    "last": "2022-12-30"
+  },
+  "created_at_utc": "2026-10-16T12:58:15+00:00"
+}
