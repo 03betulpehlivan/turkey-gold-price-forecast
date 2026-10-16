@@ -14,29 +14,46 @@ try {
     if (-not $env:EVDS_API_KEY -and $Gorev -eq "sabah") { Write-Host "UYARI: EVDS_API_KEY tanimli degil." }
     & ".\$betik"
     $kod = $LASTEXITCODE
-    # LIVE_V2 (GLD tabanli teorik): yalnizca aksam; LIVE_V1'in cikis kodunu ETKILEMEZ.
+    # Sonraki adimlarin SONUCLARI (cikis kodlarina gore) ayrica $durum dosyasina yazilir; sistem durumu
+    # bunu okur. Cikti yakalanmaz (*>&1 kullanilmaz: PowerShell 5.1'de stderr'i hataya cevirebilir).
+    # Bu adimlarin HICBIRI cikis kodunu degistirmez.
+    $durum = "$log.durum"
+    function Not([string]$m) { Write-Host $m; Add-Content -Path $durum -Value $m -Encoding UTF8 }
+    # LIVE_V2 (GLD tabanli teorik): yalnizca aksam; LIVE_V1 etkilenmez.
     if ($Gorev -eq "aksam") {
         try {
             & ".\scripts\teorik_v2.ps1"
-            if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: LIVE_V2 adimi basarisiz (LIVE_V1 etkilenmedi)." }
+            if ($LASTEXITCODE -ne 0) { Not "UYARI: LIVE_V2 adimi basarisiz (LIVE_V1 etkilenmedi)." }
         }
-        catch { Write-Host "UYARI: LIVE_V2 hatasi (LIVE_V1 etkilenmedi): $_" }
+        catch { Not "UYARI: LIVE_V2 hatasi (LIVE_V1 etkilenmedi): $_" }
     }
-    # Veritabani aynasi (SQL Server / SQLite): kayitlari okur; tahmin sonucunu ve cikis kodunu ETKILEMEZ.
+    # Veritabani aynasi (SQL Server / SQLite): kayitlari okur.
     try {
         & ".\.venv\Scripts\python.exe" -m src.db.store load
-        if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: veritabani yuklemesi basarisiz (kayitlar etkilenmedi)." }
+        if ($LASTEXITCODE -ne 0) { Not "UYARI: veritabani yuklemesi basarisiz (kayitlar etkilenmedi)." }
     }
-    catch { Write-Host "UYARI: veritabani yukleme hatasi (kayitlar etkilenmedi): $_" }
-    # Veri yedegi: tahmin sonucunu ve cikis kodunu ETKILEMEZ; yalnizca uyari yazar.
+    catch { Not "UYARI: veritabani yukleme hatasi (kayitlar etkilenmedi): $_" }
+    # Veri yedegi
     if ($env:ALTIN_YEDEK) {
         try {
             & ".\scripts\yedekle.ps1" -Hedef $env:ALTIN_YEDEK
-            if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: yedekleme basarisiz (tahmin kaydi etkilenmedi)." }
+            if ($LASTEXITCODE -eq 0) { Not "YEDEK TAMAM" } else { Not "UYARI: yedekleme basarisiz (tahmin kaydi etkilenmedi)." }
         }
-        catch { Write-Host "UYARI: yedekleme hatasi (tahmin kaydi etkilenmedi): $_" }
+        catch { Not "UYARI: yedekleme hatasi (tahmin kaydi etkilenmedi): $_" }
     }
-    else { Write-Host "UYARI: ALTIN_YEDEK tanimli degil; veri yedegi alinmadi." }
+    else { Not "UYARI: ALTIN_YEDEK tanimli degil; veri yedegi alinmadi." }
+    # GitHub esitlemesi (merge, rebase YOK; ayrinti gunlukte)
+    try {
+        & ".\scripts\git_esitle.ps1"
+        if ($LASTEXITCODE -eq 0) { Not "ESITLEME TAMAM" } else { Not "ESITLEME HATA: ayrinti gunlukte" }
+    }
+    catch { Not "ESITLEME HATA: $_" }
+    # Sistem durumu (data/processed/health/status.json; pano gosterir)
+    try {
+        & ".\.venv\Scripts\python.exe" -m src.health write --gorev $Gorev --kod $kod --log $log --durum $durum
+        if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: sistem durumu yazilamadi." }
+    }
+    catch { Write-Host "UYARI: sistem durumu hatasi: $_" }
     Write-Host "Bitis: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | cikis kodu: $kod"
 }
 catch {

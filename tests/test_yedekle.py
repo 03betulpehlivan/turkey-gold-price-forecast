@@ -56,7 +56,7 @@ class TestWrapperCall(unittest.TestCase):
         start = WRAP.index("yedekle.ps1")
         end = WRAP.index("Write-Host \"Bitis")
         block = WRAP[start:end]
-        self.assertNotIn("$kod", block)
+        self.assertNotRegex(block, r"\$kod\s*=")             # okunabilir (sistem durumu), atanamaz
         self.assertNotIn("exit", block)
         self.assertIn("catch {", block)                       # yedek istisnasi dis catch'e ulasmaz
 

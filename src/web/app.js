@@ -132,7 +132,31 @@ function sinavListesi(kutu, sinavlar) {
   });
 }
 
+const DURUM = { TAMAM: "sorunsuz", UYARI: "uyarı var", HATA: "hata var" };
+const GOREV = { sabah: "Sabah görevi (12:30)", aksam: "Akşam görevi (22:30)" };
+const DENETIM = { zaman: "Zamanlama", gorev: "Görev", gunluk: "Günlük", yedek: "Yedek", github: "GitHub",
+                  tahmin: "Tahmin", butunluk: "Bütünlük" };
+async function sistemDurumu() {
+  const kutu = document.getElementById("sistem");
+  kutu.replaceChildren();
+  let s;
+  try { s = await al("/api/system"); } catch (e) { kutu.append(el("p", { class: "bos" }, "Sistem durumu alınamadı.")); return; }
+  kutu.className = `sistem ${s.overall}`;
+  kutu.append(el("h2", {}, `Sistem: ${DURUM[s.overall] || s.overall}`));
+  Object.entries(s.tasks).forEach(([ad, g]) => {
+    const zaman = g.at ? new Date(g.at).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" }) : "kayıt yok";
+    const blok = el("div", { class: "gorev" }, el("div", {}, `${GOREV[ad] || ad}: son çalışma ${zaman}, ${DURUM[g.overall] || g.overall}`));
+    const sorun = g.checks.filter(c => c.status !== "TAMAM");
+    if (sorun.length) blok.append(el("ul", {}, ...sorun.map(c => el("li", { class: c.status }, `${DENETIM[c.name] || c.name}: ${c.detail}`))));
+    const tum = el("details", {}, el("summary", {}, "Tüm denetimler"),
+                   el("ul", {}, ...g.checks.map(c => el("li", { class: c.status }, `${DENETIM[c.name] || c.name}: ${c.detail}`))));
+    blok.append(tum);
+    kutu.append(blok);
+  });
+}
+
 async function yukle() {
+  sistemDurumu();
   const durum = document.getElementById("durum");
   try {
     const saglik = await al("/api/health");

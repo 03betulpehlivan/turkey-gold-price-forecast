@@ -23,6 +23,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from src import health as hl
 from src.db import store
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
@@ -75,6 +76,12 @@ def health():
     except Exception as e:  # veritabani yok veya ulasilamiyor
         return {"status": "veritabani_yok", "db": store.redact(store.db_url()), "detail": type(e).__name__}
     return {"status": "ok" if last else "bos", "db": store.redact(store.db_url()), "last_load": last}
+
+
+@app.get("/api/system")
+def system():
+    """Zamanlanmis gorevlerin son durumu ve zaman cizelgesi (veritabani gerektirmez)."""
+    return hl.system_status()
 
 
 @app.get("/api/protocols")

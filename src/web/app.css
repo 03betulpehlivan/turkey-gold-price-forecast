@@ -53,3 +53,13 @@
     .satir, .eksen { grid-template-columns: 96px 84px 1fr; }
     .sinav { grid-template-columns: 1fr; }
   }
+  .sistem { margin-top: 16px; padding: 12px 16px; border: 1px solid var(--cizgi); border-left: 4px solid var(--gercek);
+            background: var(--yuzey); }
+  .sistem.UYARI { border-left-color: var(--pirinc); }
+  .sistem.HATA { border-left-color: var(--uyari); }
+  .sistem h2 { margin: 0 0 4px; font-size: 1rem; }
+  .sistem ul { margin: 4px 0 0; padding-left: 18px; }
+  .sistem .gorev { margin-top: 8px; }
+  .sistem details { margin-top: 8px; color: var(--soluk); font-size: 0.85rem; }
+  .sistem .HATA { color: var(--uyari); }
+  .sistem .UYARI { color: var(--pirinc); }
