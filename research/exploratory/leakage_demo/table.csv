@@ -1,0 +1,14 @@
+kurulum,model,r2_level,mape_pct,mae_tl,vs_rw_pct,oos_r2_return,dm_p,direction_hit_pct
+K1_literatur_rastgele_bolme,Yarin=bugun,0.999252,1.04767,2.48765,0,,,
+K1_literatur_rastgele_bolme,Dogrusal,0.999017,1.12746,2.78079,-11.7842,,,
+K1_literatur_rastgele_bolme,XGBoost,0.998874,1.35358,3.1984,-28.5714,,,
+K1_literatur_rastgele_bolme,LSTM,0.998063,2.32807,4.30264,-72.9602,,,
+K2_kronolojik_seviye,Yarin=bugun,0.996721,1.17419,7.35354,0,,,
+K2_kronolojik_seviye,Dogrusal,0.996634,1.22291,7.6715,-4.3238,,,
+K2_kronolojik_seviye,XGBoost,-1.62056,45.8688,332.703,-4424.39,,,
+K2_kronolojik_seviye,LSTM,0.104497,21.2212,171.397,-2230.8,,,
+K3_dogru_walk_forward,Yarin=bugun,0.999021,0.910343,2.90601,0,0,,
+K3_dogru_walk_forward,Ortalama,0.999024,0.909484,2.8918,0.489069,0.00336779,0.0101426,53.0658
+K3_dogru_walk_forward,Dogrusal,0.999011,0.925603,2.94174,-1.22955,-0.0202964,0.137052,51.1334
+K3_dogru_walk_forward,XGBoost,0.999024,0.938528,2.95597,-1.71928,-0.0301195,0.0875398,51.6908
+K3_dogru_walk_forward,LSTM,0.999045,0.911448,2.88811,0.616062,0.00860107,0.188964,52.6198
