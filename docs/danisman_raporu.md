@@ -193,6 +193,11 @@ Veri boru hattı ─► Modeller ─► Canlı kayıtlar (Git, satır özetli, d
 - **Veritabanı:** Microsoft SQL Server (LocalDB). Git'teki kayıtlar her görevden sonra doğrulanıp veritabanına yansıtılıyor; bozuk bir kayıt varsa hiçbir şey yazılmıyor.
 - **REST API (FastAPI):** yalnızca okuma yapıyor: tahminler, karne, fiyatlar, performans eğrisi, sınavlar, araştırma bulguları, sistem durumu. Belgeleri `/docs` adresinde.
 - **Web panosu:** bugünün tahminleri (aralık bantlarıyla), son puanlanan gün, fiyat grafiği, ara karne, canlı performans eğrisi, bağımsız sınavlar ve araştırma bulguları.
+
+![Web panosu: bugünün fiziki tahmini ve son puanlanan gün](figures/pano_tahmin.png)
+
+![Web panosu: araştırma bulguları (sayılar kayıtlı sonuç dosyalarından otomatik okunur)](figures/pano_bulgular.png)
+
 - **Güvenlik:**
   - Pano yalnızca yerel bilgisayardan erişilebiliyor; sıkı bir içerik güvenlik politikası (CSP) uygulanıyor.
   - GitHub'da `main` dalı korumalı: silinemez, zorla push yapılamaz.

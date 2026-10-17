@@ -14,6 +14,7 @@ Machine learning-based forecasting and analysis of **physical** and **theoretica
 - [Overview](#overview)
 - [Key Findings](#key-findings)
 - [Live System](#live-system)
+- [Web Dashboard](#web-dashboard)
 - [System Architecture](#system-architecture)
 - [Methodology](#methodology)
 - [Tech Stack](#tech-stack)
@@ -23,7 +24,6 @@ Machine learning-based forecasting and analysis of **physical** and **theoretica
 - [Literature Review](#literature-review)
 - [Roadmap](#roadmap)
 - [Limitations](#limitations)
-- [Contributors](#contributors)
 - [License](#license)
 
 ---
@@ -88,6 +88,14 @@ Every result is labelled as **exploratory** (development data; model selection h
 - **Integrity:** records are append-only with per-row hashes, scored automatically and committed to git daily.
 - **Automation:** Windows Task Scheduler, weekdays 12:30 (retry 13:30) and 22:30.
 - **Evaluation:** one-shot, pre-registered, after 120 scored forecasts (~April 2027).
+
+## Web Dashboard
+
+A local, read-only dashboard served by the FastAPI application (`scripts\pano.ps1`, http://127.0.0.1:8000) and backed by the SQL Server mirror. It shows the system status, today's forecasts with 80% / 95% interval bands, the last scored day against the realized price, a price chart, the interim scorecard, the live performance curve, the independent exams and the research findings.
+
+![Dashboard: today's physical forecast and the last scored day](docs/figures/pano_tahmin.png)
+
+![Dashboard: research findings, read automatically from the committed result files](docs/figures/pano_bulgular.png)
 
 ## System Architecture
 
@@ -154,6 +162,7 @@ turkey-gold-price-forecast/
 │   └── report_figures.py  # report figures from committed results
 ├── tests/                 # unit tests (synthetic data)
 ├── Literatur_Taramasi_Raporu_Gram_Altin.pdf
+├── LICENSE
 ├── requirements.txt
 └── README.md
 ```
@@ -229,13 +238,6 @@ A comparative literature review of 23 studies on machine learning-based gold pri
 - The 2001–2004 exchange archive is sparse (~170 days/year), limiting the backward exam's power.
 - With 120 forecasts, interval calibration tests detect only large deviations.
 - **This project is for research and education only and is not financial advice.**
-
-## Contributors
-
-| Name | GitHub | Focus Area |
-|------|--------|------------|
-| Betül Pehlivan | [@03betulpehlivan](https://github.com/03betulpehlivan) | TBD |
-| Enes Karaca | [@EnesKaraca44](https://github.com/EnesKaraca44) | TBD |
 
 ## License
 
