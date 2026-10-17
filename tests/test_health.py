@@ -174,14 +174,36 @@ class TestStatus(unittest.TestCase):
         durum = self.tmp / "sabah.log.durum"
         durum.write_bytes("\ufeffYEDEK TAMAM\nESITLEME TAMAM\n".encode("utf-8"))           # PowerShell BOM'u
         with mock.patch.object(health, "STATUS_PATH", self.path), \
+                mock.patch.object(health, "HEARTBEAT_PATH", self.tmp / "heartbeat.json"), \
                 mock.patch.object(health, "_audit", OK_AUDIT), mock.patch.object(health, "ROOT", self.tmp):
             import contextlib
             import io
             with contextlib.redirect_stdout(io.StringIO()):
                 health.main(["write", "--gorev", "sabah", "--kod", "1", "--log", str(log), "--durum", str(durum)])
+        hb = json.loads((self.tmp / "heartbeat.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(hb), {"sabah"})
+        self.assertEqual(hb["sabah"]["overall"], "UYARI")
+        self.assertEqual(hb["sabah"]["problems"], ["gorev"])
         e = json.loads(self.path.read_text(encoding="utf-8"))["sabah"]
         m = {c["name"]: c["status"] for c in e["checks"]}
         self.assertEqual((m["gorev"], m["yedek"]), ("UYARI", "TAMAM"))
+
+
+class TestHeartbeat(unittest.TestCase):
+    def test_heartbeat_keeps_both_tasks_and_no_details(self):
+        tmp = Path(tempfile.mkdtemp(prefix="hb_"))
+        self.addCleanup(rmtree, tmp)
+        p = tmp / "heartbeat.json"
+        e = {"task": "sabah", "at": "2026-10-19T12:41:00+03:00", "kod": 0, "overall": "UYARI",
+             "checks": [{"status": "UYARI", "name": "tahmin", "detail": "GIZLI_AYRINTI"},
+                        {"status": "TAMAM", "name": "gorev", "detail": "x"}]}
+        health.write_heartbeat(e, p)
+        health.write_heartbeat(dict(e, task="aksam", overall="TAMAM", checks=[]), p)
+        hb = json.loads(p.read_text(encoding="utf-8"))
+        self.assertEqual(set(hb), {"sabah", "aksam"})
+        self.assertEqual(hb["sabah"]["problems"], ["tahmin"])
+        self.assertNotIn("GIZLI_AYRINTI", p.read_text(encoding="utf-8"))
+        self.assertNotIn(b"\r\n", p.read_bytes())
 
 
 class TestScripts(unittest.TestCase):
@@ -216,6 +238,18 @@ class TestScripts(unittest.TestCase):
         self.assertIn("--kod $kod --log $log --durum $durum", w)
         self.assertIn('Not "YEDEK TAMAM"', w)
         self.assertIn('Not "ESITLEME TAMAM"', w)
+
+    def test_heartbeat_committed_alone_after_status(self):
+        w = self.code(self.wrap)
+        i = w.index('$kalp = "research/live/heartbeat.json"')
+        self.assertLess(w.index("src.health write"), i)
+        self.assertLess(i, w.index('Write-Host "Bitis'))
+        block = w[i:w.index('Write-Host "Bitis')]
+        self.assertIn('git commit -q -m "Kalp atisi ($Gorev)" -- $kalp', block)
+        self.assertIn("git_esitle.ps1", block)
+        self.assertNotRegex(block, r"git add (-A|\.|--all)")
+        self.assertNotRegex(block, r"\$kod\s*=")
+        self.assertIn("catch {", block)
 
     def test_dashboard_shows_system_status(self):
         html = (PROJECT_ROOT / "src" / "web" / "index.html").read_text(encoding="utf-8")

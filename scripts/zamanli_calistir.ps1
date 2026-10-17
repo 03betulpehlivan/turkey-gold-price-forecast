@@ -54,6 +54,20 @@ try {
         if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: sistem durumu yazilamadi." }
     }
     catch { Write-Host "UYARI: sistem durumu hatasi: $_" }
+    # Kalp atisi: yalnizca research/live/heartbeat.json commit edilir ve gonderilir (GitHub'daki bekci okur).
+    try {
+        $kalp = "research/live/heartbeat.json"
+        if (Test-Path $kalp) {
+            git add $kalp
+            git diff --cached --quiet -- $kalp
+            if ($LASTEXITCODE -ne 0) {
+                git commit -q -m "Kalp atisi ($Gorev)" -- $kalp
+                & ".\scripts\git_esitle.ps1"
+                if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: kalp atisi GitHub'a gonderilemedi." }
+            }
+        }
+    }
+    catch { Write-Host "UYARI: kalp atisi hatasi: $_" }
     Write-Host "Bitis: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | cikis kodu: $kod"
 }
 catch {

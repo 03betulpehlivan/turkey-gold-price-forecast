@@ -1,0 +1,24 @@
+# Bekci: zamanlanmis gorevlerin kalp atisini GitHub uzerinden denetler (bilgisayardan bagimsiz).
+# Hafta ici 11:20 ve 20:15 UTC = 14:20 ve 23:15 Istanbul. Sorun varsa is akisi basarisiz olur ve GitHub
+# depo sahibine e-posta gonderir. Yalnizca standart kutuphane kullanilir; paket kurulmaz.
+name: watchdog
+
+on:
+  schedule:
+    - cron: "20 11 * * 1-5"
+    - cron: "15 20 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Kalp atisi denetimi
+        run: python3 -m src.watchdog

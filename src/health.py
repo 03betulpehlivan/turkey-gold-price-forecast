@@ -8,6 +8,8 @@ Kullanim (proje kokunden):
       # son durum + zaman cizelgesi kontrolu (beklenen calisma olmadiysa HATA)
 
 Durum kaydi: data/processed/health/status.json (Git'e girmez). Her gorev icin SON calisma tutulur.
+Kalp atisi: research/live/heartbeat.json (Git'e GIRER; yalnizca zaman, genel durum ve sorunlu denetim adlari).
+  GitHub'daki bekci (.github/workflows/watchdog.yml, src/watchdog.py) bunu okuyup gerekirse e-posta ile uyarir.
 Bir calismanin denetimleri:
   gorev        betigin cikis kodu (ilk push basarisiz ama esitleme gondermisse UYARI)
   gunluk       kayittaki "UYARI:" satirlari (LIVE_V2, veritabani, yedek ...)
@@ -31,6 +33,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 STATUS_PATH = ROOT / "data" / "processed" / "health" / "status.json"
+HEARTBEAT_PATH = ROOT / "research" / "live" / "heartbeat.json"      # Git'e girer; GitHub'daki bekci okur
 TZ = "Europe/Istanbul"
 SCHEDULE = {"sabah": (12, 30), "aksam": (22, 30)}
 GRACE_MIN = 45
@@ -141,6 +144,20 @@ def write(entry: dict, path: Path = None) -> Path:
     return path
 
 
+def write_heartbeat(entry: dict, path: Path = None) -> Path:
+    """Kalp atisi: her gorev icin son calisma zamani, genel durum ve sorunlu denetim adlari.
+    Ayrinti ve gizli bilgi icermez. GitHub'daki bekci (src/watchdog.py) bunu okur."""
+    path = Path(path or HEARTBEAT_PATH)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    data[entry["task"]] = {"at": entry["at"], "overall": entry["overall"], "kod": entry["kod"],
+                           "problems": sorted({c["name"] for c in entry["checks"] if c["status"] != OK})}
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    tmp.replace(path)
+    return path
+
+
 # ---------------------------------------------------------------------------
 # Okuma aninda: son durum + zaman cizelgesi
 # ---------------------------------------------------------------------------
@@ -185,6 +202,7 @@ def main(argv=None) -> int:
                          for p in (args.log, args.durum) if p is not None and p.exists())
         e = collect(args.gorev, args.kod, text)
         print(f"SISTEM DURUMU ({args.gorev}): {e['overall']} -> {write(e)}")
+        print(f"  Kalp atisi: {write_heartbeat(e)}")
         for c in e["checks"]:
             print(f"  [{c['status']:5s}] {c['name']}: {c['detail']}")
         return 0
