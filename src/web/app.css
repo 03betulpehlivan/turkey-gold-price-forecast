@@ -63,3 +63,14 @@
   .sistem details { margin-top: 8px; color: var(--soluk); font-size: 0.85rem; }
   .sistem .HATA { color: var(--uyari); }
   .sistem .UYARI { color: var(--pirinc); }
+  .bulgular { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .bulgu { background: var(--yuzey); border: 1px solid var(--cizgi); padding: 16px; }
+  .bulgu h3 { margin: 0 0 6px; font-size: 1rem; }
+  .bulgu p { margin: 6px 0 0; }
+  .bulgu small { display: block; margin-top: 8px; color: var(--soluk); }
+  .etiket { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border: 1px solid currentColor; }
+  .etiket.olumlu { color: var(--gercek); }
+  .etiket.olumsuz { color: var(--soluk); }
+  .etiket.kismen { color: var(--pirinc); }
+  code { font-size: 0.85em; }
+  @media (max-width: 720px) { .bulgular { grid-template-columns: 1fr; } }

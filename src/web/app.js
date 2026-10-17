@@ -155,7 +155,55 @@ async function sistemDurumu() {
   });
 }
 
+const s2 = (v, d = 1) => v == null ? "—" : Number(v).toLocaleString("tr-TR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const pyaz = p => p == null ? "—" : (p < 0.001 ? "< 0,001" : s2(p, 3));
+const yz = v => v == null ? "—" : (v < 0 ? "−%" : "%") + s2(Math.abs(v));
+const BULGU = {
+  sizinti: v => ({ baslik: "Literatürdeki yüksek başarı yanıltıcı", etiket: ["olumsuz", "Günlük yön tahmin edilemiyor"],
+    metin: `Rastgele bölme ve fiyat seviyesinde ölçümle “yarın = bugün” bile R² ${s2(v.k1_r2_rw, 4)} alıyor; LSTM ` +
+      `R² ${s2(v.k1_r2_lstm, 4)} alırken aslında ondan ${yz(Math.abs(v.k1_lstm_vs_rw_pct))} daha kötü. Doğru kurulumda ` +
+      `(${v.period}, ${v.n} gün) en iyi model ${v.k3_best_model}: yarın = bugün'e göre ${yz(v.k3_best_vs_rw_pct)}, ` +
+      `p ${pyaz(v.k3_best_dm_p)}; yön isabeti %${s2(v.k3_hit_min)}–%${s2(v.k3_hit_max)}.` }),
+  oynaklik: v => ({ baslik: "Oynaklık tahmin edilebiliyor", etiket: ["olumlu", "Tahmin edilebiliyor"],
+    metin: `GARCH, oynaklığı sabit sayan modeli ${v.garch_years_better}/${v.years} yılda geçiyor ve aralık ihlalleri ` +
+      `kümelenmiyor (Christoffersen p ${pyaz(v.garch_christoffersen80_p)}; sabit modelde p ${pyaz(v.sabit_christoffersen80_p)}). ` +
+      `%80 aralığın kapsamı %${s2(100 * v.garch_cov80)}. Ortalama kayıp testi kriz günlerinin ağırlığı yüzünden anlamsız (p ${pyaz(v.garch_dm_p)}).` }),
+  bilesen: v => ({ baslik: "GVZ'nin kriz başarısızlığının nedeni: kur", etiket: ["kismen", "Teşhis doğrulandı"],
+    metin: `Kur oynaklığı eklenince 2018 (${s2(v.gvz_2018, 2)} → ${s2(v.bilesengvz_2018, 2)}) ve 2021 ` +
+      `(${s2(v.gvz_2021, 2)} → ${s2(v.bilesengvz_2021, 2)}) düzeliyor; ancak hiçbir bileşen modeli GARCH'ı anlamlı ` +
+      `biçimde geçmiyor (en iyi QLIKE farkı ${s2(v.best_vs_garch, 3)}).` }),
+  trend: v => ({ baslik: "Makro göstergeler ek bilgi taşımıyor", etiket: ["olumsuz", "Yalnız TL eğilimi"],
+    metin: `Aylık ufukta (${v.ay.n} ay) yalnız TL eğilimi yarın = bugün'ü geçiyor (${yz(v.ay.ortalama_vs_rw_pct)}, ` +
+      `p ${pyaz(v.ay.ortalama_dm_p)}); momentum, kur, faiz ve reel faiz eğilimi geçemiyor (${yz(v.ay.dogrusal_vs_ortalama_pct)}). ` +
+      `Lojistik modelin yön isabeti %${s2(v.ay.lojistik_hit_pct)}, “her zaman yükselir” kuralınınki %${s2(v.ay.hep_yukari_hit_pct)}.` }),
+  prim: v => ({ baslik: "Fiziki prim hızla ortalamasına dönüyor", etiket: ["olumlu", "Tahmin edilebiliyor"],
+    metin: `Haftalık prim katsayısı ${s2(v.phi, 2)} [${s2(v.phi_ci95[0], 2)}, ${s2(v.phi_ci95[1], 2)}], yarı ömür ` +
+      `${s2(v.half_life_weeks)} hafta. Gelecek haftanın priminde AR(1) yarın = bugün'den ${yz(v.ar1_vs_rw_pct)} iyi ` +
+      `(p ${pyaz(v.ar1_dm_p)}). 2023 sonrası kalıcı prim bu dönemde emsalsiz.` }),
+  geriye_donuk: v => ({ baslik: "Gece ons bilgisi bağımsız veride doğrulanmadı", etiket: ["olumsuz", v.supported ? "Desteklendi" : "Desteklenmedi"],
+    metin: `Geriye dönük sınav (${v.period[0].slice(0, 4)}–${v.period[1].slice(0, 4)}, ${v.n} gün): yarın = bugün'e göre ` +
+      `${yz(v.ons_vs_rw_pct)} [${yz(v.ons_vs_rw_ci[0])}, ${yz(v.ons_vs_rw_ci[1])}], p ${pyaz(v.ons_vs_rw_p)}; yalnız eğilime ` +
+      `göre ${yz(v.ons_vs_egilim_pct)}, p ${pyaz(v.ons_vs_egilim_p)}.` })
+};
+async function bulgular() {
+  const kutu = document.getElementById("bulgular");
+  kutu.replaceChildren();
+  let d;
+  try { d = await al("/api/findings"); } catch (e) { kutu.append(el("p", { class: "bos" }, "Bulgular alınamadı.")); return; }
+  d.items.forEach(it => {
+    if (!it.available || !BULGU[it.id]) {
+      kutu.append(el("div", { class: "bulgu" }, el("h3", {}, it.id), el("p", { class: "bos" }, `Sonuç dosyası yok: ${it.source}`)));
+      return;
+    }
+    let b;
+    try { b = BULGU[it.id](it.values); } catch (e) { b = { baslik: it.id, etiket: ["kismen", "Okunamadı"], metin: "Değerler eksik." }; }
+    kutu.append(el("div", { class: "bulgu" }, el("h3", {}, b.baslik), el("span", { class: `etiket ${b.etiket[0]}` }, b.etiket[1]),
+                   el("p", {}, b.metin), el("small", {}, `Kaynak: ${it.source}`)));
+  });
+}
+
 async function yukle() {
+  bulgular();
   sistemDurumu();
   const durum = document.getElementById("durum");
   try {

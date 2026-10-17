@@ -23,6 +23,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from src import findings as fd
 from src import health as hl
 from src.db import store
 
@@ -82,6 +83,12 @@ def health():
 def system():
     """Zamanlanmis gorevlerin son durumu ve zaman cizelgesi (veritabani gerektirmez)."""
     return hl.system_status()
+
+
+@app.get("/api/findings")
+def findings():
+    """Kesif calismalarinin ve geriye donuk sinavin anahtar sayilari (kayitli sonuc dosyalarindan)."""
+    return {"items": fd.collect()}
 
 
 @app.get("/api/protocols")
