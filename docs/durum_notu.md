@@ -1,33 +1,21 @@
-# Durum Notu (15 Ekim 2026)
+# Durum Notu (17 Ekim 2026)
 
 Ayrıntılı ara rapor: [danisman_raporu.md](danisman_raporu.md). Bu not yalnızca güncel durumu özetler.
 
-## Tamamlanan
+## Çalışan sistem
 
-- **Bağımsız sınavlar (tek seferlik, tekrar çalıştırılmaz):**
-  - `FINAL_EXAM_V1` (teorik, 2026): nokta tahmini "yarın = bugün" ile **pratikte eşdeğer**. Aralıklarda Christoffersen %80 koşulu **sağlanmadı**.
-  - `FINAL_EXAM_PHYS_V1` (fiziki, 2023-01 – 2026-10): Boşluk modeli RW'den **%9,1 daha kötü** (p = 0,03).
-- **Canlı protokoller (ön kayıtlı, 15.10.2026'dan beri):**
-  - `LIVE_PHYS_V1` ve `LIVE_PHYS_INT_V1`: sabah fiziki tahmin ve aralıklar.
-  - `LIVE_V1`: akşam eşanlı teorik tahmin. Değerlendirme kuralı, ilk sonuç görülmeden önce `research/preregistration/live_v1.json` ile donduruldu (`src/live/forecast_eval.py`). Aynı ön kayıtla `forecast.py`, `sync_dataset.py`, `adaptive.py`, `intervals.py`, `implied_vol.py` ve `train.py` kilitlendi. Bunlardan biri değişirse sonraki teorik tahminler değerlendirmeye girmez.
-- **Otomasyon:** Windows Görev Zamanlayıcı ile hafta içi 12:30 / 13:30 (sabah) ve 22:30 (akşam).
-- **Veri yedeği:** Her zamanlanmış çalışmanın sonunda `data\raw`, `data\processed` ve `logs` klasörleri `ALTIN_YEDEK` hedefine kopyalanır (`scripts/yedekle.ps1`). Hedefte hiçbir şey silinmez.
-- **Sürekli test:** GitHub Actions her kod değişikliğinde bütün birim testlerini Ubuntu'da çalıştırır.
+- **Canlı protokoller (15.10.2026'dan beri, ön kayıtlı):** `LIVE_PHYS_V1` ve `LIVE_PHYS_INT_V1` (sabah fiziki tahmin ve aralıklar), `LIVE_V1` (akşam teorik tahmin, vadeli ons) ve `LIVE_V2` (aynı model, ons kaynağı GLD). Değerlendirme 120 tahminden sonra bir kez yapılacak (~Nisan 2027).
+- **Otomasyon:** hafta içi 12:30 (yedek 13:30) ve 22:30; her çalışmanın sonunda veritabanı yüklemesi, yedek, GitHub eşitlemesi ve sistem durumu.
+- **Sistem katmanı:** SQL Server (LocalDB) aynası, salt okunur FastAPI ve web panosu (`scripts\pano.ps1`).
+- **Koruma:** her push'ta ve her gün bütünlük denetimi (`python -m src.audit`), GitHub'da bekçi (görev çalışmazsa e-posta), korumalı `main` dalı, SHA ile sabit eylemler, haftalık bağımlılık taraması.
+- **Yeniden üretim:** `python -m src.repro`, bütün keşif çalışmalarını ve geriye dönük sınavı baştan hesaplayıp kayıtlı sonuçlarla karşılaştırır.
 
-## Vadeli kontrat değişimi (teorik seri) ve spot ons taraması
+## Tamamlanan çalışmalar
 
-- GC=F kontrat değişim günlerinde %1,5–1,9'luk sahte sıçrama gösteriyor (örneğin 2025-07-30 ve 2026-07-29). Bir sonraki değişim Kasım sonunda bekleniyor. `LIVE_V1` ön kaydı bu günleri yalnızca ikincil duyarlılık analizinde dışlıyor; birincil sonuç bütün günleri kapsıyor.
-- **Spot ons taraması (15.10.2026, teşhis; `research/diagnostics/spot_probe_20261015.json`):**
-  - XAUUSD=X: Yahoo'da veri yok.
-  - GLD ve IAU önceden sabitlenen kuralı geçti: kontrat günlerinde z = +8,7 / +9,2 (sıçrama ETF'de yok), diğer günlerde getiri korelasyonu 0,982, ortak gün 496 (kapsam %98,8).
-  - Kural kapsamı en yüksek adayı seçiyor; kapsamlar eşit olduğundan listede önce gelen **GLD** seçildi.
-  - Sınırlamalar: ETF çubuğu 14:00 yerine **13:30 NY**'de kapanıyor (kurla 30 dakika fark); günlük getiri farkının medyanı 13 baz puan; GLD bir ETF olduğu için ons fiyatına oranı yönetim ücreti ve taşıma farkıyla zamanla kayıyor (GC=F / GLD oranı 10,89 → 10,98).
-- **Karar:** `LIVE_V1` değişmeden devam ediyor. GLD tabanlı teorik tahmin yeni protokol kimliğiyle (`LIVE_V2`) Kasım ortasından önce başlatılacak; böylece Kasım sonundaki kontrat değişiminde iki protokol yan yana kaydedilecek.
+- Bağımsız sınavlar: `FINAL_EXAM_V1`, `FINAL_EXAM_PHYS_V1`, `BACK_EXAM_ONS_V1` (hiçbirinde model RW'yi geçemedi).
+- Keşif çalışmaları: sızıntı gösterimi ve LSTM, oynaklık, TL oynaklığı bileşen modeli, haftalık/aylık trend ve makro göstergeler, fiziki prim, güç analizi.
 
-## Sıradaki adımlar
+## Takvim
 
-1. 2001–2004 geriye dönük bağımsız sınav ("yalnız ons" modeli; daha önce hiçbir seçimde kullanılmamış dönem).
-2. `LIVE_V2` (GLD tabanlı teorik tahmin; Kasım ortasından önce).
-3. SQL Server, REST API ve web arayüzü.
-4. Haftalık/aylık trend, makro göstergeler, sızıntı gösterimi ve LSTM (keşif).
-5. Nisan 2027: canlı protokollerin tek seferlik değerlendirmesi.
+- **Kasım 2026 sonu:** vadeli kontrat değişimi; `LIVE_V1` ve `LIVE_V2` karşılaştırması.
+- **~Nisan 2027:** canlı protokollerin tek seferlik değerlendirmesi.
