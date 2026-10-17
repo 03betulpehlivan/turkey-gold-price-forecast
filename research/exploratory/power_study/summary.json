@@ -1,0 +1,247 @@
+{
+  "nature": "KESIF (betimleyici); on kayitli canli degerlendirmeyi DEGISTIRMEZ",
+  "config": {
+    "eval_n": 120,
+    "step": 10,
+    "alpha": 0.05,
+    "holm_k": 3,
+    "effects_pct": [
+      0,
+      2,
+      5,
+      10,
+      15,
+      20,
+      30,
+      40
+    ],
+    "reps": 5000,
+    "seed": 20260101
+  },
+  "physical_bosluk_vs_rw": {
+    "n_days": 2545,
+    "n_windows": 243,
+    "curve": [
+      {
+        "effect_pct": 0,
+        "power": 0.04526748971193416,
+        "power_holm3": 0.01646090534979424,
+        "reject_two_sided": 0.1934156378600823
+      },
+      {
+        "effect_pct": 2,
+        "power": 0.05761316872427984,
+        "power_holm3": 0.0411522633744856,
+        "reject_two_sided": 0.13580246913580246
+      },
+      {
+        "effect_pct": 5,
+        "power": 0.09876543209876543,
+        "power_holm3": 0.053497942386831275,
+        "reject_two_sided": 0.11934156378600823
+      },
+      {
+        "effect_pct": 10,
+        "power": 0.3168724279835391,
+        "power_holm3": 0.17695473251028807,
+        "reject_two_sided": 0.3168724279835391
+      },
+      {
+        "effect_pct": 15,
+        "power": 0.6213991769547325,
+        "power_holm3": 0.522633744855967,
+        "reject_two_sided": 0.6213991769547325
+      },
+      {
+        "effect_pct": 20,
+        "power": 0.9300411522633745,
+        "power_holm3": 0.8189300411522634,
+        "reject_two_sided": 0.9300411522633745
+      },
+      {
+        "effect_pct": 30,
+        "power": 1.0,
+        "power_holm3": 0.9794238683127572,
+        "reject_two_sided": 1.0
+      },
+      {
+        "effect_pct": 40,
+        "power": 1.0,
+        "power_holm3": 1.0,
+        "reject_two_sided": 1.0
+      }
+    ],
+    "size_at_zero": 0.1934156378600823,
+    "mde80_pct": 20,
+    "mde80_holm3_pct": 20,
+    "observed": {
+      "full_period_improvement_pct": 23.257462245072,
+      "window_improvement_p10_p50_p90": [
+        17.830807030618118,
+        22.917814001993122,
+        29.126928549354425
+      ],
+      "share_windows_significant": 0.9876543209876543
+    }
+  },
+  "theoretical_mean_vs_rw_proxy": {
+    "n_days": 2761,
+    "n_windows": 265,
+    "curve": [
+      {
+        "effect_pct": 0,
+        "power": 0.06792452830188679,
+        "power_holm3": 0.026415094339622643,
+        "reject_two_sided": 0.06792452830188679
+      },
+      {
+        "effect_pct": 2,
+        "power": 0.9132075471698113,
+        "power_holm3": 0.7962264150943397,
+        "reject_two_sided": 0.9132075471698113
+      },
+      {
+        "effect_pct": 5,
+        "power": 1.0,
+        "power_holm3": 1.0,
+        "reject_two_sided": 1.0
+      },
+      {
+        "effect_pct": 10,
+        "power": 1.0,
+        "power_holm3": 1.0,
+        "reject_two_sided": 1.0
+      },
+      {
+        "effect_pct": 15,
+        "power": 1.0,
+        "power_holm3": 1.0,
+        "reject_two_sided": 1.0
+      },
+      {
+        "effect_pct": 20,
+        "power": 1.0,
+        "power_holm3": 1.0,
+        "reject_two_sided": 1.0
+      },
+      {
+        "effect_pct": 30,
+        "power": 1.0,
+        "power_holm3": 1.0,
+        "reject_two_sided": 1.0
+      },
+      {
+        "effect_pct": 40,
+        "power": 1.0,
+        "power_holm3": 1.0,
+        "reject_two_sided": 1.0
+      }
+    ],
+    "size_at_zero": 0.06792452830188679,
+    "mde80_pct": 2,
+    "mde80_holm3_pct": 5,
+    "observed": {
+      "full_period_improvement_pct": 0.05740554303792701,
+      "window_improvement_p10_p50_p90": [
+        -0.7261685687699955,
+        -0.054803806069318825,
+        0.8845564935871625
+      ],
+      "share_windows_significant": 0.07169811320754717
+    }
+  },
+  "kupiec": {
+    "80": [
+      {
+        "true_miss_rate": 0.1,
+        "true_coverage_pct": 90.0,
+        "power": 0.8578
+      },
+      {
+        "true_miss_rate": 0.15,
+        "true_coverage_pct": 85.0,
+        "power": 0.2714
+      },
+      {
+        "true_miss_rate": 0.2,
+        "true_coverage_pct": 80.0,
+        "power": 0.05
+      },
+      {
+        "true_miss_rate": 0.25,
+        "true_coverage_pct": 75.0,
+        "power": 0.2852
+      },
+      {
+        "true_miss_rate": 0.3,
+        "true_coverage_pct": 70.0,
+        "power": 0.7588
+      },
+      {
+        "true_miss_rate": 0.35,
+        "true_coverage_pct": 65.0,
+        "power": 0.9724
+      },
+      {
+        "true_miss_rate": 0.4,
+        "true_coverage_pct": 60.0,
+        "power": 0.9984
+      }
+    ],
+    "95": [
+      {
+        "true_miss_rate": 0.01,
+        "true_coverage_pct": 99.0,
+        "power": 0.6544
+      },
+      {
+        "true_miss_rate": 0.02,
+        "true_coverage_pct": 98.0,
+        "power": 0.3012
+      },
+      {
+        "true_miss_rate": 0.05,
+        "true_coverage_pct": 95.0,
+        "power": 0.0374
+      },
+      {
+        "true_miss_rate": 0.08,
+        "true_coverage_pct": 92.0,
+        "power": 0.2448
+      },
+      {
+        "true_miss_rate": 0.1,
+        "true_coverage_pct": 90.0,
+        "power": 0.5556
+      },
+      {
+        "true_miss_rate": 0.15,
+        "true_coverage_pct": 85.0,
+        "power": 0.9594
+      }
+    ]
+  },
+  "christoffersen_80": [
+    {
+      "p_violation_after_violation": 0.2,
+      "power": 0.048
+    },
+    {
+      "p_violation_after_violation": 0.3,
+      "power": 0.221
+    },
+    {
+      "p_violation_after_violation": 0.4,
+      "power": 0.6514
+    },
+    {
+      "p_violation_after_violation": 0.5,
+      "power": 0.918
+    },
+    {
+      "p_violation_after_violation": 0.6,
+      "power": 0.9832
+    }
+  ],
+  "created_at_utc": "2026-10-17T10:17:32+00:00"
+}

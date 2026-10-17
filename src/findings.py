@@ -20,6 +20,7 @@ FILES = {
     "trend": "research/exploratory/trend_study/summary.json",
     "prim": "research/exploratory/premium_study/summary.json",
     "geriye_donuk": "research/back_exam_ons_v1/result.json",
+    "guc": "research/exploratory/power_study/summary.json",
 }
 
 
@@ -92,8 +93,19 @@ def _geriye(d):
             "ons_vs_egilim_p": p["Ons_vs_Egilim"]["p_used"]}
 
 
+def _guc(d):
+    ph, th = d["physical_bosluk_vs_rw"], d["theoretical_mean_vs_rw_proxy"]
+    k80 = {round(r["true_coverage_pct"]): r["power"] for r in d["kupiec"]["80"]}
+    ch = {r["p_violation_after_violation"]: r["power"] for r in d["christoffersen_80"]}
+    return {"n": d["config"]["eval_n"], "phys_mde80": ph["mde80_pct"], "phys_mde80_holm": ph["mde80_holm3_pct"],
+            "phys_observed": ph["observed"]["full_period_improvement_pct"],
+            "phys_share_sig": ph["observed"]["share_windows_significant"], "phys_size": ph["size_at_zero"],
+            "theo_mde80": th["mde80_pct"], "theo_observed": th["observed"]["full_period_improvement_pct"],
+            "kupiec80_at70": k80.get(70), "kupiec80_at75": k80.get(75), "christoffersen_at05": ch.get(0.5)}
+
+
 EXTRACT = {"sizinti": _sizinti, "oynaklik": _oynaklik, "bilesen": _bilesen, "trend": _trend, "prim": _prim,
-           "geriye_donuk": _geriye}
+           "geriye_donuk": _geriye, "guc": _guc}
 
 
 def collect(root: Path = None) -> list:

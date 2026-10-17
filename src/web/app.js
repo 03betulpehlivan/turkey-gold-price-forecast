@@ -191,6 +191,12 @@ const BULGU = {
     metin: `Haftalık prim katsayısı ${s2(v.phi, 2)} [${s2(v.phi_ci95[0], 2)}, ${s2(v.phi_ci95[1], 2)}], yarı ömür ` +
       `${s2(v.half_life_weeks)} hafta. Gelecek haftanın priminde AR(1) yarın = bugün'den ${yz(v.ar1_vs_rw_pct)} iyi ` +
       `(p ${pyaz(v.ar1_dm_p)}). 2023 sonrası kalıcı prim bu dönemde emsalsiz.` }),
+  guc: v => ({ baslik: "120 gün neyi görebilir? (güç analizi)", etiket: ["kismen", "Örneklem yeterliliği"],
+    metin: `Fiziki Boşluk modeli için 120 günde %80 olasılıkla fark edilebilecek en küçük iyileşme ` +
+      `${v.phys_mde80 == null ? "> %40" : "%" + v.phys_mde80} (Holm ile ${v.phys_mde80_holm == null ? "> %40" : "%" + v.phys_mde80_holm}); ` +
+      `geliştirme döneminde gözlenen iyileşme ${yz(v.phys_observed)}. Teorik tarafta küçük bir farkı görmek için en az ` +
+      `${v.theo_mde80 == null ? "%40'tan büyük" : "%" + v.theo_mde80} iyileşme gerekiyor. Aralıklarda kapsamın %80'den %70'e düşmesi ` +
+      `%${s2(100 * v.kupiec80_at70, 0)}, %75'e düşmesi yalnızca %${s2(100 * v.kupiec80_at75, 0)} olasılıkla yakalanır.` }),
   geriye_donuk: v => ({ baslik: "Gece ons bilgisi bağımsız veride doğrulanmadı", etiket: ["olumsuz", v.supported ? "Desteklendi" : "Desteklenmedi"],
     metin: `Geriye dönük sınav (${v.period[0].slice(0, 4)}–${v.period[1].slice(0, 4)}, ${v.n} gün): yarın = bugün'e göre ` +
       `${yz(v.ons_vs_rw_pct)} [${yz(v.ons_vs_rw_ci[0])}, ${yz(v.ons_vs_rw_ci[1])}], p ${pyaz(v.ons_vs_rw_p)}; yalnız eğilime ` +

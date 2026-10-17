@@ -3,7 +3,7 @@ Yeniden Uretim Denetimi (salt okunur)
 ====================================
 Kullanim (proje kokunden):
   python -m src.repro                    # hepsi (sizinti gosterimi LSTM nedeniyle 2-3 dakika)
-  python -m src.repro --sadece prim      # tek calisma: sizinti, oynaklik, trend, prim, bilesen, geriye_donuk
+  python -m src.repro --sadece prim      # tek calisma: sizinti, oynaklik, trend, prim, bilesen, guc, geriye_donuk
 
 Her calismayi yerel veriyle BASTAN hesaplar ve depodaki kayitli sonucla sayi sayi karsilastirir.
   Kayitli hicbir dosyanin uzerine YAZMAZ. Geriye donuk sinav (BACK_EXAM_ONS_V1) yeniden CALISTIRILMAZ:
@@ -59,6 +59,11 @@ def _components():
     return vc.run_all(ld.load_prices(), vs.load_gvz(), vc.load_panel())
 
 
+def _power():
+    from src.analysis import power_study as pw
+    return pw.run_all(pw.physical_dev_errors(), pw.theoretical_dev_errors())
+
+
 def _back_exam():
     from src.models import back_exam as be
     pr = json.loads(Path(be.PREREG_PATH).read_text(encoding="utf-8"))
@@ -75,6 +80,7 @@ ARTIFACTS = {
     "trend": ("research/exploratory/trend_study/summary.json", _trend),
     "prim": ("research/exploratory/premium_study/summary.json", _premium),
     "bilesen": ("research/exploratory/vol_components/summary.json", _components),
+    "guc": ("research/exploratory/power_study/summary.json", _power),
     "geriye_donuk": ("research/back_exam_ons_v1/result.json", _back_exam),
 }
 DATA_FILES = ["data/processed/physical/physical_gold_daily.csv", "data/processed/history/market_panel.csv",

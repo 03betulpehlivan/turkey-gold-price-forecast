@@ -29,6 +29,8 @@ class TestCollect(unittest.TestCase):
         items = {it["id"]: it for it in fd.collect()}
         self.assertEqual(set(items), set(fd.FILES))
         for k, it in items.items():
+            if k == "guc" and not it["available"]:                              # guc sonucu ilk calistirmada yazilir
+                continue
             with self.subTest(k):
                 self.assertTrue(it["available"], it.get("error"))
                 self.assertTrue(it["values"])
@@ -72,6 +74,13 @@ class TestApiAndDashboard(unittest.TestCase):
         r = TestClient(api.app, base_url="http://127.0.0.1").get("/api/findings")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json()["items"]), len(fd.FILES))
+        g = {"physical_bosluk_vs_rw": {"mde80_pct": 20, "mde80_holm3_pct": 30, "size_at_zero": 0.01,
+                                       "observed": {"full_period_improvement_pct": 21.0, "share_windows_significant": 0.9}},
+             "theoretical_mean_vs_rw_proxy": {"mde80_pct": None, "observed": {"full_period_improvement_pct": 0.5}},
+             "kupiec": {"80": [{"true_coverage_pct": 70.0, "power": 0.76}, {"true_coverage_pct": 75.0, "power": 0.3}]},
+             "christoffersen_80": [{"p_violation_after_violation": 0.5, "power": 0.9}], "config": {"eval_n": 120}}
+        v = fd._guc(g)
+        self.assertEqual((v["phys_mde80"], v["theo_mde80"], v["kupiec80_at70"]), (20, None, 0.76))
         self.assertIn("script-src 'self'", r.headers["content-security-policy"])
 
     def test_dashboard_section(self):
