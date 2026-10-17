@@ -305,6 +305,32 @@ def q_scorecard(c, protocol: str) -> dict:
             "note": "Betimleyici ara karne; on kayitli degerlendirme oncesi model secimi icin KULLANILMAZ."}
 
 
+def q_performance(c, protocol: str) -> dict:
+    """Puanlanmis her gun icin (model hatasi - yarin=bugun hatasi) ve birikimli toplami (TL).
+    Negatif birikimli deger = model o ana kadar toplamda daha az hata yapti. Betimleyicidir."""
+    s = sa.select(FORECAST.c.asof_date, FORECAST.c.model, FORECAST.c.abs_err) \
+        .where(FORECAST.c.protocol_id == protocol, FORECAST.c.abs_err.is_not(None)).order_by(FORECAST.c.asof_date)
+    rows = [dict(r) for r in c.execute(s).mappings()]
+    if not rows:
+        return {"protocol_id": protocol, "dates": [], "series": {}, "n": 0}
+    df = pd.DataFrame(rows)
+    wide = df.pivot_table(index="asof_date", columns="model", values="abs_err", aggfunc="first").sort_index()
+    if "RW" not in wide.columns:
+        return {"protocol_id": protocol, "dates": [], "series": {}, "n": 0}
+    wide = wide[wide["RW"].notna()]
+    series = {}
+    for m in wide.columns:
+        if m == "RW":
+            continue
+        d = (wide[m] - wide["RW"])
+        ok = d.notna()
+        series[m] = {"daily": [float(x) for x in d[ok]], "cumulative": [float(x) for x in d[ok].cumsum()],
+                     "dates": [x.isoformat() if hasattr(x, "isoformat") else str(x) for x in d.index[ok]]}
+    return {"protocol_id": protocol, "dates": [x.isoformat() if hasattr(x, "isoformat") else str(x) for x in wide.index],
+            "series": series, "n": int(len(wide)),
+            "note": "Betimleyici; negatif birikimli fark = model yarin=bugun'den az hata yapti. Degerlendirmenin yerine gecmez."}
+
+
 def q_prices(c, series: str, start=None, end=None) -> list:
     s = sa.select(PRICE.c.date, PRICE.c.value).where(PRICE.c.series == series).order_by(PRICE.c.date)
     if start:

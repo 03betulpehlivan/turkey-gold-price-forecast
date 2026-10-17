@@ -122,6 +122,13 @@ def scorecard(protocol: str = Query(...)):
         return store.q_scorecard(c, protocol)
 
 
+@app.get("/api/performance")
+def performance(protocol: str = Query(...)):
+    _check(protocol, PROTOCOLS, "protokol")
+    with _conn() as c:
+        return store.q_performance(c, protocol)
+
+
 @app.get("/api/prices")
 def prices(series: str = Query(...), start: date = Query(None), end: date = Query(None)):
     _check(series, SERIES, "seri")

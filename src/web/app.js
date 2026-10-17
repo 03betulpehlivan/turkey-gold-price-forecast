@@ -136,6 +136,17 @@ const DURUM = { TAMAM: "sorunsuz", UYARI: "uyarı var", HATA: "hata var" };
 const GOREV = { sabah: "Sabah görevi (12:30)", aksam: "Akşam görevi (22:30)" };
 const DENETIM = { zaman: "Zamanlama", gorev: "Görev", gunluk: "Günlük", yedek: "Yedek", github: "GitHub",
                   tahmin: "Tahmin", butunluk: "Bütünlük" };
+const TURKCE = { henuz: "henüz", kaydi: "kaydı", kayit: "kayıt", zamaninda: "zamanında", calisti: "çalıştı",
+  calisma: "çalışma", calismadi: "çalışmadı", sonrasi: "sonrası", cikis: "çıkış", ayrinti: "ayrıntı",
+  gunlukte: "günlükte", basarisizdi: "başarısızdı", basarisiz: "başarısız", esitleme: "eşitleme", esit: "eşit",
+  gonderdi: "gönderdi", gonderilmemis: "gönderilmemiş", alinmadi: "alınmadı", bugunun: "bugünün", bugun: "bugün",
+  icin: "için", hatali: "hatalı", adimi: "adımı", yuklemesi: "yüklemesi", veritabani: "veritabanı",
+  tanimli: "tanımlı", degil: "değil", yedegi: "yedeği", yedeklendi: "yedeklendi", hatasi: "hatası",
+  yazilamadi: "yazılamadı" };
+const turkce = s => String(s).replace(/[A-Za-z]+/g, k => {
+  const t = TURKCE[k.toLowerCase()];
+  return t === undefined ? k : (k[0] === k[0].toUpperCase() ? t[0].toLocaleUpperCase("tr-TR") + t.slice(1) : t);
+});
 async function sistemDurumu() {
   const kutu = document.getElementById("sistem");
   kutu.replaceChildren();
@@ -147,9 +158,9 @@ async function sistemDurumu() {
     const zaman = g.at ? new Date(g.at).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" }) : "kayıt yok";
     const blok = el("div", { class: "gorev" }, el("div", {}, `${GOREV[ad] || ad}: son çalışma ${zaman}, ${DURUM[g.overall] || g.overall}`));
     const sorun = g.checks.filter(c => c.status !== "TAMAM");
-    if (sorun.length) blok.append(el("ul", {}, ...sorun.map(c => el("li", { class: c.status }, `${DENETIM[c.name] || c.name}: ${c.detail}`))));
+    if (sorun.length) blok.append(el("ul", {}, ...sorun.map(c => el("li", { class: c.status }, `${DENETIM[c.name] || c.name}: ${turkce(c.detail)}`))));
     const tum = el("details", {}, el("summary", {}, "Tüm denetimler"),
-                   el("ul", {}, ...g.checks.map(c => el("li", { class: c.status }, `${DENETIM[c.name] || c.name}: ${c.detail}`))));
+                   el("ul", {}, ...g.checks.map(c => el("li", { class: c.status }, `${DENETIM[c.name] || c.name}: ${turkce(c.detail)}`))));
     blok.append(tum);
     kutu.append(blok);
   });
@@ -202,6 +213,43 @@ async function bulgular() {
   });
 }
 
+const RENK = ["var(--pirinc)", "var(--gercek)", "var(--uyari)"];
+function performansKutusu(veri) {
+  const kutu = el("div", { class: "serit" }, el("h3", {}, PROTOKOL[veri.protocol_id] || veri.protocol_id));
+  const modeller = Object.keys(veri.series);
+  if (veri.n < 2 || !modeller.length) {
+    kutu.append(el("p", { class: "bos" }, `Eğri en az 2 puanlanmış gün olunca çizilir; şu an ${veri.n} gün.`));
+    return kutu;
+  }
+  const G = 400, Y = 160, P = 6;
+  const tum = modeller.flatMap(m => veri.series[m].cumulative).concat([0]);
+  const min = Math.min(...tum), max = Math.max(...tum);
+  const x = i => P + (i / Math.max(veri.n - 1, 1)) * (G - 2 * P);
+  const y = v => Y - P - ((v - min) / (max - min || 1)) * (Y - 2 * P);
+  const s = svg("svg", { class: "grafik", viewBox: `0 0 ${G} ${Y}`, role: "img",
+    "aria-label": `${PROTOKOL[veri.protocol_id]}: ${veri.n} gün, birikimli hata farkı` });
+  s.append(svg("line", { x1: 0, x2: G, y1: y(0), y2: y(0), stroke: "var(--cizgi)", "stroke-width": 1, "stroke-dasharray": "4 6" }));
+  const sira = Object.fromEntries(veri.dates.map((d, i) => [d, i]));
+  modeller.forEach((m, k) => {
+    const sr = veri.series[m];
+    s.append(svg("polyline", { points: sr.cumulative.map((v, i) => `${x(sira[sr.dates[i]])},${y(v)}`).join(" "),
+                               fill: "none", stroke: RENK[k % RENK.length], "stroke-width": 2 }));
+  });
+  const son = m => veri.series[m].cumulative.at(-1);
+  kutu.append(s, el("div", { class: "grafik-eksen" }, el("span", {}, tarih(veri.dates[0])), el("span", {}, tarih(veri.dates.at(-1)))),
+              el("div", { class: "lejant" }, ...modeller.map((m, k) =>
+                el("span", { class: `renk-${k % RENK.length}` }, `${MODEL_ADI[m] || m}: ${s2(son(m), 1)} TL`))));
+  return kutu;
+}
+async function performans() {
+  const kutu = document.getElementById("performans");
+  kutu.replaceChildren();
+  for (const p of ["LIVE_PHYS_V1", "LIVE_V1", "LIVE_V2"]) {
+    try { kutu.append(performansKutusu(await al(`/api/performance?protocol=${p}`))); }
+    catch (e) { kutu.append(el("div", { class: "serit" }, el("p", { class: "bos" }, `${PROTOKOL[p]}: veri alınamadı.`))); }
+  }
+}
+
 async function yukle() {
   bulgular();
   sistemDurumu();
@@ -226,6 +274,7 @@ async function yukle() {
     cizgiGrafik(document.getElementById("grafik"), fiyat.prices, tum.filter(f => f.model === "Bosluk"));
     const karneler = await Promise.all(["LIVE_PHYS_V1", "LIVE_V1", "LIVE_V2"].map(p => al(`/api/scorecard?protocol=${p}`)));
     karneTablosu(document.getElementById("karne"), karneler);
+    performans();
     sinavListesi(document.getElementById("sinavlar"), (await al("/api/exams")).exams);
   } catch (e) {
     durum.textContent = `Veriler alınamadı: ${e.message}. API çalışıyor mu?`;

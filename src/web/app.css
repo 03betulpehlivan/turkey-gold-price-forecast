@@ -74,3 +74,10 @@
   .etiket.kismen { color: var(--pirinc); }
   code { font-size: 0.85em; }
   @media (max-width: 720px) { .bulgular { grid-template-columns: 1fr; } }
+  .performans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .performans .serit h3 { margin: 0 0 6px; font-size: 0.95rem; }
+  .lejant { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.8rem; color: var(--soluk); margin-top: 6px; }
+  .lejant span::before { content: ""; display: inline-block; width: 10px; height: 3px; margin-right: 4px;
+                         vertical-align: middle; background: currentColor; }
+  .renk-0 { color: var(--pirinc); } .renk-1 { color: var(--gercek); } .renk-2 { color: var(--uyari); }
+  @media (max-width: 900px) { .performans { grid-template-columns: 1fr; } }

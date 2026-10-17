@@ -171,6 +171,42 @@ class TestLoad(Base):
         eng.dispose()
 
 
+class TestPerformance(Base):
+    def test_cumulative_difference_vs_rw(self):
+        self.load()
+        eng = store.get_engine()
+        with eng.connect() as c:
+            p = store.q_performance(c, "LIVE_PHYS_V1")
+            self.assertEqual((p["n"], p["dates"]), (2, DAYS[:2]))                 # 3. gun puanlanmamis
+            self.assertEqual(set(p["series"]), {"Bosluk", "Bosluk-Kayan", "Prim-Capa"})
+            self.assertEqual(p["series"]["Bosluk"]["daily"], [-10.0, -10.0])
+            self.assertEqual(p["series"]["Bosluk"]["cumulative"], [-10.0, -20.0])
+            self.assertEqual(p["series"]["Prim-Capa"]["cumulative"], [10.0, 20.0])
+            t = store.q_performance(c, "LIVE_V2")
+            self.assertEqual((t["n"], t["series"]["Mean-Return"]["cumulative"]), (1, [-5.0]))
+            self.assertIn("Betimleyici", t["note"])
+        eng.dispose()
+
+    def test_empty_and_api(self):
+        eng = store.get_engine()
+        store.META.create_all(eng)
+        with eng.connect() as c:
+            self.assertEqual(store.q_performance(c, "LIVE_V1")["n"], 0)
+        eng.dispose()
+        self.load()
+        cl = TestClient(api.app, base_url="http://127.0.0.1")
+        self.assertEqual(cl.get("/api/performance", params={"protocol": "LIVE_PHYS_V1"}).json()["n"], 2)
+        self.assertEqual(cl.get("/api/performance", params={"protocol": "XYZ"}).status_code, 404)
+
+    def test_dashboard_has_performance_and_turkish_messages(self):
+        html = (PROJECT_ROOT / "src" / "web" / "index.html").read_text(encoding="utf-8")
+        js = (PROJECT_ROOT / "src" / "web" / "app.js").read_text(encoding="utf-8")
+        self.assertIn('id="performans"', html)
+        self.assertIn("/api/performance?protocol=", js)
+        self.assertIn("turkce(c.detail)", js)
+        self.assertNotIn("innerHTML", js)
+
+
 class TestConfig(unittest.TestCase):
     def test_url_read_at_runtime_and_redacted(self):
         with mock.patch.dict(os.environ, {"ALTIN_DB_URL": "mssql+pyodbc://u:gizli@srv/AltinTahmin?driver=X"}):
