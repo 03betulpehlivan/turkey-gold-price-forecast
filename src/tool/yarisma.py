@@ -31,6 +31,11 @@ Modeller:
                    ve dolar endeksi (DXY) oynakliklari. Her bilgi gunu icin YALNIZCA bir onceki gunun degerleri
                    kullanilir (ABD kapanisi Turkiye kapanisindan sonra oldugu icin).
   Birlesim-2       (Chronos varsa) ARIMA-GARCH ve Chronos yuzdeliklerinin ortalamasi (onceden sabit uyeler)
+  GARCH-t+olay     (olay takvimi doluysa) GARCH-t; onceden bilinen olay penceresine (Fed karari, ABD enflasyonu,
+                   TCMB karari: olay gunu ve ertesi islem gunu) dusen gunlerin varyansi (1 + kappa) ile carpilir.
+                   kappa her ay, YALNIZCA gecmis olay gunlerinin GARCH'a gore fazla oynakligindan tahmin edilir.
+                   Takvim: research/tool/olay_takvimi.csv (tarih,tur,kaynak). Olay tarihleri onceden ilan edildigi icin
+                   gelecekteki tarihleri bilmek sizinti degildir; fiyat bilgisi yine yalnizca gecmisten gelir.
 Anlamlilik: kazanan modelin "Sabit aralik"a gore gunluk aralik puani farki icin DM testi (Newey-West + HLN)
   ve eslestirilmis blok bootstrap ile iyilesme yuzdesinin %95 guven araligi; secim ve final donemi ayri.
   Chronos          (istege bagli) Amazon Chronos-Bolt, egitimsiz; son 512 gunun fiyatindan %10/%50/%90 yuzdelik,
@@ -57,6 +62,8 @@ OUT_DIR = ROOT / "research" / "tool"
 PANEL_PATH = ROOT / "data" / "processed" / "history" / "market_panel.csv"
 DIS = ("gvz", "vix", "usdtry", "brent", "dxy")
 DIS_YAS = 10                                  # gun; daha eski dis veri kullanilmaz
+OLAY_PATH = ROOT / "research" / "tool" / "olay_takvimi.csv"
+OLAY_MIN = 20                                 # kappa icin gereken en az gecmis olay gunu
 UFUKLAR = (1, 3, 5)
 PENCERE, EWMA_L, ACI_GAMMA = 750, 0.94, 0.005
 SECIM = ("2012-01-01", "2023-01-01")         # bilgi gunu >= ilk, hedef gunu < ikinci
@@ -64,7 +71,7 @@ FINAL = "2023-01-01"                          # bilgi gunu >= bu
 HEDEF = {80: 3.0, 95: 2.0}                    # kabul edilen sapma (yuzde puani)
 QS = (0.025, 0.10, 0.50, 0.90, 0.975)
 MODELLER = ("Sabit aralik", "Gecmis benzer", "EWMA", "GARCH-t", "GJR-t", "EWMA+ACI", "GARCH-t+ACI", "XGBoost-kantil",
-            "ARIMA-GARCH", "HAR", "Rejim (Markov)", "Birlesim", "HAR-X")
+            "ARIMA-GARCH", "HAR", "Rejim (Markov)", "Birlesim", "HAR-X", "GARCH-t+olay")
 BIRLESIM = ("GARCH-t", "EWMA", "Gecmis benzer")
 
 
@@ -388,6 +395,55 @@ def m_harx(d, idx, h, panel):
     return {"Q": Q}
 
 
+def olay_yukle(path: Path = None):
+    p = Path(path or OLAY_PATH)
+    if not p.exists():
+        return None
+    df = pd.read_csv(p, dtype=str, comment="#").dropna(subset=["tarih"])
+    df["tarih"] = pd.to_datetime(df["tarih"].str.strip(), format="%Y-%m-%d")
+    return df if len(df) else None
+
+
+def olay_gunleri(d: dict, olaylar: pd.DataFrame) -> np.ndarray:
+    """Islem gunu bazinda olay penceresi: olayin dustugu (ya da tatildeyse sonraki) islem gunu ve ertesi gun."""
+    tarih = pd.DatetimeIndex(d["tarih"])
+    isa = np.zeros(len(tarih), dtype=bool)
+    pos = np.searchsorted(tarih.values, olaylar["tarih"].values.astype("datetime64[ns]"))
+    for p in pos:
+        for q in (p, p + 1):
+            if 0 <= q < len(tarih):
+                isa[q] = True
+    return isa
+
+
+def m_garch_olay(d, idx, h, cache, olaylar):
+    if "garch" not in cache:
+        cache["garch"] = _garch_daily(d, idx_all=cache["idx_all"], gjr=False)
+    s2, persist, V, nu = cache["garch"]
+    allpos = cache["idx_all"]
+    pos = np.searchsorted(allpos, idx)
+    ev = olay_gunleri(d, olaylar)
+    r2 = np.nan_to_num(d["r"], nan=0.0) ** 2
+    oran = np.full(len(allpos), np.nan)
+    ok = allpos + 1 < d["n"]
+    oran[ok] = r2[allpos[ok] + 1] / s2[ok]                              # gerceklesen / beklenen (1 gun)
+    kap = np.zeros(len(idx))
+    for blok in ay_bloklari(d, idx):
+        b = int(blok[0])
+        gec = (allpos + 1 <= b) & (allpos + 1 > b - PENCERE) & np.isfinite(oran)   # hedefi b'ye kadar gerceklesmis
+        e = gec & ev[np.minimum(allpos + 1, d["n"] - 1)]
+        n_ = gec & ~ev[np.minimum(allpos + 1, d["n"] - 1)]
+        kv = (np.mean(oran[e]) / np.mean(oran[n_]) - 1) if e.sum() >= OLAY_MIN and n_.sum() >= OLAY_MIN else 0.0
+        kap[np.isin(idx, blok)] = max(0.0, float(kv))
+    a, p, v = s2[pos], persist[pos], V[pos]
+    tot = np.zeros(len(idx))
+    for kk in range(1, h + 1):
+        gun = np.minimum(idx + kk, d["n"] - 1)
+        var_k = np.where(p < 0.999, v + p ** (kk - 1) * (a - v), a)
+        tot += var_k * np.where(ev[gun] & (idx + kk < d["n"]), 1 + kap, 1.0)
+    return {"mu": np.zeros(len(idx)), "sig": np.sqrt(tot), "nu": nu[pos], "kappa": kap}
+
+
 def aci(d, idx, h, f, gamma=ACI_GAMMA):
     """Parametrik tahmin + uyarlamali kalibrasyon. i gunundeki ayar, yalnizca hedefi i'ye kadar gerceklesmis
     (i-h ve oncesi) tahminlerin iskalamalarini kullanir."""
@@ -418,7 +474,7 @@ def yuzdelikler(f: dict) -> np.ndarray:
     return np.column_stack([f["mu"] + z[q] * f["sig"] for q in QS])
 
 
-def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None, panel=None, idx=None) -> dict:
+def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None, panel=None, idx=None, olaylar=None) -> dict:
     idx = kokenler(d, h) if idx is None else np.asarray(idx)
     cache = {"idx_all": idx}
     out = {}
@@ -451,6 +507,10 @@ def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None, panel=None, idx=No
             if panel is None:
                 continue                                              # dis veri yoksa yarismaya girmez
             f = m_harx(d, idx, h, panel)
+        elif m == "GARCH-t+olay":
+            if olaylar is None:
+                continue                                              # takvim yoksa yarismaya girmez
+            f = m_garch_olay(d, idx, h, cache, olaylar)
         elif m in ("Birlesim", "Birlesim-2"):
             continue
         else:
@@ -563,11 +623,11 @@ def kazanan(tablo: dict) -> str:
     return min(aday, key=lambda m: tablo[m]["puan80"] + tablo[m]["puan95"])
 
 
-def yarisma(prices: pd.Series, ufuklar=UFUKLAR, modeller=MODELLER, chronos_pipeline=None, panel=None) -> dict:
+def yarisma(prices: pd.Series, ufuklar=UFUKLAR, modeller=MODELLER, chronos_pipeline=None, panel=None, olaylar=None) -> dict:
     d = hazirla(prices)
     sonuc = {}
     for h in ufuklar:
-        t = tahminler(d, h, modeller, chronos_pipeline, panel)
+        t = tahminler(d, h, modeller, chronos_pipeline, panel, olaylar=olaylar)
         idx = t["idx"]
         y = d["lp"][idx + h] - d["lp"][idx]
         bilgi, hedef = d["tarih"][idx], d["tarih"][idx + h]
@@ -631,7 +691,13 @@ def main(argv=None) -> int:
     else:
         print(f"  Dis piyasa verisi: {', '.join(c for c in DIS if c in panel.columns)} | son tarih {panel['Date'].max().date()}"
               " (bundan sonraki gunlerde HAR-X duz HAR'a doner)")
-    res = yarisma(k.load_series(), ufuklar, modeller, panel=panel)
+    olaylar = olay_yukle()
+    if olaylar is None:
+        print(f"  Not: olay takvimi bos ya da yok ({OLAY_PATH}); GARCH-t+olay yarismaya girmiyor.")
+    else:
+        print(f"  Olay takvimi: {len(olaylar)} olay ({', '.join(sorted(olaylar['tur'].dropna().unique()))}), "
+              f"{olaylar['tarih'].min().date()} .. {olaylar['tarih'].max().date()}")
+    res = yarisma(k.load_series(), ufuklar, modeller, panel=panel, olaylar=olaylar)
     if panel is not None:
         res["dis_veri"] = {"dosya": str(PANEL_PATH.relative_to(ROOT)).replace("\\", "/"), "son_tarih": str(panel["Date"].max().date()),
                            "seriler": [c for c in DIS if c in panel.columns]}
