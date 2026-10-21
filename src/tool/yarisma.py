@@ -27,6 +27,12 @@ Modeller:
   Rejim (Markov)   iki rejimli (sakin / kriz) Markov modeli; rejim olasiliklari her gun yalnizca gecmisle guncellenir,
                    parametreler uc ayda bir yeniden tahmin edilir
   Birlesim         GARCH-t, EWMA ve Gecmis benzer modellerinin yuzdeliklerinin ortalamasi (onceden sabit uyeler)
+  HAR-X            HAR + dis piyasa bilgisi: altin oynaklik endeksi (GVZ), korku endeksi (VIX), dolar/TL, Brent petrol
+                   ve dolar endeksi (DXY) oynakliklari. Her bilgi gunu icin YALNIZCA bir onceki gunun degerleri
+                   kullanilir (ABD kapanisi Turkiye kapanisindan sonra oldugu icin).
+  Birlesim-2       (Chronos varsa) ARIMA-GARCH ve Chronos yuzdeliklerinin ortalamasi (onceden sabit uyeler)
+Anlamlilik: kazanan modelin "Sabit aralik"a gore gunluk aralik puani farki icin DM testi (Newey-West + HLN)
+  ve eslestirilmis blok bootstrap ile iyilesme yuzdesinin %95 guven araligi; secim ve final donemi ayri.
   Chronos          (istege bagli) Amazon Chronos-Bolt, egitimsiz; son 512 gunun fiyatindan %10/%50/%90 yuzdelik,
                    %95 araligi bunlardan normal varsayimiyla turetilir (Bolt %10-%90 disini egitmedi)
 HAR ve Rejim modellerinde aralik sekli (kuyruk kalinligi), her pencerede modelin egitim donemindeki
@@ -43,10 +49,14 @@ import sys
 import numpy as np
 import pandas as pd
 
+from src.models import final_exam as fe
 from src.tool import karne as k
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "research" / "tool"
+PANEL_PATH = ROOT / "data" / "processed" / "history" / "market_panel.csv"
+DIS = ("gvz", "vix", "usdtry", "brent", "dxy")
+DIS_YAS = 10                                  # gun; daha eski dis veri kullanilmaz
 UFUKLAR = (1, 3, 5)
 PENCERE, EWMA_L, ACI_GAMMA = 750, 0.94, 0.005
 SECIM = ("2012-01-01", "2023-01-01")         # bilgi gunu >= ilk, hedef gunu < ikinci
@@ -54,7 +64,7 @@ FINAL = "2023-01-01"                          # bilgi gunu >= bu
 HEDEF = {80: 3.0, 95: 2.0}                    # kabul edilen sapma (yuzde puani)
 QS = (0.025, 0.10, 0.50, 0.90, 0.975)
 MODELLER = ("Sabit aralik", "Gecmis benzer", "EWMA", "GARCH-t", "GJR-t", "EWMA+ACI", "GARCH-t+ACI", "XGBoost-kantil",
-            "ARIMA-GARCH", "HAR", "Rejim (Markov)", "Birlesim")
+            "ARIMA-GARCH", "HAR", "Rejim (Markov)", "Birlesim", "HAR-X")
 BIRLESIM = ("GARCH-t", "EWMA", "Gecmis benzer")
 
 
@@ -311,6 +321,73 @@ def m_rejim(d, idx, h):
     return {"Q": Q}
 
 
+def panel_yukle(path: Path = None):
+    p = Path(path or PANEL_PATH)
+    if not p.exists():
+        return None
+    cols = ["Date"] + [c for c in DIS if c in pd.read_csv(p, nrows=0).columns]
+    return pd.read_csv(p, usecols=cols, parse_dates=["Date"]).sort_values("Date").drop_duplicates("Date")
+
+
+def dis_ozellik(d: dict, panel: pd.DataFrame) -> np.ndarray:
+    """Fiziki gun i icin, tarihi KESINLIKLE i'den once olan en son panel satirindan (en cok DIS_YAS gun) gunluk
+    varyans olceginde ozellikler: (GVZ/100)^2/252, (VIX/100)^2/252 ve dolar/TL, Brent, DXY'nin 20 gunluk ortalama
+    kare log degisimleri. Eksikse NaN."""
+    pn = panel.set_index("Date")
+    f = pd.DataFrame(index=pn.index)
+    for c in ("gvz", "vix"):
+        if c in pn:
+            f[c] = (pn[c].where(pn[c] > 0) / 100.0) ** 2 / 252.0
+    for c in ("usdtry", "brent", "dxy"):
+        if c in pn:
+            f[c] = (np.log(pn[c].where(pn[c] > 0)).diff() ** 2).rolling(20, min_periods=15).mean()
+    f = f.reset_index().rename(columns={"Date": "pdate"}).sort_values("pdate")
+    q = pd.DataFrame({"tarih": pd.DatetimeIndex(d["tarih"]) - pd.Timedelta(days=1)}).reset_index()
+    m = pd.merge_asof(q.sort_values("tarih"), f, left_on="tarih", right_on="pdate", direction="backward")
+    m = m.sort_values("index")
+    eski = (m["tarih"] - m["pdate"]).dt.days > DIS_YAS
+    X = m[[c for c in f.columns if c != "pdate"]].to_numpy(float)
+    X[eski.to_numpy()] = np.nan
+    return X
+
+
+def m_harx(d, idx, h, panel):
+    """HAR + dis oynaklik bilgisi (EKK, aylik). Dis verisi eksik gunlerde ayni bloktaki duz HAR kullanilir."""
+    r, lp = d["r"], d["lp"]
+    Xh = _har_x(r)
+    E = dis_ozellik(d, panel)
+    X = np.column_stack([Xh, E])
+    r2 = np.nan_to_num(r, nan=0.0) ** 2
+    cs = np.concatenate([[0.0], np.cumsum(r2)])
+    hedef = np.full(len(r), np.nan)
+    j = np.arange(len(r) - h)
+    hedef[j] = (cs[j + h + 1] - cs[j + 1]) / h
+    Q = np.empty((len(idx), len(QS)))
+    k_ = 0
+    for blok in ay_bloklari(d, idx):
+        b = int(blok[0])
+        tr = np.arange(b - PENCERE, b - h + 1)
+        ok = np.isfinite(X[tr]).all(axis=1)
+        alt = 0.1 * float(np.mean(hedef[tr]))
+        bh = np.linalg.lstsq(Xh[tr], hedef[tr], rcond=None)[0]
+        if ok.sum() >= 250:
+            bx = np.linalg.lstsq(X[tr][ok], hedef[tr][ok], rcond=None)[0]
+        else:
+            bx = None
+
+        def olc(rows):
+            v = Xh[rows] @ bh
+            if bx is not None:
+                fin = np.isfinite(X[rows]).all(axis=1)
+                v = np.where(fin, np.nan_to_num(X[rows]) @ bx, v)
+            return np.sqrt(h * np.maximum(v, alt))
+
+        zq = _z_yuzdelik(lp[tr + h] - lp[tr], olc(tr))
+        Q[k_:k_ + len(blok)] = olc(blok)[:, None] * zq[None, :]
+        k_ += len(blok)
+    return {"Q": Q}
+
+
 def aci(d, idx, h, f, gamma=ACI_GAMMA):
     """Parametrik tahmin + uyarlamali kalibrasyon. i gunundeki ayar, yalnizca hedefi i'ye kadar gerceklesmis
     (i-h ve oncesi) tahminlerin iskalamalarini kullanir."""
@@ -341,7 +418,7 @@ def yuzdelikler(f: dict) -> np.ndarray:
     return np.column_stack([f["mu"] + z[q] * f["sig"] for q in QS])
 
 
-def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None) -> dict:
+def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None, panel=None) -> dict:
     idx = kokenler(d, h)
     cache = {"idx_all": idx}
     out = {}
@@ -370,7 +447,11 @@ def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None) -> dict:
             f = m_har(d, idx, h)
         elif m == "Rejim (Markov)":
             f = m_rejim(d, idx, h)
-        elif m == "Birlesim":
+        elif m == "HAR-X":
+            if panel is None:
+                continue                                              # dis veri yoksa yarismaya girmez
+            f = m_harx(d, idx, h, panel)
+        elif m in ("Birlesim", "Birlesim-2"):
             continue
         else:
             raise ValueError(m)
@@ -383,6 +464,8 @@ def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None) -> dict:
         out["Birlesim"] = np.mean([out[u] for u in BIRLESIM], axis=0)
         for u in eksik:
             out.pop(u)
+    if "Birlesim-2" in modeller and "Chronos" in out and "ARIMA-GARCH" in out:
+        out["Birlesim-2"] = np.mean([out["ARIMA-GARCH"], out["Chronos"]], axis=0)
     return {"idx": idx, "Q": out}
 
 
@@ -405,17 +488,30 @@ def puanla(Q: np.ndarray, y: np.ndarray) -> dict:
             "nokta_hata": float(np.mean(np.abs(yy - Qp[:, 2]))), "rw_hata": float(np.mean(np.abs(yy)))}
 
 
+def gunluk_puan(Q: np.ndarray, y: np.ndarray) -> np.ndarray:
+    yy, Qp = 100 * y, 100 * Q
+    return aralik_puani(Qp[:, 1], Qp[:, 3], yy, 0.20) + aralik_puani(Qp[:, 0], Qp[:, 4], yy, 0.05)
+
+
+def anlamlilik(Q_model, Q_ref, y) -> dict:
+    lm, lr = gunluk_puan(Q_model, y), gunluk_puan(Q_ref, y)
+    dm = fe.dm_hln(lm, lr)
+    bs = fe.paired_bootstrap(lm, lr)
+    return {"iyilesme_pct": float(-bs["pct"]), "iyilesme_ga95": [float(-bs["pct_ci95"][1]), float(-bs["pct_ci95"][0])],
+            "p_degeri": dm["p_value"], "gun": int(len(y))}
+
+
 def kazanan(tablo: dict) -> str:
     uygun = [m for m, s in tablo.items() if abs(s["tutma80"] - 80) <= HEDEF[80] and abs(s["tutma95"] - 95) <= HEDEF[95]]
     aday = uygun or list(tablo)
     return min(aday, key=lambda m: tablo[m]["puan80"] + tablo[m]["puan95"])
 
 
-def yarisma(prices: pd.Series, ufuklar=UFUKLAR, modeller=MODELLER, chronos_pipeline=None) -> dict:
+def yarisma(prices: pd.Series, ufuklar=UFUKLAR, modeller=MODELLER, chronos_pipeline=None, panel=None) -> dict:
     d = hazirla(prices)
     sonuc = {}
     for h in ufuklar:
-        t = tahminler(d, h, modeller, chronos_pipeline)
+        t = tahminler(d, h, modeller, chronos_pipeline, panel)
         idx = t["idx"]
         y = d["lp"][idx + h] - d["lp"][idx]
         bilgi, hedef = d["tarih"][idx], d["tarih"][idx + h]
@@ -428,7 +524,13 @@ def yarisma(prices: pd.Series, ufuklar=UFUKLAR, modeller=MODELLER, chronos_pipel
                                         if a in ("gun", "tutma80", "tutma95", "genislik80")}}
                      for Y in np.unique(yillar)] for m, Q in t["Q"].items()}
         w = kazanan(secim_t)
+        anl = {}
+        if "Sabit aralik" in t["Q"] and w != "Sabit aralik":
+            anl["secim"] = anlamlilik(t["Q"][w][secim], t["Q"]["Sabit aralik"][secim], y[secim])
+            if final.any():
+                anl["final"] = anlamlilik(t["Q"][w][final], t["Q"]["Sabit aralik"][final], y[final])
         sonuc[str(h)] = {"ufuk_gun": h, "secim": secim_t, "final": final_t, "yillar": yil_t, "kazanan": w,
+                         "anlamlilik_sabit_araliga_gore": anl,
                          "donem": {"secim": [str(bilgi[secim].min().date()), str(hedef[secim].max().date())],
                                    "final": [str(bilgi[final].min().date()), str(hedef[final].max().date())] if final.any() else None}}
     return {"seri": "fiziki gram altin (TL/gr)", "pencere_gun": PENCERE, "yeniden_egitim": "aylik",
@@ -451,6 +553,9 @@ def yazdir(res: dict):
             print(f"  FINAL ({u['donem']['final'][0]} .. {u['donem']['final'][1]}, hic gorulmemis, {f['gun']} gun): "
                   f"{u['kazanan']} %80 aralik %{_f(f['tutma80'])}, %95 aralik %{_f(f['tutma95'])} tuttu "
                   f"(ortalama %80 genislik %{_f(f['genislik80'], 2)})")
+        for donem, a in u.get("anlamlilik_sabit_araliga_gore", {}).items():
+            print(f"  Anlamlilik ({donem}): {u['kazanan']}, sabit araliga gore aralik puaninda %{_f(a['iyilesme_pct'])} iyi "
+                  f"[%95 GA %{_f(a['iyilesme_ga95'][0])}, %{_f(a['iyilesme_ga95'][1])}], p = {_f(a['p_degeri'], 4)}")
         yy = pd.DataFrame(u["yillar"][u["kazanan"]])
         print("  Yillara gore (" + u["kazanan"] + "): " + ", ".join(f"{int(r.yil)} %{_f(r.tutma80)}" for r in yy.itertuples()))
 
@@ -462,9 +567,18 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args([] if argv is None else argv)
     ufuklar = tuple(int(x) for x in args.ufuk.split(","))
-    modeller = MODELLER + (("Chronos",) if args.chronos else ())
+    modeller = MODELLER + (("Chronos", "Birlesim-2") if args.chronos else ())
     print("=" * 78 + "\nMODEL YARISMASI - fiziki gram altin, aylik pencere, 1/3/5 gun ufuk\n" + "=" * 78)
-    res = yarisma(k.load_series(), ufuklar, modeller)
+    panel = panel_yukle()
+    if panel is None:
+        print(f"  Not: dis piyasa paneli yok ({PANEL_PATH}); HAR-X yarismaya girmiyor.")
+    else:
+        print(f"  Dis piyasa verisi: {', '.join(c for c in DIS if c in panel.columns)} | son tarih {panel['Date'].max().date()}"
+              " (bundan sonraki gunlerde HAR-X duz HAR'a doner)")
+    res = yarisma(k.load_series(), ufuklar, modeller, panel=panel)
+    if panel is not None:
+        res["dis_veri"] = {"dosya": str(PANEL_PATH.relative_to(ROOT)).replace("\\", "/"), "son_tarih": str(panel["Date"].max().date()),
+                           "seriler": [c for c in DIS if c in panel.columns]}
     res["created_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     yazdir(res)
     out = Path(args.out or OUT_DIR)

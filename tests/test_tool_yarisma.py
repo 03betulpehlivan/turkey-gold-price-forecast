@@ -142,6 +142,75 @@ class TestNewModels(unittest.TestCase):
             self.assertAlmostEqual(s["tutma95"], 95, delta=3, msg=m)
 
 
+def panel_for(p, seed=4):
+    rng = np.random.default_rng(seed)
+    d = p.index
+    return pd.DataFrame({"Date": d, "gvz": 18 + rng.normal(0, 2, len(d)), "vix": 20 + rng.normal(0, 2, len(d)),
+                         "usdtry": 2 * np.exp(np.cumsum(rng.normal(0, 0.004, len(d)))),
+                         "brent": 60 * np.exp(np.cumsum(rng.normal(0, 0.02, len(d)))),
+                         "dxy": 95 * np.exp(np.cumsum(rng.normal(0, 0.004, len(d))))})
+
+
+class TestExternal(unittest.TestCase):
+    def setUp(self):
+        self.p = world(end="2015-12-31")
+        self.d = y.hazirla(self.p)
+        self.pn = panel_for(self.p)
+
+    def test_uses_only_previous_day_panel(self):
+        X = y.dis_ozellik(self.d, self.pn)
+        i = 1500
+        gun = self.d["tarih"][i]
+        pn2 = self.pn.copy()
+        pn2.loc[pn2["Date"] >= gun, ["gvz", "vix", "usdtry", "brent", "dxy"]] *= 3     # ayni gun ve sonrasi
+        np.testing.assert_allclose(X[: i + 1], y.dis_ozellik(self.d, pn2)[: i + 1], equal_nan=True)
+        onceki = pn2.loc[pn2["Date"] < gun, "Date"].max()
+        pn3 = self.pn.copy()
+        pn3.loc[pn3["Date"] == onceki, "gvz"] *= 3                                  # bir onceki gun etkiler
+        self.assertNotAlmostEqual(X[i, 0], y.dis_ozellik(self.d, pn3)[i, 0])
+
+    def test_stale_panel_is_ignored(self):
+        pn = self.pn[self.pn["Date"] < self.d["tarih"][1000] - pd.Timedelta(days=30)]
+        X = y.dis_ozellik(self.d, pn)
+        self.assertTrue(np.isnan(X[1000:]).all())
+
+    def test_harx_no_future_and_skip_without_panel(self):
+        h = 3
+        a = y.tahminler(self.d, h, ("HAR-X",), panel=self.pn)
+        j = 150
+        i0 = int(a["idx"][j])
+        p2 = self.p.copy()
+        p2.iloc[i0 + 1:] *= 1.2
+        pn2 = self.pn.copy()
+        pn2.loc[pn2["Date"] >= self.d["tarih"][i0], "gvz"] *= 4
+        b = y.tahminler(y.hazirla(p2), h, ("HAR-X",), panel=pn2)
+        np.testing.assert_allclose(a["Q"]["HAR-X"][: j + 1], b["Q"]["HAR-X"][: j + 1], rtol=1e-9)
+        self.assertNotIn("HAR-X", y.tahminler(self.d, h, ("HAR-X", "EWMA"))["Q"])
+
+    def test_harx_refit_day_uses_only_realized_targets(self):
+        h = 3
+        a = y.tahminler(self.d, h, ("HAR-X",), panel=self.pn)
+        per = pd.DatetimeIndex(self.d["tarih"][a["idx"]]).to_period("M")
+        j = int(np.flatnonzero(per == pd.Period("2014-05"))[0])
+        b0 = int(a["idx"][j])
+        for k_ in range(1, h + 1):
+            p2 = self.p.copy()
+            p2.iloc[b0 + k_] *= 1.10
+            b = y.tahminler(y.hazirla(p2), h, ("HAR-X",), panel=self.pn)
+            np.testing.assert_allclose(a["Q"]["HAR-X"][j], b["Q"]["HAR-X"][j], rtol=1e-9, err_msg=str(k_))
+
+    def test_combination2_and_significance(self):
+        t = y.tahminler(self.d, 1, ("ARIMA-GARCH", "Chronos", "Birlesim-2"), chronos_pipeline=FakeChronos())
+        np.testing.assert_allclose(t["Q"]["Birlesim-2"], (t["Q"]["ARIMA-GARCH"] + t["Q"]["Chronos"]) / 2)
+        yy = self.d["lp"][t["idx"] + 1] - self.d["lp"][t["idx"]]
+        a = y.anlamlilik(t["Q"]["ARIMA-GARCH"], t["Q"]["ARIMA-GARCH"], yy)
+        self.assertAlmostEqual(a["iyilesme_pct"], 0.0, places=9)
+        b = y.anlamlilik(t["Q"]["ARIMA-GARCH"], t["Q"]["Chronos"], yy)
+        self.assertTrue(0 <= b["p_degeri"] <= 1)
+        self.assertLessEqual(b["iyilesme_ga95"][0], b["iyilesme_pct"])
+        self.assertLessEqual(b["iyilesme_pct"], b["iyilesme_ga95"][1])
+
+
 class TestScoring(unittest.TestCase):
     def test_interval_score(self):
         self.assertAlmostEqual(float(y.aralik_puani(-1.0, 1.0, 0.0, 0.2)), 2.0)
@@ -181,7 +250,7 @@ class TestRun(unittest.TestCase):
         d = y.hazirla(p)
         t = y.tahminler(d, 3, ("Chronos",), chronos_pipeline=FakeChronos())
         self.assertEqual(t["Q"]["Chronos"].shape[1], 5)
-        np.testing.assert_allclose(t["Q"]["Chronos"][:, 2], 0.0, atol=1e-12)     # medyan = bilgi gunu fiyati
+        np.testing.assert_allclose(t["Q"]["Chronos"][:, 2], 0.0, atol=1e-6)      # medyan = bilgi gunu fiyati (float32)
         self.assertTrue((t["Q"]["Chronos"][:, 0] < t["Q"]["Chronos"][:, 1]).all())  # %95 alt sinir, %80'in altinda
         tmp = Path(tempfile.mkdtemp(prefix="yar_"))
         self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
