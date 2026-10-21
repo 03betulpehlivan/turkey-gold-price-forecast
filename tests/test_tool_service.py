@@ -103,6 +103,56 @@ class TestService(Base):
                 ts.kart()
 
 
+class TestYarismaService(Base):
+    def setUp(self):
+        super().setUp()
+        ts._ufuklar.cache_clear()
+        ts._bu_yil_yarisma.cache_clear()
+        p = mock.patch.object(ts.yr, "chronos_var", lambda: False)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_summary_from_committed_file(self):
+        d = ts.yarisma()
+        self.assertEqual([u["ufuk_gun"] for u in d["ufuklar"]], [1, 3, 5])
+        src = json.loads((PROJECT_ROOT / d["kaynak"]).read_text(encoding="utf-8"))
+        for u in d["ufuklar"]:
+            s = src["ufuklar"][str(u["ufuk_gun"])]
+            self.assertEqual(u["kazanan"], s["kazanan"])
+            self.assertEqual(u["final"]["tutma95"], s["final"][s["kazanan"]]["tutma95"])
+            puanlar = [r["puan"] for r in u["modeller"]]
+            self.assertEqual(puanlar, sorted(puanlar))
+            w = next(r for r in u["modeller"] if r["model"] == u["kazanan"])
+            self.assertTrue(w["uygun"])                                            # kazanan hedefe yakin olmali
+            self.assertEqual(min(r["puan"] for r in u["modeller"] if r["uygun"]), w["puan"])
+
+    def test_horizon_cards_with_fallback(self):
+        d = ts.ufuklar()
+        self.assertEqual([u["ufuk_gun"] for u in d["ufuklar"]], [1, 3, 5])
+        for u in d["ufuklar"]:
+            self.assertLess(u["aralik95"][0], u["aralik80"][0])
+            self.assertLess(u["aralik80"][1], u["aralik95"][1])
+            if u["model"] in ("Chronos", "Birlesim-2"):
+                self.assertTrue(u["yedek"])
+                self.assertEqual(u["kullanilan"], "ARIMA-GARCH")
+        w = [u["aralik80"][1] - u["aralik80"][0] for u in d["ufuklar"]]
+        self.assertLess(w[0], w[1])
+        self.assertLess(w[1], w[2])                                               # ufuk uzadikca aralik genisler
+        self.assertTrue(0 <= d["hareketli_olasiligi_pct"] <= 100)
+
+    def test_this_year_with_winner(self):
+        d = ts.bu_yil_yarisma()
+        self.assertEqual(d["yil"], 2026)
+        g = pd.DataFrame(d["gunler"])
+        self.assertTrue(g["tarih"].str.startswith("2026").all())
+        in80 = ((g["gercek"] >= g["lo80"]) & (g["gercek"] <= g["hi80"])).sum()
+        self.assertEqual(d["aralik80_tuttu"], int(in80))
+
+    def test_missing_result_file(self):
+        with self.assertRaisesRegex(FileNotFoundError, "Yarisma sonucu yok"):
+            ts.yarisma_dosyasi(self.tmp)
+
+
 class TestApiAndPage(Base):
     def client(self):
         return TestClient(api.app, base_url="http://127.0.0.1")
@@ -116,6 +166,14 @@ class TestApiAndPage(Base):
             self.assertEqual(cl.get("/api/tahmin/bu-yil").json()["yil"], 2026)
         self.assertEqual(cl.get("/api/tahmin/karne").json()["model"], k.ODAK)
         self.assertIn("script-src 'self'", r.headers["content-security-policy"])
+
+    def test_yarisma_endpoints(self):
+        cl = self.client()
+        with mock.patch.object(ts.yr, "chronos_var", lambda: False):
+            ts._ufuklar.cache_clear()
+            self.assertEqual(len(cl.get("/api/tahmin/ufuklar").json()["ufuklar"]), 3)
+            self.assertEqual(cl.get("/api/tahmin/yarisma").json()["ufuklar"][0]["ufuk_gun"], 1)
+            self.assertEqual(cl.get("/api/tahmin/bu-yil-yarisma").status_code, 200)
 
     def test_503_when_data_missing(self):
         with mock.patch.object(k, "PATHS", [self.tmp / "yok.csv"]):
@@ -133,7 +191,7 @@ class TestApiAndPage(Base):
         self.assertIn("/static/app.js", detay.text)
         self.assertIn('href="/"', detay.text)
         js = (PROJECT_ROOT / "src" / "web" / "ana.js").read_text(encoding="utf-8")
-        for u in ("/api/tahmin/yarin", "/api/tahmin/bu-yil", "/api/tahmin/karne"):
+        for u in ("/api/tahmin/ufuklar", "/api/tahmin/yarisma", "/api/tahmin/bu-yil-yarisma"):
             self.assertIn(u, js)
         self.assertNotIn("innerHTML", js)
         self.assertNotIn("style:", js)                                            # CSP: satir ici stil yok

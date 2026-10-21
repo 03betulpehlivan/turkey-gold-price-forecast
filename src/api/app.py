@@ -162,6 +162,24 @@ def tahmin_bu_yil():
     return _tahmin(ts.bu_yil)
 
 
+@app.get("/api/tahmin/ufuklar")
+def tahmin_ufuklar():
+    """1, 3 ve 5 gun sonrasi icin %80 ve %95 araliklar (her ufukta model yarismasinin kazanani)."""
+    return _tahmin(ts.ufuklar)
+
+
+@app.get("/api/tahmin/yarisma")
+def tahmin_yarisma():
+    """Model yarismasi ozeti: kazananlar, hic gorulmemis 2023-2026 sonuclari ve anlamlilik."""
+    return _tahmin(ts.yarisma)
+
+
+@app.get("/api/tahmin/bu-yil-yarisma")
+def tahmin_bu_yil_yarisma():
+    """Icinde bulunulan yilin gunluk tahminleri (1 gun ufkunun kazanan modeliyle) ve gerceklesen fiyatlar."""
+    return _tahmin(ts.bu_yil_yarisma)
+
+
 @app.get("/api/tahmin/karne")
 def tahmin_karne():
     """Kayitli basari karnesi (egitim 2012-2017, test 2018-2022)."""

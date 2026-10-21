@@ -211,6 +211,36 @@ class TestExternal(unittest.TestCase):
         self.assertLessEqual(b["iyilesme_pct"], b["iyilesme_ga95"][1])
 
 
+class TestLive(unittest.TestCase):
+    def test_live_uses_last_close_and_fallback(self):
+        p = world(end="2016-06-30")
+        c = y.canli(p, 3, "Birlesim-2", chronos_ok=False)
+        self.assertEqual((c["kullanilan"], c["yedek"]), ("ARIMA-GARCH", True))
+        self.assertEqual(c["bilgi_gunu"], "2016-06-30")
+        self.assertAlmostEqual(c["son_kapanis"], float(p.iloc[-1]))
+        f = y.canli(p, 3, "Birlesim-2", chronos_pipeline=FakeChronos(), chronos_ok=False)
+        self.assertEqual((f["kullanilan"], f["yedek"]), ("Birlesim-2", False))
+        g = y.canli(p, 1, "GARCH-t+ACI", chronos_ok=False)
+        self.assertLess(g["aralik80"][0], g["son_kapanis"])
+        self.assertLess(g["son_kapanis"], g["aralik80"][1])
+
+    def test_live_matches_backtest_for_a_known_day(self):
+        p = world(end="2016-06-30")
+        h = 3
+        d = y.hazirla(p)
+        idx = y.kokenler(d, h)
+        i_last = int(idx[-1])                                                     # hedefi bilinen son gun
+        q = y.tahminler(d, h, ("ARIMA-GARCH",))["Q"]["ARIMA-GARCH"][-1]
+        c = y.canli(p.iloc[: i_last + 1], h, "ARIMA-GARCH", chronos_ok=False)
+        np.testing.assert_allclose(c["aralik80"], np.exp(d["lp"][i_last] + q[[1, 3]]), rtol=1e-9)
+
+    def test_daily_series(self):
+        p = world(end="2016-06-30")
+        g = y.gunluk_seri(p, 1, "ARIMA-GARCH", "2016-01-01", chronos_ok=False)
+        self.assertTrue((pd.DatetimeIndex(g["tarih"]) >= "2016-01-01").all())
+        self.assertTrue((g["lo95"] < g["lo80"]).all() and (g["hi80"] < g["hi95"]).all())
+
+
 class TestScoring(unittest.TestCase):
     def test_interval_score(self):
         self.assertAlmostEqual(float(y.aralik_puani(-1.0, 1.0, 0.0, 0.2)), 2.0)

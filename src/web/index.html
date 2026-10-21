@@ -3,18 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gram altın: yarın için tahmin</title>
+<title>Gram altın: önümüzdeki günler için fiyat aralığı</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%226%22 width=%2212%22 height=%224%22 fill=%22%238a6d22%22/%3E%3Crect x=%227.25%22 y=%223%22 width=%221.5%22 height=%2210%22 fill=%22%231f2a33%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/ana.css">
 </head>
 <body>
 <main>
   <header>
-    <h1>Gram altın için yarın</h1>
+    <h1>Gram altın, önümüzdeki günler</h1>
     <p class="ust" id="ust">Tahmin hazırlanıyor…</p>
   </header>
 
-  <section class="tahmin" id="tahmin" aria-live="polite"></section>
+  <section class="tahmin" aria-live="polite">
+    <div class="yelpaze" id="yelpaze"></div>
+    <div class="kartlar" id="kartlar"></div>
+    <p class="not" id="hareket"></p>
+  </section>
+
+  <section>
+    <h2>Ne kadar güvenilir?</h2>
+    <p class="aciklama" id="guven-ozet">Yükleniyor…</p>
+    <div class="guven" id="guven"></div>
+  </section>
 
   <section>
     <h2>Bu yıl tahminler ne kadar tuttu?</h2>
@@ -23,36 +33,29 @@
   </section>
 
   <section>
-    <h2>Geçmiş başarı</h2>
-    <p class="aciklama" id="karne-ozet">Yükleniyor…</p>
-    <div class="kiyas" id="kiyas"></div>
-  </section>
-
-  <section>
-    <h2>Söylenen olasılıklar tuttu mu?</h2>
-    <p class="aciklama">Sistem her gün “yarın fiyat %1'den fazla değişir mi?” sorusuna bir olasılık veriyor.
-      Aşağıda, verdiği olasılıklar gruplandı ve o günlerin gerçekte yüzde kaçının hareketli geçtiği yanına yazıldı.
-      İki sütun birbirine ne kadar yakınsa olasılıklara o kadar güvenilir.</p>
-    <div class="guven" id="guven"></div>
+    <h2>Model yarışması</h2>
+    <p class="aciklama" id="yarisma-ozet">Yükleniyor…</p>
+    <div class="tablo-kutu" id="yarisma"></div>
   </section>
 
   <section>
     <h2>Yıllara göre</h2>
-    <p class="aciklama">%80'lik aralığın her test yılında tuttuğu günlerin oranı. 2018 ve 2021 Türk lirası krizleri, 2020 ise pandemi yılı.</p>
+    <p class="aciklama" id="yillar-ozet">Bir sonraki gün için %80 aralığın her yıl tuttuğu günlerin oranı.</p>
     <div class="yillar" id="yillar"></div>
   </section>
 
   <section class="nasil">
     <h2>Nasıl çalışıyor?</h2>
-    <p id="nasil">Model, fiyatın yönünü değil ne kadar oynayacağını tahmin eder: çalkantılı günlerin art arda geldiğini
-      bilen bir oynaklık modeli (GARCH) son iki-üç yılın verisiyle her ay yeniden eğitilir; aralık son günlerde sık
-      ıskaladıysa kendiliğinden genişler. Başarı ölçülürken hiçbir tahmin, o günden sonraki fiyatları görmedi.</p>
+    <p>Sistem fiyatın yönünü değil, ne kadar oynayacağını tahmin eder ve bunu bir fiyat aralığına çevirir.
+      On beş model (ikisi birleşim) 2012–2022 arasında yarıştırıldı: her ay, yalnızca o güne kadar gerçekleşmiş fiyatlarla yeniden kurulup
+      o ayın her günü için 1, 3 ve 5 gün sonrası tahmin edildi. Her ufukta hedefi tutturan en dar aralığı veren model seçildi
+      ve hiç görmediği 2023–2026 döneminde sınandı. Hiçbir tahmin, o günden sonraki fiyatları görmedi.</p>
   </section>
 
   <footer>
     <a href="/detay">Ayrıntılı araştırma panosu</a>
     <a href="/docs">API belgeleri</a>
-    <span>Fiziki gram altın, Borsa İstanbul kapanışı (TCMB EVDS). Araştırma ve eğitim amaçlıdır; yatırım tavsiyesi değildir.</span>
+    <span>Fiziki gram altın, Borsa İstanbul kapanışı (TCMB EVDS). Araştırma ve eğitim amaçlıdır. Gösterilen aralıklar yatırım tavsiyesi değil, istatistiksel risk aralığıdır.</span>
   </footer>
 </main>
 <script src="/static/ana.js"></script>

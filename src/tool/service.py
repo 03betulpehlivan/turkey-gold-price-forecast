@@ -5,6 +5,8 @@ Web panosunun ana ekranini besler:
   kart()      bir sonraki islem gunu icin aralik tahmini ve hareketli gun olasiligi
   bu_yil()    icinde bulunulan yilin gunluk tahminleri ve gerceklesen fiyatlar (gercek, ileriye donuk sinama)
   karne()     kayitli basari karnesi (research/tool/), testi 2018-2022
+  ufuklar()   1, 3 ve 5 gun sonrasi icin araliklar; her ufukta model yarismasinin kazanani (research/tool/yarisma_*.json)
+  yarisma()   yarisma ozeti: modeller, kazananlar, hic gorulmemis 2023-2026 sonuclari ve anlamlilik
 Model ve pencere onceden sabittir: GARCH-t + ACI, pencere dogrulamada secilen (research/tool/pencere_*.json).
 Hesaplar gunluk fiyat dosyasi degismedikce onbellekte tutulur. Hicbir dosyaya yazmaz.
 """
@@ -15,8 +17,10 @@ import json
 import math
 
 import numpy as np
+import pandas as pd
 
 from src.tool import karne as k
+from src.tool import yarisma as yr
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOL_DIR = ROOT / "research" / "tool"
@@ -72,6 +76,80 @@ def _bu_yil(key, pencere):
     return {"yil": int(y), "gun": int(len(g)), "aralik80_tuttu": int(in80.sum()), "aralik95_tuttu": int(in95.sum()),
             "aralik80_pct": float(100 * in80.mean()), "aralik95_pct": float(100 * in95.mean()),
             "gunler": rows}
+
+
+def yarisma_dosyasi(tool_dir: Path = None) -> Path:
+    tool_dir = Path(tool_dir or TOOL_DIR)
+    for name in ("yarisma_1-3-5_chronos.json", "yarisma_1-3-5.json"):
+        if (tool_dir / name).exists():
+            return tool_dir / name
+    raise FileNotFoundError("Yarisma sonucu yok (python -m src.tool.yarisma --chronos)")
+
+
+def _yarisma_json(tool_dir: Path = None) -> dict:
+    return json.loads(yarisma_dosyasi(tool_dir).read_text(encoding="utf-8"))
+
+
+@lru_cache(maxsize=4)
+def _ufuklar(key, dosya, chronos_ok):
+    prices = k.load_series(Path(key[0]))
+    res = json.loads(Path(dosya).read_text(encoding="utf-8"))
+    panel = yr.panel_yukle()
+    out = []
+    for h, u in sorted(res["ufuklar"].items(), key=lambda kv: int(kv[0])):
+        c = yr.canli(prices, int(h), u["kazanan"], panel=panel, chronos_ok=chronos_ok)
+        f = u["final"].get(u["kazanan"], {}) if u.get("final") else {}
+        c["final"] = {"tutma80": f.get("tutma80"), "tutma95": f.get("tutma95"), "gun": f.get("gun")}
+        out.append(c)
+    s = out[0]["gunluk_sigma_pct"] if out else float("nan")
+    hareket = float(100 * 2 * (1 - float(k._cdf(1.0 / s, np.nan)))) if s and np.isfinite(s) else None
+    return {"bilgi_gunu": str(prices.index[-1].date()), "son_kapanis": float(prices.iloc[-1]), "ufuklar": out,
+            "hareketli_olasiligi_pct": hareket, "esik_pct": 1.0, "kaynak": f"research/tool/{Path(dosya).name}"}
+
+
+def ufuklar() -> dict:
+    return _clean(dict(_ufuklar(_data_key(), str(yarisma_dosyasi()), yr.chronos_var())))
+
+
+@lru_cache(maxsize=4)
+def _bu_yil_yarisma(key, dosya, chronos_ok):
+    prices = k.load_series(Path(key[0]))
+    res = json.loads(Path(dosya).read_text(encoding="utf-8"))
+    model = res["ufuklar"]["1"]["kazanan"]
+    y = prices.index[-1].year
+    g = yr.gunluk_seri(prices, 1, model, f"{y}-01-01", chronos_ok=chronos_ok)
+    g = g[pd.DatetimeIndex(g["tarih"]).year == y]
+    gercek = g["gercek"].to_numpy(float)
+    in80 = (gercek >= g["lo80"].to_numpy()) & (gercek <= g["hi80"].to_numpy())
+    in95 = (gercek >= g["lo95"].to_numpy()) & (gercek <= g["hi95"].to_numpy())
+    rows = [{"tarih": str(pd.Timestamp(a).date()), "gercek": float(b), "lo80": float(c), "hi80": float(dd), "lo95": float(e), "hi95": float(f)}
+            for a, b, c, dd, e, f in zip(g["tarih"], gercek, g["lo80"], g["hi80"], g["lo95"], g["hi95"])]
+    return {"yil": int(y), "gun": int(len(g)), "aralik80_tuttu": int(in80.sum()), "aralik95_tuttu": int(in95.sum()),
+            "aralik80_pct": float(100 * in80.mean()) if len(g) else None, "aralik95_pct": float(100 * in95.mean()) if len(g) else None,
+            "model": str(g["model"].iat[0]) if len(g) else model, "gunler": rows}
+
+
+def bu_yil_yarisma() -> dict:
+    return _clean(dict(_bu_yil_yarisma(_data_key(), str(yarisma_dosyasi()), yr.chronos_var())))
+
+
+def yarisma(tool_dir: Path = None) -> dict:
+    p = yarisma_dosyasi(tool_dir)
+    res = json.loads(p.read_text(encoding="utf-8"))
+    out = []
+    for h, u in sorted(res["ufuklar"].items(), key=lambda kv: int(kv[0])):
+        w = u["kazanan"]
+        modeller = sorted(({"model": m, "tutma80": s["tutma80"], "tutma95": s["tutma95"], "genislik80": s["genislik80"],
+                            "puan": s["puan80"] + s["puan95"],
+                            "uygun": bool(abs(s["tutma80"] - 80) <= yr.HEDEF[80] and abs(s["tutma95"] - 95) <= yr.HEDEF[95])}
+                           for m, s in u["secim"].items()), key=lambda r: r["puan"])
+        anl = u.get("anlamlilik_sabit_araliga_gore", {})
+        out.append({"ufuk_gun": int(h), "kazanan": w, "modeller": modeller, "donem": u["donem"],
+                    "final": u["final"].get(w) if u.get("final") else None, "anlamlilik": anl,
+                    "yillar": u["yillar"][w]})
+    return _clean({"kaynak": f"research/tool/{p.name}", "pencere_gun": res.get("pencere_gun"), "ufuklar": out,
+                   "hedef_sapma": {"80": yr.HEDEF[80], "95": yr.HEDEF[95]},
+                   "model_sayisi": len(out[0]["modeller"]) if out else 0})
 
 
 def kart(pencere: int = None) -> dict:

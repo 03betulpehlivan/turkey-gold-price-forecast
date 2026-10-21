@@ -418,8 +418,8 @@ def yuzdelikler(f: dict) -> np.ndarray:
     return np.column_stack([f["mu"] + z[q] * f["sig"] for q in QS])
 
 
-def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None, panel=None) -> dict:
-    idx = kokenler(d, h)
+def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None, panel=None, idx=None) -> dict:
+    idx = kokenler(d, h) if idx is None else np.asarray(idx)
     cache = {"idx_all": idx}
     out = {}
     for m in modeller:
@@ -467,6 +467,62 @@ def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None, panel=None) -> dic
     if "Birlesim-2" in modeller and "Chronos" in out and "ARIMA-GARCH" in out:
         out["Birlesim-2"] = np.mean([out["ARIMA-GARCH"], out["Chronos"]], axis=0)
     return {"idx": idx, "Q": out}
+
+
+# ---------------------------------------------------------------------------
+# Canli tahmin (pano): son kapanistan h gun sonrasi, yarismanin kazanan modeliyle
+# ---------------------------------------------------------------------------
+def chronos_var() -> bool:
+    try:
+        import chronos  # noqa: F401
+        import torch  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+def canli(prices: pd.Series, h: int, model: str, panel=None, chronos_pipeline=None, chronos_ok=None) -> dict:
+    """Son bilgi gunu icin h gun sonrasinin yuzdelikleri (fiyat olceginde). Model ay basinda, yarismadaki gibi
+    yalnizca o gune kadarki veriyle kurulur. Chronos gerekirse ve kurulu degilse ARIMA-GARCH kullanilir."""
+    d = hazirla(prices)
+    n = d["n"]
+    ay = pd.DatetimeIndex(d["tarih"]).to_period("M")
+    ilk = int(np.flatnonzero(ay == ay[-1])[0])
+    gecmis = max(PENCERE + 61, n - 520) if "ACI" in model else ilk          # ACI icin iskalama gecmisi gerekir
+    idx = np.arange(max(gecmis, PENCERE + 61), n)
+    ok = chronos_var() if chronos_ok is None else chronos_ok
+    kullanilan, yedek = model, False
+    if model in ("Chronos", "Birlesim-2") and not ok and chronos_pipeline is None:
+        kullanilan, yedek = "ARIMA-GARCH", True
+    if kullanilan == "Birlesim-2":
+        ag = tahminler(d, h, ("ARIMA-GARCH",), idx=idx)["Q"]["ARIMA-GARCH"][-1]
+        ch = tahminler(d, h, ("Chronos",), chronos_pipeline, idx=idx[-1:])["Q"]["Chronos"][-1]
+        q = (ag + ch) / 2
+    else:
+        q = tahminler(d, h, (kullanilan,), chronos_pipeline, panel, idx=idx if kullanilan != "Chronos" else idx[-1:])["Q"][kullanilan][-1]
+    P = float(prices.iloc[-1])
+    fiyat = P * np.exp(q)
+    sig1 = (q[3] - q[1]) / (2 * 1.2815515655446004) / math.sqrt(h)
+    return {"ufuk_gun": h, "model": model, "kullanilan": kullanilan, "yedek": yedek,
+            "bilgi_gunu": str(prices.index[-1].date()), "son_kapanis": P,
+            "hedef_gun_yaklasik": str((prices.index[-1] + pd.offsets.BDay(h)).date()),
+            "medyan": float(fiyat[2]), "aralik80": [float(fiyat[1]), float(fiyat[3])], "aralik95": [float(fiyat[0]), float(fiyat[4])],
+            "gunluk_sigma_pct": float(100 * sig1)}
+
+
+def gunluk_seri(prices: pd.Series, h: int, model: str, baslangic: str, chronos_pipeline=None, chronos_ok=None) -> pd.DataFrame:
+    """baslangic tarihinden itibaren hedefi gerceklesmis gunler icin tahmin ve gerceklesen fiyat."""
+    d = hazirla(prices)
+    ok = chronos_var() if chronos_ok is None else chronos_ok
+    kullanilan = "ARIMA-GARCH" if model in ("Chronos", "Birlesim-2") and not ok and chronos_pipeline is None else model
+    idx = kokenler(d, h, start=baslangic)
+    t = tahminler(d, h, (kullanilan,) if kullanilan != "Birlesim-2" else ("ARIMA-GARCH", "Chronos", "Birlesim-2"),
+                  chronos_pipeline, idx=idx)
+    Q = t["Q"][kullanilan]
+    P = np.exp(d["lp"][idx])
+    return pd.DataFrame({"tarih": d["tarih"][idx + h], "gercek": np.exp(d["lp"][idx + h]),
+                         "lo80": P * np.exp(Q[:, 1]), "hi80": P * np.exp(Q[:, 3]),
+                         "lo95": P * np.exp(Q[:, 0]), "hi95": P * np.exp(Q[:, 4]), "model": kullanilan})
 
 
 # ---------------------------------------------------------------------------
