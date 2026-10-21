@@ -77,3 +77,6 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--cizgi)
   .kartlar, .guven { grid-template-columns: 1fr; }
   .kart + .kart { border-left: 0; border-top: 1px solid var(--cizgi); }
 }
+td.tuttu { color: var(--gercek); font-weight: 600; }
+td.tutmadi { color: var(--uyari); font-weight: 600; }
+#canli-son { margin-top: 18px; }

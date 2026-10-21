@@ -213,9 +213,41 @@ async function yarisma() {
   }
 }
 
+async function canliKarne() {
+  const ozet = document.getElementById("canli-ozet");
+  try {
+    const d = await al("/api/tahmin/canli-karne");
+    if (!d.kayit) {
+      ozet.textContent = "Bu karne, her sabah verilen 1, 3 ve 5 günlük aralıkları gerçek fiyat belli olmadan önce kaydeder ve " +
+        "sonra gerçekleşen fiyatla puanlar. Henüz kayıt yok; ilk kayıt bir sonraki sabah görevinde yapılacak.";
+      return;
+    }
+    ozet.textContent = `Her sabah verilen aralıklar, gerçek fiyat belli olmadan önce değiştirilemez biçimde kaydediliyor ` +
+      `(${tarih(d.baslangic)} kapanışından beri). Modellerin hiç görmediği, gerçekten ileriye dönük sonuçlar bunlar; ` +
+      "gün geçtikçe karne doluyor.";
+    document.getElementById("canli").replaceChildren(...d.ufuklar.map(u => el("div", { class: "blok" },
+      el("p", { class: "baslik" }, u.ufuk_gun === 1 ? "Bir sonraki gün" : `${u.ufuk_gun} gün sonra`),
+      el("p", { class: "buyuk" }, u.puanlanan ? `${u.tuttu80}/${u.puanlanan}` : "—"),
+      el("p", { class: "alt" }, u.puanlanan ? `%80 aralık tuttu (${yuzde(u.tutma80)})` : "henüz sonuçlanan tahmin yok"),
+      el("p", { class: "satir" }, u.puanlanan ? `%95 aralık: ${u.tuttu95}/${u.puanlanan} tuttu` : `${u.kayit} tahmin bekliyor`))));
+    const tbl = el("table", {}, el("thead", {}, el("tr", {}, el("th", {}, "Tahmin günü"), el("th", {}, "Ufuk"),
+      el("th", {}, "%80 aralık (TL)"), el("th", {}, "Gerçekleşen"), el("th", {}, "Sonuç"))));
+    const gov = el("tbody");
+    d.son_kayitlar.slice().reverse().forEach(r => gov.append(el("tr", {}, el("td", {}, kisa(r.bilgi_gunu)),
+      el("td", {}, `${r.ufuk_gun} gün`), el("td", {}, `${sayi(r.lo80)} – ${sayi(r.hi80)}`),
+      el("td", {}, r.gercek == null ? "bekliyor" : sayi(r.gercek)),
+      el("td", { class: r.in80 === true ? "tuttu" : (r.in80 === false ? "tutmadi" : "") },
+         r.in80 == null ? "—" : (r.in80 ? "tuttu" : "tutmadı")))));
+    tbl.append(gov);
+    document.getElementById("canli-son").replaceChildren(tbl);
+  } catch (e) {
+    ozet.textContent = `İleriye dönük karne okunamadı (${e.message}).`;
+  }
+}
+
 async function hepsi() {
   const gecmis = await buYil();
-  await Promise.all([tahmin(gecmis), yarisma()]);
+  await Promise.all([tahmin(gecmis), yarisma(), canliKarne()]);
 }
 hepsi();
 let sonGenislik = window.innerWidth, zamanlayici = null;

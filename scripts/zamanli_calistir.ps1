@@ -27,6 +27,20 @@ try {
         }
         catch { Not "UYARI: LIVE_V2 hatasi (LIVE_V1 etkilenmedi): $_" }
     }
+    # Ileriye donuk karne: 1/3/5 gun araliklari, fiziki kapanistan ONCE kaydedilir (yalnizca sabah).
+    if ($Gorev -eq "sabah") {
+        try {
+            & ".\.venv\Scripts\python.exe" -m src.tool.canli_karne kaydet
+            if ($LASTEXITCODE -ne 0) { Not "UYARI: ileriye donuk karne kaydi yapilamadi (diger kayitlar etkilenmedi)." }
+            $ck = "research/tool/canli_aralik_log.csv"
+            if (Test-Path $ck) {
+                git add $ck
+                git diff --cached --quiet -- $ck
+                if ($LASTEXITCODE -ne 0) { git commit -q -m "Ileriye donuk karne: 1/3/5 gun araliklari" -- $ck }
+            }
+        }
+        catch { Not "UYARI: ileriye donuk karne hatasi: $_" }
+    }
     # Veritabani aynasi (SQL Server / SQLite): kayitlari okur.
     try {
         & ".\.venv\Scripts\python.exe" -m src.db.store load

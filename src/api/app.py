@@ -180,6 +180,12 @@ def tahmin_bu_yil_yarisma():
     return _tahmin(ts.bu_yil_yarisma)
 
 
+@app.get("/api/tahmin/canli-karne")
+def tahmin_canli_karne():
+    """Ileriye donuk karne: her sabah onceden kaydedilen 1/3/5 gun araliklarinin tutma oranlari."""
+    return _tahmin(ts.canli_karne)
+
+
 @app.get("/api/tahmin/karne")
 def tahmin_karne():
     """Kayitli basari karnesi (egitim 2012-2017, test 2018-2022)."""

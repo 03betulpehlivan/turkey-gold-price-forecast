@@ -133,6 +133,19 @@ def bu_yil_yarisma() -> dict:
     return _clean(dict(_bu_yil_yarisma(_data_key(), str(yarisma_dosyasi()), yr.chronos_var())))
 
 
+@lru_cache(maxsize=4)
+def _canli_karne(key, log_key):
+    from src.tool import canli_karne as ck
+    return ck.karne(k.load_series(Path(key[0])), Path(log_key[0]))
+
+
+def canli_karne() -> dict:
+    from src.tool import canli_karne as ck
+    p = ck.LOG
+    log_key = (str(p), p.stat().st_mtime_ns if p.exists() else 0)
+    return _clean(dict(_canli_karne(_data_key(), log_key)))
+
+
 def yarisma(tool_dir: Path = None) -> dict:
     p = yarisma_dosyasi(tool_dir)
     res = json.loads(p.read_text(encoding="utf-8"))
