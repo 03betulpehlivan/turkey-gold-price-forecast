@@ -22,7 +22,15 @@ Modeller:
   GJR-t            asimetrik GARCH (dususler oynakligi daha cok artirir)
   EWMA+ACI, GARCH-t+ACI   araliklar, h gun once yapilan tahminlerin iskalamalarina gore kendini ayarlar
   XGBoost-kantil   makine ogrenmesi: son 10 gunluk getiriler ve 5/20/60 gunluk oynakliktan dogrudan yuzdelik
-  Chronos          (istege bagli) Amazon Chronos-Bolt, egitimsiz; son 512 gunun fiyatindan yuzdelik
+  ARIMA-GARCH      ortalama icin AR(1) (ARIMA(1,0,0)), oynaklik icin GARCH(1,1)-t
+  HAR              cok olcekli oynaklik: gunluk, haftalik (5) ve aylik (22) kare getirilerden h gunluk varyans (EKK)
+  Rejim (Markov)   iki rejimli (sakin / kriz) Markov modeli; rejim olasiliklari her gun yalnizca gecmisle guncellenir,
+                   parametreler uc ayda bir yeniden tahmin edilir
+  Birlesim         GARCH-t, EWMA ve Gecmis benzer modellerinin yuzdeliklerinin ortalamasi (onceden sabit uyeler)
+  Chronos          (istege bagli) Amazon Chronos-Bolt, egitimsiz; son 512 gunun fiyatindan %10/%50/%90 yuzdelik,
+                   %95 araligi bunlardan normal varsayimiyla turetilir (Bolt %10-%90 disini egitmedi)
+HAR ve Rejim modellerinde aralik sekli (kuyruk kalinligi), her pencerede modelin egitim donemindeki
+  standartlastirilmis hatalarinin yuzdeliklerinden alinir.
 """
 
 from datetime import datetime, timezone
@@ -45,7 +53,9 @@ SECIM = ("2012-01-01", "2023-01-01")         # bilgi gunu >= ilk, hedef gunu < i
 FINAL = "2023-01-01"                          # bilgi gunu >= bu
 HEDEF = {80: 3.0, 95: 2.0}                    # kabul edilen sapma (yuzde puani)
 QS = (0.025, 0.10, 0.50, 0.90, 0.975)
-MODELLER = ("Sabit aralik", "Gecmis benzer", "EWMA", "GARCH-t", "GJR-t", "EWMA+ACI", "GARCH-t+ACI", "XGBoost-kantil")
+MODELLER = ("Sabit aralik", "Gecmis benzer", "EWMA", "GARCH-t", "GJR-t", "EWMA+ACI", "GARCH-t+ACI", "XGBoost-kantil",
+            "ARIMA-GARCH", "HAR", "Rejim (Markov)", "Birlesim")
+BIRLESIM = ("GARCH-t", "EWMA", "Gecmis benzer")
 
 
 # ---------------------------------------------------------------------------
@@ -191,9 +201,114 @@ def m_chronos(d, idx, h, pipeline=None):
     Q = []
     for a in range(0, len(idx), 256):
         ctx = [tens(p[max(0, i + 1 - k.CHRONOS_CTX): i + 1]) for i in idx[a:a + 256]]
-        q, _ = pipeline.predict_quantiles(ctx, prediction_length=h, quantile_levels=list(QS))
-        Q.append(np.log(np.asarray(q)[:, h - 1, :] / p[idx[a:a + 256], None]))
+        q, _ = pipeline.predict_quantiles(ctx, prediction_length=h, quantile_levels=[0.1, 0.5, 0.9])
+        lq = np.log(np.asarray(q)[:, h - 1, :] / p[idx[a:a + 256], None])
+        s = (lq[:, 2] - lq[:, 0]) / (2 * 1.2815515655446004)
+        Q.append(np.column_stack([lq[:, 1] - 1.959963984540054 * s, lq[:, 0], lq[:, 1], lq[:, 2],
+                                  lq[:, 1] + 1.959963984540054 * s]))
     return {"Q": np.vstack(Q)}
+
+
+def _blok(d, idx, ceyrek=False):
+    if not ceyrek:
+        return ay_bloklari(d, idx)
+    per = pd.DatetimeIndex(d["tarih"][idx]).to_period("Q")
+    return np.split(idx, np.flatnonzero(per[1:] != per[:-1]) + 1) if len(idx) else []
+
+
+def _z_yuzdelik(y, olcek):
+    z = y / olcek
+    z = z[np.isfinite(z)]
+    return np.quantile(z, QS)
+
+
+def m_arima_garch(d, idx, h):
+    """AR(1) ortalama + GARCH(1,1)-t oynaklik; ay basi yeniden tahmin, sabit parametreyle gunluk filtre."""
+    from arch import arch_model
+    x = 100 * np.nan_to_num(d["r"], nan=0.0)
+    mu, sig, nu = np.empty(len(idx)), np.empty(len(idx)), np.empty(len(idx))
+    k_ = 0
+    for blok in ay_bloklari(d, idx):
+        b, e = int(blok[0]), int(blok[-1])
+        fs = b - PENCERE + 1
+        spec = dict(mean="AR", lags=1, vol="GARCH", p=1, q=1, dist="t", rescale=False)
+        res = arch_model(x[fs:b + 1], **spec).fit(disp="off", show_warning=False)
+        pr = res.params
+        seri = np.concatenate([x[fs:e + 2], np.zeros(max(0, e + 2 - len(x)))])
+        cv = np.asarray(arch_model(seri, **spec).fix(pr).conditional_volatility)
+        c, phi = float(pr["Const"]), float(pr["y[1]"])
+        p = float(pr["alpha[1]"] + pr["beta[1]"])
+        V = float(pr["omega"] / (1 - p)) if p < 0.999 else np.nan
+        for i in blok:
+            a2 = cv[i + 1 - fs] ** 2
+            ks = np.arange(1, h + 1)
+            m_ = np.sum(c * (1 - phi ** ks) / (1 - phi) + phi ** ks * x[i]) if abs(phi) < 0.999 else c * h
+            var = np.sum(V + p ** (ks - 1) * (a2 - V)) if np.isfinite(V) else a2 * h
+            mu[k_], sig[k_], nu[k_] = m_ / 100.0, math.sqrt(var) / 100.0, pr["nu"]
+            k_ += 1
+    return {"mu": mu, "sig": sig, "nu": nu}
+
+
+def _har_x(r):
+    r2 = np.nan_to_num(r, nan=0.0) ** 2
+    s = pd.Series(r2)
+    return np.column_stack([np.ones(len(r2)), r2, s.rolling(5).mean().to_numpy(), s.rolling(22).mean().to_numpy()])
+
+
+def m_har(d, idx, h):
+    """HAR: gelecek h gunun ortalama kare getirisi ~ dunku, haftalik ve aylik ortalama kare getiri (EKK)."""
+    r, lp = d["r"], d["lp"]
+    X = _har_x(r)
+    r2 = np.nan_to_num(r, nan=0.0) ** 2
+    hedef = np.full(len(r), np.nan)
+    cs = np.concatenate([[0.0], np.cumsum(r2)])
+    j = np.arange(len(r) - h)
+    hedef[j] = (cs[j + h + 1] - cs[j + 1]) / h                         # mean r2[j+1 .. j+h]
+    Q = np.empty((len(idx), len(QS)))
+    k_ = 0
+    for blok in ay_bloklari(d, idx):
+        b = int(blok[0])
+        tr = np.arange(b - PENCERE, b - h + 1)                         # hedefi b gunune kadar gerceklesmis
+        beta = np.linalg.lstsq(X[tr], hedef[tr], rcond=None)[0]
+        alt = 0.1 * float(np.mean(hedef[tr]))
+        olc = lambda rows: np.sqrt(h * np.maximum(X[rows] @ beta, alt))
+        zq = _z_yuzdelik(lp[tr + h] - lp[tr], olc(tr))
+        Q[k_:k_ + len(blok)] = olc(blok)[:, None] * zq[None, :]
+        k_ += len(blok)
+    return {"Q": Q}
+
+
+def m_rejim(d, idx, h):
+    """Iki rejimli Markov modeli (sabit + rejime gore varyans); ceyrek basi yeniden tahmin, gunluk filtre."""
+    import warnings
+    from statsmodels.tsa.regime_switching.markov_regression import MarkovRegression
+    x = 100 * np.nan_to_num(d["r"], nan=0.0)
+    lp = d["lp"]
+    Q = np.empty((len(idx), len(QS)))
+    k_ = 0
+    for blok in _blok(d, idx, ceyrek=True):
+        b, e = int(blok[0]), int(blok[-1])
+        fs = b - PENCERE + 1
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            res = MarkovRegression(x[fs:b + 1], k_regimes=2, trend="c", switching_variance=True).fit(disp=False)
+            fr = MarkovRegression(x[fs:e + 1], k_regimes=2, trend="c", switching_variance=True).filter(res.params)
+        names = res.model.param_names
+        s2 = np.array([res.params[names.index("sigma2[0]")], res.params[names.index("sigma2[1]")]])
+        T = np.asarray(fr.regime_transition)[:, :, 0]                  # T[sonraki, onceki]
+        P = np.asarray(fr.filtered_marginal_probabilities)              # P[t]: x[..t] ile
+        Tk = [np.linalg.matrix_power(T, kk) for kk in range(1, h + 1)]
+
+        def olcek(rows):
+            pr = P[rows - fs]
+            v = sum((pr @ M.T) @ s2 for M in Tk)
+            return np.sqrt(v) / 100.0
+
+        tr = np.arange(fs, b - h + 1)
+        zq = _z_yuzdelik(lp[tr + h] - lp[tr], olcek(tr))
+        Q[k_:k_ + len(blok)] = olcek(blok)[:, None] * zq[None, :]
+        k_ += len(blok)
+    return {"Q": Q}
 
 
 def aci(d, idx, h, f, gamma=ACI_GAMMA):
@@ -249,9 +364,25 @@ def tahminler(d, h, modeller=MODELLER, chronos_pipeline=None) -> dict:
             f = m_xgb(d, idx, h)
         elif m == "Chronos":
             f = m_chronos(d, idx, h, chronos_pipeline)
+        elif m == "ARIMA-GARCH":
+            f = m_arima_garch(d, idx, h)
+        elif m == "HAR":
+            f = m_har(d, idx, h)
+        elif m == "Rejim (Markov)":
+            f = m_rejim(d, idx, h)
+        elif m == "Birlesim":
+            continue
         else:
             raise ValueError(m)
         out[m] = yuzdelikler(f)
+    if "Birlesim" in modeller:
+        eksik = [u for u in BIRLESIM if u not in out]
+        for u in eksik:
+            out[u] = yuzdelikler({"GARCH-t": lambda: m_garch_t(d, idx, h, cache), "EWMA": lambda: m_ewma(d, idx, h),
+                                  "Gecmis benzer": lambda: m_gecmis(d, idx, h)}[u]())
+        out["Birlesim"] = np.mean([out[u] for u in BIRLESIM], axis=0)
+        for u in eksik:
+            out.pop(u)
     return {"idx": idx, "Q": out}
 
 
