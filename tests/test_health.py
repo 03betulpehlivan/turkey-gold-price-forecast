@@ -253,7 +253,7 @@ class TestScripts(unittest.TestCase):
         self.assertIn("catch {", block)
 
     def test_dashboard_shows_system_status(self):
-        html = (PROJECT_ROOT / "src" / "web" / "index.html").read_text(encoding="utf-8")
+        html = (PROJECT_ROOT / "src" / "web" / "detay.html").read_text(encoding="utf-8")
         js = (PROJECT_ROOT / "src" / "web" / "app.js").read_text(encoding="utf-8")
         self.assertIn('id="sistem"', html)
         self.assertIn('al("/api/system")', js)

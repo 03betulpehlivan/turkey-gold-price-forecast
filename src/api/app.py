@@ -24,6 +24,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src import findings as fd
+from src.tool import service as ts
 from src import health as hl
 from src.db import store
 
@@ -142,6 +143,36 @@ def exams():
         return {"exams": store.q_exams(c)}
 
 
+def _tahmin(fn):
+    try:
+        return fn()
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@app.get("/api/tahmin/yarin")
+def tahmin_yarin():
+    """Bir sonraki islem gunu icin aralik tahmini ve hareketli gun olasiligi (GARCH-t + pencere + ACI)."""
+    return _tahmin(ts.kart)
+
+
+@app.get("/api/tahmin/bu-yil")
+def tahmin_bu_yil():
+    """Icinde bulunulan yilin gunluk tahminleri ve gerceklesen fiyatlar."""
+    return _tahmin(ts.bu_yil)
+
+
+@app.get("/api/tahmin/karne")
+def tahmin_karne():
+    """Kayitli basari karnesi (egitim 2012-2017, test 2018-2022)."""
+    return _tahmin(ts.karne)
+
+
 @app.get("/", include_in_schema=False)
 def index():
     return FileResponse(WEB_DIR / "index.html", media_type="text/html; charset=utf-8")
+
+
+@app.get("/detay", include_in_schema=False)
+def detay():
+    return FileResponse(WEB_DIR / "detay.html", media_type="text/html; charset=utf-8")

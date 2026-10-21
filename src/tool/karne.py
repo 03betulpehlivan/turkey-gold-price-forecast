@@ -353,6 +353,19 @@ def run(prices: pd.Series, egitim: tuple, test: tuple, models=MODELS, esik: floa
             "yillar": {m: yearly(te, o) for m, o in outs.items()}}
 
 
+def gunluk(prices: pd.Series, egitim: tuple, test: tuple, model: str = ODAK, pencere=None) -> pd.DataFrame:
+    """Test gunleri icin gunluk tahmin tablosu: hedef gun, gerceklesen fiyat, tahmin ve araliklar."""
+    df = frame(prices)
+    tr, te = split(df, egitim, test)
+    full = df.loc[tr.index.min(): te.index.max()]
+    f = FUNCS[model]
+    o = f(tr, te, full, prices, pencere=pencere) if model in PENCERELI else f(tr, te, full, prices)
+    out = o[["T", "point", "lo80", "hi80", "lo95", "hi95"]].copy()
+    out.insert(1, "gercek", te["P1"].to_numpy(float))
+    out["p_hareketli"] = p_move(o["mu"].to_numpy(float), o["sigma"].to_numpy(float), ESIK, o["nu"].to_numpy(float))
+    return out.reset_index(drop=True)
+
+
 def tomorrow(prices: pd.Series, egitim: tuple, model: str = ODAK, esik: float = ESIK, pencere=None) -> dict:
     """Son kapanisa gore bir sonraki islem gunu icin tahmin karti. Egitim yillarindan sonraki gunler de (hedefi
     bilinen) gecmis olarak islenir; ACI ve pencere boylece guncel kalir. Kart son (hedefi bilinmeyen) satirdir."""

@@ -84,7 +84,7 @@ class TestApiAndDashboard(unittest.TestCase):
         self.assertIn("script-src 'self'", r.headers["content-security-policy"])
 
     def test_dashboard_section(self):
-        html = (PROJECT_ROOT / "src" / "web" / "index.html").read_text(encoding="utf-8")
+        html = (PROJECT_ROOT / "src" / "web" / "detay.html").read_text(encoding="utf-8")
         js = (PROJECT_ROOT / "src" / "web" / "app.js").read_text(encoding="utf-8")
         self.assertIn('id="bulgular"', html)
         self.assertIn('al("/api/findings")', js)

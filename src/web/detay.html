@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gram altın: ayrıntılı araştırma panosu</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%226%22 width=%2212%22 height=%224%22 fill=%22%238a6d22%22/%3E%3Crect x=%227.25%22 y=%223%22 width=%221.5%22 height=%2210%22 fill=%22%231f2a33%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Ayrıntılı araştırma panosu</h1>
+    <a class="durum" href="/">Ana ekrana dön</a>
+    <span class="durum" id="durum">Veriler yükleniyor…</span>
+  </header>
+  <section class="sistem" id="sistem" aria-live="polite"></section>
+  <p class="alt giris">Her iş günü kendiliğinden üretilen, önceden kayıtlı tahminler. Kayıtlar sonradan
+    değiştirilemez; başarı, 120 tahmin dolunca önceden belirlenen testle bir kez ölçülecek.</p>
+
+  <h2>Fiziki altın: bugünün kapanış tahmini</h2>
+  <p class="alt">Borsa İstanbul toptan kapanışı (TL/gr), sabah verilen tahmin. Koyu bant %80, açık bant %95 aralık;
+    yeşil çizgi gerçekleşen kapanış (yayımlandığında).</p>
+  <div class="serit" id="fiziki"></div>
+  <div class="serit dun" id="fiziki-dun"></div>
+
+  <h2>Teorik gram altın: ertesi gün tahmini</h2>
+  <p class="alt">Ons × USD/TRY ÷ 31,1035. Aynı model iki ons kaynağıyla: vadeli kontrat (GC=F) ve fiziki altın fonu (GLD).</p>
+  <div class="iki">
+    <div class="serit" id="teorik-v1"></div>
+    <div class="serit" id="teorik-v2"></div>
+  </div>
+
+  <h2>Fiziki kapanış, son 120 işlem günü</h2>
+  <div class="serit" id="grafik"></div>
+
+  <h2>Ara karne</h2>
+  <p class="alt">Puanlanmış tahminlerin ortalama mutlak hatası (TL). Betimleyicidir: önceden kayıtlı değerlendirme
+    120 tahmin dolunca bir kez yapılacak.</p>
+  <div id="karne"></div>
+
+  <h2>Canlı performans</h2>
+  <p class="alt">Her puanlanmış gün için “model hatası − yarın = bugün hatası” farkının birikimli toplamı (TL).
+    Sıfırın altı: model o güne kadar toplamda daha az hata yaptı. Betimleyicidir; önceden kayıtlı değerlendirmenin
+    yerine geçmez.</p>
+  <div class="performans" id="performans"></div>
+
+  <h2>Bağımsız sınavlar</h2>
+  <p class="alt">Önceden kayıtlı, tek seferlik testler. Olumsuz sonuçlar da olduğu gibi gösterilir.</p>
+  <div id="sinavlar"></div>
+
+  <h2>Araştırma bulguları</h2>
+  <p class="alt">Geliştirme verisiyle (2022 ve öncesi) yapılan keşif çalışmaları ve geriye dönük bağımsız sınav.
+    Sayılar depodaki sonuç dosyalarından okunur; hepsi <code>python -m src.repro</code> ile yeniden üretilebilir.
+    Keşif sonuçları model seçimi için kullanılmaz.</p>
+  <div class="bulgular" id="bulgular"></div>
+
+  <footer>
+    Kaynaklar: TCMB EVDS (fiziki kapanış), Yahoo Finance (ons, kur, GLD). Kayıtlar Git'te değiştirilemez biçimde
+    tutulur; bu sayfa onların veritabanı aynasını okur. API belgeleri: <a href="/docs">/docs</a>.
+    Araştırma ve eğitim amaçlıdır; yatırım tavsiyesi değildir.
+  </footer>
+</main>
+<script src="/static/app.js" defer></script>
+</body>
+</html>

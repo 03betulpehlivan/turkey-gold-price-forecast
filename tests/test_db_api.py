@@ -199,7 +199,7 @@ class TestPerformance(Base):
         self.assertEqual(cl.get("/api/performance", params={"protocol": "XYZ"}).status_code, 404)
 
     def test_dashboard_has_performance_and_turkish_messages(self):
-        html = (PROJECT_ROOT / "src" / "web" / "index.html").read_text(encoding="utf-8")
+        html = (PROJECT_ROOT / "src" / "web" / "detay.html").read_text(encoding="utf-8")
         js = (PROJECT_ROOT / "src" / "web" / "app.js").read_text(encoding="utf-8")
         self.assertIn('id="performans"', html)
         self.assertIn("/api/performance?protocol=", js)
@@ -303,7 +303,7 @@ class TestApi(Base):
         self.assertEqual(self.c.get("/static/app.css").status_code, 200)
         for bad in ("/static/../db/store.py", "/static/%2e%2e/db/store.py", "/static/missing.js"):
             self.assertEqual(self.c.get(bad).status_code, 404, bad)
-        html = (PROJECT_ROOT / "src" / "web" / "index.html").read_text(encoding="utf-8")
+        html = (PROJECT_ROOT / "src" / "web" / "detay.html").read_text(encoding="utf-8")
         self.assertIsNone(re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html))       # satir ici betik yok
         self.assertNotIn("<style", html)
         self.assertNotIn(" style=", html)
@@ -313,7 +313,7 @@ class TestApi(Base):
             self.assertNotIn(bad, js)
 
     def test_dashboard_served(self):
-        r = self.c.get("/")
+        r = self.c.get("/detay")                                                   # ayrintili arastirma panosu
         self.assertEqual(r.status_code, 200)
         self.assertIn("text/html", r.headers["content-type"])
         self.assertIn("/static/app.js", r.text)

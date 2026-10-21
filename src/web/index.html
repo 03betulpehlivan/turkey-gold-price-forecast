@@ -3,63 +3,58 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gram altın canlı tahmin kaydı</title>
+<title>Gram altın: yarın için tahmin</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%226%22 width=%2212%22 height=%224%22 fill=%22%238a6d22%22/%3E%3Crect x=%227.25%22 y=%223%22 width=%221.5%22 height=%2210%22 fill=%22%231f2a33%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/ana.css">
 </head>
 <body>
 <main>
   <header>
-    <h1>Gram altın canlı tahmin kaydı</h1>
-    <span class="durum" id="durum">Veriler yükleniyor…</span>
+    <h1>Gram altın için yarın</h1>
+    <p class="ust" id="ust">Tahmin hazırlanıyor…</p>
   </header>
-  <section class="sistem" id="sistem" aria-live="polite"></section>
-  <p class="alt giris">Her iş günü kendiliğinden üretilen, önceden kayıtlı tahminler. Kayıtlar sonradan
-    değiştirilemez; başarı, 120 tahmin dolunca önceden belirlenen testle bir kez ölçülecek.</p>
 
-  <h2>Fiziki altın: bugünün kapanış tahmini</h2>
-  <p class="alt">Borsa İstanbul toptan kapanışı (TL/gr), sabah verilen tahmin. Koyu bant %80, açık bant %95 aralık;
-    yeşil çizgi gerçekleşen kapanış (yayımlandığında).</p>
-  <div class="serit" id="fiziki"></div>
-  <div class="serit dun" id="fiziki-dun"></div>
+  <section class="tahmin" id="tahmin" aria-live="polite"></section>
 
-  <h2>Teorik gram altın: ertesi gün tahmini</h2>
-  <p class="alt">Ons × USD/TRY ÷ 31,1035. Aynı model iki ons kaynağıyla: vadeli kontrat (GC=F) ve fiziki altın fonu (GLD).</p>
-  <div class="iki">
-    <div class="serit" id="teorik-v1"></div>
-    <div class="serit" id="teorik-v2"></div>
-  </div>
+  <section>
+    <h2>Bu yıl tahminler ne kadar tuttu?</h2>
+    <p class="aciklama" id="buyil-ozet">Yükleniyor…</p>
+    <div class="grafik-kutu" id="buyil"></div>
+  </section>
 
-  <h2>Fiziki kapanış, son 120 işlem günü</h2>
-  <div class="serit" id="grafik"></div>
+  <section>
+    <h2>Geçmiş başarı</h2>
+    <p class="aciklama" id="karne-ozet">Yükleniyor…</p>
+    <div class="kiyas" id="kiyas"></div>
+  </section>
 
-  <h2>Ara karne</h2>
-  <p class="alt">Puanlanmış tahminlerin ortalama mutlak hatası (TL). Betimleyicidir: önceden kayıtlı değerlendirme
-    120 tahmin dolunca bir kez yapılacak.</p>
-  <div id="karne"></div>
+  <section>
+    <h2>Hava durumu gibi: söylenen olasılık tuttu mu?</h2>
+    <p class="aciklama">Sistem her gün “yarın fiyat %1'den fazla değişir mi?” sorusuna bir olasılık veriyor.
+      Aşağıda, verdiği olasılıklar gruplandı ve o günlerin gerçekte yüzde kaçının hareketli geçtiği yanına yazıldı.
+      İki sütun birbirine ne kadar yakınsa olasılıklara o kadar güvenilir.</p>
+    <div class="guven" id="guven"></div>
+  </section>
 
-  <h2>Canlı performans</h2>
-  <p class="alt">Her puanlanmış gün için “model hatası − yarın = bugün hatası” farkının birikimli toplamı (TL).
-    Sıfırın altı: model o güne kadar toplamda daha az hata yaptı. Betimleyicidir; önceden kayıtlı değerlendirmenin
-    yerine geçmez.</p>
-  <div class="performans" id="performans"></div>
+  <section>
+    <h2>Yıllara göre</h2>
+    <p class="aciklama">%80'lik aralığın her test yılında tuttuğu günlerin oranı. 2018 ve 2021 Türk lirası krizleri, 2020 ise pandemi yılı.</p>
+    <div class="yillar" id="yillar"></div>
+  </section>
 
-  <h2>Bağımsız sınavlar</h2>
-  <p class="alt">Önceden kayıtlı, tek seferlik testler. Olumsuz sonuçlar da olduğu gibi gösterilir.</p>
-  <div id="sinavlar"></div>
-
-  <h2>Araştırma bulguları</h2>
-  <p class="alt">Geliştirme verisiyle (2022 ve öncesi) yapılan keşif çalışmaları ve geriye dönük bağımsız sınav.
-    Sayılar depodaki sonuç dosyalarından okunur; hepsi <code>python -m src.repro</code> ile yeniden üretilebilir.
-    Keşif sonuçları model seçimi için kullanılmaz.</p>
-  <div class="bulgular" id="bulgular"></div>
+  <section class="nasil">
+    <h2>Nasıl çalışıyor?</h2>
+    <p id="nasil">Model, fiyatın yönünü değil ne kadar oynayacağını tahmin eder: çalkantılı günlerin art arda geldiğini
+      bilen bir oynaklık modeli (GARCH) son iki-üç yılın verisiyle her ay yeniden eğitilir; aralık son günlerde sık
+      ıskaladıysa kendiliğinden genişler. Başarı ölçülürken hiçbir tahmin, o günden sonraki fiyatları görmedi.</p>
+  </section>
 
   <footer>
-    Kaynaklar: TCMB EVDS (fiziki kapanış), Yahoo Finance (ons, kur, GLD). Kayıtlar Git'te değiştirilemez biçimde
-    tutulur; bu sayfa onların veritabanı aynasını okur. API belgeleri: <a href="/docs">/docs</a>.
-    Araştırma ve eğitim amaçlıdır; yatırım tavsiyesi değildir.
+    <a href="/detay">Ayrıntılı araştırma panosu</a>
+    <a href="/docs">API belgeleri</a>
+    <span>Fiziki gram altın, Borsa İstanbul kapanışı (TCMB EVDS). Araştırma ve eğitim amaçlıdır; yatırım tavsiyesi değildir.</span>
   </footer>
 </main>
-<script src="/static/app.js" defer></script>
+<script src="/static/ana.js"></script>
 </body>
 </html>
