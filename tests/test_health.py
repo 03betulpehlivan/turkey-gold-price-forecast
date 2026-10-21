@@ -175,7 +175,8 @@ class TestStatus(unittest.TestCase):
         durum.write_bytes("\ufeffYEDEK TAMAM\nESITLEME TAMAM\n".encode("utf-8"))           # PowerShell BOM'u
         with mock.patch.object(health, "STATUS_PATH", self.path), \
                 mock.patch.object(health, "HEARTBEAT_PATH", self.tmp / "heartbeat.json"), \
-                mock.patch.object(health, "_audit", OK_AUDIT), mock.patch.object(health, "ROOT", self.tmp):
+                mock.patch.object(health, "_audit", OK_AUDIT), mock.patch.object(health, "ROOT", self.tmp), \
+                mock.patch.object(health, "check_forecast", lambda root, task, today: []):    # haftanin gununden bagimsiz
             import contextlib
             import io
             with contextlib.redirect_stdout(io.StringIO()):

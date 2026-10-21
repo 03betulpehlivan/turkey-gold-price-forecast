@@ -1,0 +1,582 @@
+{
+  "seri": "fiziki gram altin (TL/gr)",
+  "egitim": [
+    2012,
+    2017
+  ],
+  "test": [
+    2018,
+    2022
+  ],
+  "esik_pct": 1.0,
+  "pencere": 750,
+  "egitim_gun": 1496,
+  "test_gun": 1242,
+  "modeller": {
+    "Yarin=bugun": {
+      "gun": 1242,
+      "ortalama_hata_tl": 5.447156199677938,
+      "ortalama_hata_pct": 1.1046756597062628,
+      "rw_gore_pct": 0.0,
+      "aralik80_tutma_pct": 71.98067632850241,
+      "aralik95_tutma_pct": 86.23188405797102,
+      "aralik80_genislik_pct": 2.638773941031314,
+      "hareketli_isabet_pct": 62.15780998389694,
+      "hep_sakin_isabet_pct": 62.15780998389694,
+      "hareketli_yakalama_pct": 0.0,
+      "hareketli_brier": 0.2374323473661591,
+      "guvenilirlik": [
+        {
+          "tahmin_araligi": "%20-40",
+          "gun": 1242,
+          "ortalama_tahmin_pct": 33.1373183636416,
+          "gerceklesen_pct": 37.84219001610306
+        }
+      ]
+    },
+    "GARCH": {
+      "gun": 1242,
+      "ortalama_hata_tl": 5.447156199677938,
+      "ortalama_hata_pct": 1.1046756597062628,
+      "rw_gore_pct": 0.0,
+      "aralik80_tutma_pct": 75.92592592592592,
+      "aralik95_tutma_pct": 90.57971014492753,
+      "aralik80_genislik_pct": 3.1166470609134316,
+      "hareketli_isabet_pct": 63.929146537842186,
+      "hep_sakin_isabet_pct": 62.15780998389694,
+      "hareketli_yakalama_pct": 18.085106382978726,
+      "hareketli_brier": 0.2221552464135759,
+      "guvenilirlik": [
+        {
+          "tahmin_araligi": "%20-40",
+          "gun": 861,
+          "ortalama_tahmin_pct": 31.88575527715728,
+          "gerceklesen_pct": 31.939605110336817
+        },
+        {
+          "tahmin_araligi": "%40-60",
+          "gun": 321,
+          "ortalama_tahmin_pct": 46.83190812154319,
+          "gerceklesen_pct": 46.10591900311526
+        },
+        {
+          "tahmin_araligi": "%60-80",
+          "gun": 48,
+          "ortalama_tahmin_pct": 68.77013807996191,
+          "gerceklesen_pct": 72.91666666666666
+        },
+        {
+          "tahmin_araligi": "%80-100",
+          "gun": 12,
+          "ortalama_tahmin_pct": 85.06683916656974,
+          "gerceklesen_pct": 100.0
+        }
+      ]
+    },
+    "GARCH-t": {
+      "gun": 1242,
+      "ortalama_hata_tl": 5.447156199677938,
+      "ortalama_hata_pct": 1.1046756597062628,
+      "rw_gore_pct": 0.0,
+      "aralik80_tutma_pct": 76.32850241545893,
+      "aralik95_tutma_pct": 94.36392914653784,
+      "aralik80_genislik_pct": 3.2174626311801213,
+      "hareketli_isabet_pct": 63.76811594202898,
+      "hep_sakin_isabet_pct": 62.15780998389694,
+      "hareketli_yakalama_pct": 16.80851063829787,
+      "hareketli_brier": 0.2239744046753836,
+      "guvenilirlik": [
+        {
+          "tahmin_araligi": "%0-20",
+          "gun": 19,
+          "ortalama_tahmin_pct": 19.169804072892447,
+          "gerceklesen_pct": 31.57894736842105
+        },
+        {
+          "tahmin_araligi": "%20-40",
+          "gun": 850,
+          "ortalama_tahmin_pct": 30.41432547360929,
+          "gerceklesen_pct": 32.94117647058823
+        },
+        {
+          "tahmin_araligi": "%40-60",
+          "gun": 316,
+          "ortalama_tahmin_pct": 46.77843468925771,
+          "gerceklesen_pct": 44.303797468354425
+        },
+        {
+          "tahmin_araligi": "%60-80",
+          "gun": 50,
+          "ortalama_tahmin_pct": 69.69914775770694,
+          "gerceklesen_pct": 74.0
+        },
+        {
+          "tahmin_araligi": "%80-100",
+          "gun": 7,
+          "ortalama_tahmin_pct": 87.1725636826861,
+          "gerceklesen_pct": 100.0
+        }
+      ]
+    },
+    "GJR-t": {
+      "gun": 1242,
+      "ortalama_hata_tl": 5.447156199677938,
+      "ortalama_hata_pct": 1.1046756597062628,
+      "rw_gore_pct": 0.0,
+      "aralik80_tutma_pct": 76.16747181964574,
+      "aralik95_tutma_pct": 93.88083735909822,
+      "aralik80_genislik_pct": 3.2083422536407813,
+      "hareketli_isabet_pct": 63.44605475040258,
+      "hep_sakin_isabet_pct": 62.15780998389694,
+      "hareketli_yakalama_pct": 15.957446808510639,
+      "hareketli_brier": 0.22487596777837252,
+      "guvenilirlik": [
+        {
+          "tahmin_araligi": "%0-20",
+          "gun": 19,
+          "ortalama_tahmin_pct": 19.228865131109522,
+          "gerceklesen_pct": 31.57894736842105
+        },
+        {
+          "tahmin_araligi": "%20-40",
+          "gun": 868,
+          "ortalama_tahmin_pct": 30.36768646558129,
+          "gerceklesen_pct": 32.94930875576037
+        },
+        {
+          "tahmin_araligi": "%40-60",
+          "gun": 299,
+          "ortalama_tahmin_pct": 47.0137155623989,
+          "gerceklesen_pct": 45.48494983277592
+        },
+        {
+          "tahmin_araligi": "%60-80",
+          "gun": 48,
+          "ortalama_tahmin_pct": 69.41561189712928,
+          "gerceklesen_pct": 70.83333333333334
+        },
+        {
+          "tahmin_araligi": "%80-100",
+          "gun": 8,
+          "ortalama_tahmin_pct": 86.78051485375265,
+          "gerceklesen_pct": 100.0
+        }
+      ]
+    },
+    "EWMA": {
+      "gun": 1242,
+      "ortalama_hata_tl": 5.447156199677938,
+      "ortalama_hata_pct": 1.1046756597062628,
+      "rw_gore_pct": 0.0,
+      "aralik80_tutma_pct": 81.96457326892109,
+      "aralik95_tutma_pct": 93.96135265700482,
+      "aralik80_genislik_pct": 4.012360351800201,
+      "hareketli_isabet_pct": 61.03059581320451,
+      "hep_sakin_isabet_pct": 62.15780998389694,
+      "hareketli_yakalama_pct": 45.1063829787234,
+      "hareketli_brier": 0.23245156081817137,
+      "guvenilirlik": [
+        {
+          "tahmin_araligi": "%0-20",
+          "gun": 68,
+          "ortalama_tahmin_pct": 13.386753941676185,
+          "gerceklesen_pct": 17.647058823529413
+        },
+        {
+          "tahmin_araligi": "%20-40",
+          "gun": 394,
+          "ortalama_tahmin_pct": 32.11905214093007,
+          "gerceklesen_pct": 29.695431472081218
+        },
+        {
+          "tahmin_araligi": "%40-60",
+          "gun": 553,
+          "ortalama_tahmin_pct": 48.76920868941157,
+          "gerceklesen_pct": 39.78300180831826
+        },
+        {
+          "tahmin_araligi": "%60-80",
+          "gun": 189,
+          "ortalama_tahmin_pct": 68.10631461624168,
+          "gerceklesen_pct": 50.79365079365079
+        },
+        {
+          "tahmin_araligi": "%80-100",
+          "gun": 38,
+          "ortalama_tahmin_pct": 85.12420656819391,
+          "gerceklesen_pct": 65.78947368421053
+        }
+      ]
+    },
+    "GARCH-t+ACI": {
+      "gun": 1242,
+      "ortalama_hata_tl": 5.447156199677938,
+      "ortalama_hata_pct": 1.1046756597062628,
+      "rw_gore_pct": 0.0,
+      "aralik80_tutma_pct": 79.95169082125604,
+      "aralik95_tutma_pct": 95.00805152979066,
+      "aralik80_genislik_pct": 3.536324791099351,
+      "hareketli_isabet_pct": 63.76811594202898,
+      "hep_sakin_isabet_pct": 62.15780998389694,
+      "hareketli_yakalama_pct": 16.80851063829787,
+      "hareketli_brier": 0.2239744046753836,
+      "guvenilirlik": [
+        {
+          "tahmin_araligi": "%0-20",
+          "gun": 19,
+          "ortalama_tahmin_pct": 19.169804072892447,
+          "gerceklesen_pct": 31.57894736842105
+        },
+        {
+          "tahmin_araligi": "%20-40",
+          "gun": 850,
+          "ortalama_tahmin_pct": 30.41432547360929,
+          "gerceklesen_pct": 32.94117647058823
+        },
+        {
+          "tahmin_araligi": "%40-60",
+          "gun": 316,
+          "ortalama_tahmin_pct": 46.77843468925771,
+          "gerceklesen_pct": 44.303797468354425
+        },
+        {
+          "tahmin_araligi": "%60-80",
+          "gun": 50,
+          "ortalama_tahmin_pct": 69.69914775770694,
+          "gerceklesen_pct": 74.0
+        },
+        {
+          "tahmin_araligi": "%80-100",
+          "gun": 7,
+          "ortalama_tahmin_pct": 87.1725636826861,
+          "gerceklesen_pct": 100.0
+        }
+      ]
+    },
+    "ARIMA": {
+      "gun": 1242,
+      "ortalama_hata_tl": 5.440275383894257,
+      "ortalama_hata_pct": 1.1030878073700183,
+      "rw_gore_pct": 0.12631941386384016,
+      "aralik80_tutma_pct": 71.81964573268921,
+      "aralik95_tutma_pct": 86.47342995169082,
+      "aralik80_genislik_pct": 2.639117330223529,
+      "hareketli_isabet_pct": 62.15780998389694,
+      "hep_sakin_isabet_pct": 62.15780998389694,
+      "hareketli_yakalama_pct": 0.0,
+      "hareketli_brier": 0.2373911896906619,
+      "guvenilirlik": [
+        {
+          "tahmin_araligi": "%20-40",
+          "gun": 1242,
+          "ortalama_tahmin_pct": 33.15603344939992,
+          "gerceklesen_pct": 37.84219001610306
+        }
+      ]
+    },
+    "XGBoost": {
+      "gun": 1242,
+      "ortalama_hata_tl": 5.579424749154961,
+      "ortalama_hata_pct": 1.131895672540855,
+      "rw_gore_pct": -2.4282128991425456,
+      "aralik80_tutma_pct": 59.33977455716586,
+      "aralik95_tutma_pct": 80.03220611916264,
+      "aralik80_genislik_pct": 1.9782645562264531,
+      "hareketli_isabet_pct": 62.39935587761675,
+      "hep_sakin_isabet_pct": 62.15780998389694,
+      "hareketli_yakalama_pct": 2.127659574468085,
+      "hareketli_brier": 0.2583345781175461,
+      "guvenilirlik": [
+        {
+          "tahmin_araligi": "%0-20",
+          "gun": 471,
+          "ortalama_tahmin_pct": 19.660400596758578,
+          "gerceklesen_pct": 37.79193205944799
+        },
+        {
+          "tahmin_araligi": "%20-40",
+          "gun": 734,
+          "ortalama_tahmin_pct": 23.061024060492354,
+          "gerceklesen_pct": 37.60217983651226
+        },
+        {
+          "tahmin_araligi": "%40-60",
+          "gun": 25,
+          "ortalama_tahmin_pct": 46.2374627731299,
+          "gerceklesen_pct": 32.0
+        },
+        {
+          "tahmin_araligi": "%60-80",
+          "gun": 10,
+          "ortalama_tahmin_pct": 70.20082963243472,
+          "gerceklesen_pct": 70.0
+        },
+        {
+          "tahmin_araligi": "%80-100",
+          "gun": 2,
+          "ortalama_tahmin_pct": 87.76014647209344,
+          "gerceklesen_pct": 50.0
+        }
+      ]
+    }
+  },
+  "yillar": {
+    "Yarin=bugun": [
+      {
+        "yil": 2018,
+        "gun": 249,
+        "ortalama_hata_pct": 1.0836334712425681,
+        "aralik80_tutma_pct": 73.09236947791165
+      },
+      {
+        "yil": 2019,
+        "gun": 247,
+        "ortalama_hata_pct": 0.8424717090308635,
+        "aralik80_tutma_pct": 79.75708502024291
+      },
+      {
+        "yil": 2020,
+        "gun": 250,
+        "ortalama_hata_pct": 1.2581390552584693,
+        "aralik80_tutma_pct": 66.8
+      },
+      {
+        "yil": 2021,
+        "gun": 246,
+        "ortalama_hata_pct": 1.2871353817118896,
+        "aralik80_tutma_pct": 72.35772357723577
+      },
+      {
+        "yil": 2022,
+        "gun": 250,
+        "ortalama_hata_pct": 1.0516874206776539,
+        "aralik80_tutma_pct": 68.0
+      }
+    ],
+    "GARCH": [
+      {
+        "yil": 2018,
+        "gun": 249,
+        "ortalama_hata_pct": 1.0836334712425681,
+        "aralik80_tutma_pct": 77.10843373493977
+      },
+      {
+        "yil": 2019,
+        "gun": 247,
+        "ortalama_hata_pct": 0.8424717090308635,
+        "aralik80_tutma_pct": 80.5668016194332
+      },
+      {
+        "yil": 2020,
+        "gun": 250,
+        "ortalama_hata_pct": 1.2581390552584693,
+        "aralik80_tutma_pct": 71.6
+      },
+      {
+        "yil": 2021,
+        "gun": 246,
+        "ortalama_hata_pct": 1.2871353817118896,
+        "aralik80_tutma_pct": 77.64227642276423
+      },
+      {
+        "yil": 2022,
+        "gun": 250,
+        "ortalama_hata_pct": 1.0516874206776539,
+        "aralik80_tutma_pct": 72.8
+      }
+    ],
+    "GARCH-t": [
+      {
+        "yil": 2018,
+        "gun": 249,
+        "ortalama_hata_pct": 1.0836334712425681,
+        "aralik80_tutma_pct": 73.89558232931726
+      },
+      {
+        "yil": 2019,
+        "gun": 247,
+        "ortalama_hata_pct": 0.8424717090308635,
+        "aralik80_tutma_pct": 78.54251012145748
+      },
+      {
+        "yil": 2020,
+        "gun": 250,
+        "ortalama_hata_pct": 1.2581390552584693,
+        "aralik80_tutma_pct": 70.8
+      },
+      {
+        "yil": 2021,
+        "gun": 246,
+        "ortalama_hata_pct": 1.2871353817118896,
+        "aralik80_tutma_pct": 79.67479674796748
+      },
+      {
+        "yil": 2022,
+        "gun": 250,
+        "ortalama_hata_pct": 1.0516874206776539,
+        "aralik80_tutma_pct": 78.8
+      }
+    ],
+    "GJR-t": [
+      {
+        "yil": 2018,
+        "gun": 249,
+        "ortalama_hata_pct": 1.0836334712425681,
+        "aralik80_tutma_pct": 73.49397590361446
+      },
+      {
+        "yil": 2019,
+        "gun": 247,
+        "ortalama_hata_pct": 0.8424717090308635,
+        "aralik80_tutma_pct": 77.32793522267207
+      },
+      {
+        "yil": 2020,
+        "gun": 250,
+        "ortalama_hata_pct": 1.2581390552584693,
+        "aralik80_tutma_pct": 70.8
+      },
+      {
+        "yil": 2021,
+        "gun": 246,
+        "ortalama_hata_pct": 1.2871353817118896,
+        "aralik80_tutma_pct": 79.67479674796748
+      },
+      {
+        "yil": 2022,
+        "gun": 250,
+        "ortalama_hata_pct": 1.0516874206776539,
+        "aralik80_tutma_pct": 79.60000000000001
+      }
+    ],
+    "EWMA": [
+      {
+        "yil": 2018,
+        "gun": 249,
+        "ortalama_hata_pct": 1.0836334712425681,
+        "aralik80_tutma_pct": 81.12449799196787
+      },
+      {
+        "yil": 2019,
+        "gun": 247,
+        "ortalama_hata_pct": 0.8424717090308635,
+        "aralik80_tutma_pct": 82.5910931174089
+      },
+      {
+        "yil": 2020,
+        "gun": 250,
+        "ortalama_hata_pct": 1.2581390552584693,
+        "aralik80_tutma_pct": 78.8
+      },
+      {
+        "yil": 2021,
+        "gun": 246,
+        "ortalama_hata_pct": 1.2871353817118896,
+        "aralik80_tutma_pct": 81.30081300813008
+      },
+      {
+        "yil": 2022,
+        "gun": 250,
+        "ortalama_hata_pct": 1.0516874206776539,
+        "aralik80_tutma_pct": 86.0
+      }
+    ],
+    "GARCH-t+ACI": [
+      {
+        "yil": 2018,
+        "gun": 249,
+        "ortalama_hata_pct": 1.0836334712425681,
+        "aralik80_tutma_pct": 76.70682730923694
+      },
+      {
+        "yil": 2019,
+        "gun": 247,
+        "ortalama_hata_pct": 0.8424717090308635,
+        "aralik80_tutma_pct": 81.37651821862349
+      },
+      {
+        "yil": 2020,
+        "gun": 250,
+        "ortalama_hata_pct": 1.2581390552584693,
+        "aralik80_tutma_pct": 77.2
+      },
+      {
+        "yil": 2021,
+        "gun": 246,
+        "ortalama_hata_pct": 1.2871353817118896,
+        "aralik80_tutma_pct": 82.92682926829268
+      },
+      {
+        "yil": 2022,
+        "gun": 250,
+        "ortalama_hata_pct": 1.0516874206776539,
+        "aralik80_tutma_pct": 81.6
+      }
+    ],
+    "ARIMA": [
+      {
+        "yil": 2018,
+        "gun": 249,
+        "ortalama_hata_pct": 1.084595349018305,
+        "aralik80_tutma_pct": 74.29718875502009
+      },
+      {
+        "yil": 2019,
+        "gun": 247,
+        "ortalama_hata_pct": 0.838760522449329,
+        "aralik80_tutma_pct": 79.75708502024291
+      },
+      {
+        "yil": 2020,
+        "gun": 250,
+        "ortalama_hata_pct": 1.2556239626194414,
+        "aralik80_tutma_pct": 66.4
+      },
+      {
+        "yil": 2021,
+        "gun": 246,
+        "ortalama_hata_pct": 1.2869735703954204,
+        "aralik80_tutma_pct": 70.73170731707317
+      },
+      {
+        "yil": 2022,
+        "gun": 250,
+        "ortalama_hata_pct": 1.0491819073235482,
+        "aralik80_tutma_pct": 68.0
+      }
+    ],
+    "XGBoost": [
+      {
+        "yil": 2018,
+        "gun": 249,
+        "ortalama_hata_pct": 1.115602023334784,
+        "aralik80_tutma_pct": 61.44578313253012
+      },
+      {
+        "yil": 2019,
+        "gun": 247,
+        "ortalama_hata_pct": 0.8732549728459493,
+        "aralik80_tutma_pct": 68.42105263157895
+      },
+      {
+        "yil": 2020,
+        "gun": 250,
+        "ortalama_hata_pct": 1.283168459472251,
+        "aralik80_tutma_pct": 52.400000000000006
+      },
+      {
+        "yil": 2021,
+        "gun": 246,
+        "ortalama_hata_pct": 1.3057023241099996,
+        "aralik80_tutma_pct": 60.56910569105691
+      },
+      {
+        "yil": 2022,
+        "gun": 250,
+        "ortalama_hata_pct": 1.0813626263732343,
+        "aralik80_tutma_pct": 54.0
+      }
+    ]
+  },
+  "created_at_utc": "2026-10-21T14:19:10+00:00"
+}
