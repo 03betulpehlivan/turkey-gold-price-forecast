@@ -30,11 +30,11 @@ a:focus-visible { outline: 2px solid var(--pirinc); outline-offset: 2px; }
 .aralik .tl { font-size: 0.45em; color: var(--soluk); font-weight: 500; margin-left: 6px; }
 .ikinci { margin: 10px 0 0; color: var(--soluk); }
 .ikinci b { color: var(--murekkep); font-weight: 600; }
-.hava { display: grid; grid-template-columns: 64px 1fr; gap: 2px 14px; align-items: center; }
-.hava svg { width: 64px; height: 64px; grid-row: span 2; }
-.hava .olasilik { font-size: 2rem; font-weight: 600; line-height: 1; }
+.hava { border-left: 1px solid var(--cizgi); padding-left: 28px; }
+.hava .olasilik { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-size: clamp(2rem, 5vw, 3rem);
+                  font-weight: 600; line-height: 1.05; }
 .hava .ne { font-size: 1rem; font-weight: 600; }
-.hava .tanim { grid-column: 1 / -1; color: var(--soluk); font-size: 0.85rem; margin-top: 8px; }
+.hava .tanim { color: var(--soluk); font-size: 0.85rem; margin-top: 8px; }
 .cetvel { margin-top: 26px; }
 .cetvel svg, .grafik-kutu svg, .guven svg, .yillar svg { display: block; width: 100%; height: auto; overflow: visible; }
 .cetvel text { font-size: 13px; fill: var(--soluk); }
@@ -73,6 +73,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--cizgi)
 @media (max-width: 720px) {
   .tahmin { padding: 22px 18px; }
   .tahmin-ust { grid-template-columns: 1fr; }
+  .hava { border-left: 0; padding-left: 0; border-top: 1px solid var(--cizgi); padding-top: 16px; }
   .kiyas { grid-template-columns: 1fr; }
   .cubuk { grid-template-columns: 120px 1fr 56px; }
 }

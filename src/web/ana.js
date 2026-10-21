@@ -36,31 +36,10 @@ const yuzde = (v, d = 1) => "%" + sayi(v, d);
 const tarih = iso => { const [y, m, g] = iso.split("-").map(Number); return `${g} ${AY[m - 1]} ${y}`; };
 const kisaTarih = iso => { const [, m, g] = iso.split("-").map(Number); return `${g} ${AY[m - 1]}`; };
 
-function havaSimgesi(p) {
-  const s = svg("svg", { viewBox: "0 0 64 64", role: "img", "aria-hidden": "true" });
-  const gunes = (cx, cy, r) => {
-    s.append(svg("circle", { cx, cy, r, fill: "var(--gunes)" }));
-    for (let i = 0; i < 8; i++) {
-      const a = (i * Math.PI) / 4;
-      s.append(svg("line", { x1: cx + Math.cos(a) * (r + 4), y1: cy + Math.sin(a) * (r + 4), x2: cx + Math.cos(a) * (r + 9),
-                             y2: cy + Math.sin(a) * (r + 9), stroke: "var(--gunes)", "stroke-width": 3, "stroke-linecap": "round" }));
-    }
-  };
-  const bulut = (x, y, k, renk) => s.append(svg("path", {
-    d: `M${x} ${y} a${8 * k} ${8 * k} 0 0 1 ${15 * k} -${4 * k} a${10 * k} ${10 * k} 0 0 1 ${19 * k} ${4 * k} a${6 * k} ${6 * k} 0 0 1 0 ${12 * k} h-${34 * k} a${6 * k} ${6 * k} 0 0 1 0 -${12 * k}z`,
-    fill: renk }));
-  if (p < 25) gunes(32, 32, 12);
-  else if (p < 50) { gunes(24, 24, 10); bulut(22, 38, 1, "var(--soluk)"); }
-  else {
-    bulut(14, 26, 1.1, "var(--soluk)");
-    s.append(svg("path", { d: "M34 42 l-7 11 h7 l-4 10 l11 -14 h-7 l4 -7z", fill: "var(--uyari)" }));
-  }
-  return s;
-}
-function havaMetni(p) {
-  if (p < 25) return "Sakin bir gün bekleniyor";
-  if (p < 50) return "Biraz hareketli olabilir";
-  return "Hareketli bir gün bekleniyor";
+function olasilikMetni(p) {
+  if (p < 25) return "Düşük";
+  if (p < 50) return "Orta";
+  return "Yüksek";
 }
 
 const genislik = id => Math.max(300, Math.round(document.getElementById(id).clientWidth || 900));
@@ -95,9 +74,11 @@ async function tahmin() {
       el("p", { class: "aralik" }, `${sayi(k.aralik80[0])} – ${sayi(k.aralik80[1])}`, el("span", { class: "tl" }, "TL")),
       el("p", { class: "ikinci" }, "%95 olasılıkla ", el("b", {}, `${sayi(k.aralik95[0])} – ${sayi(k.aralik95[1])} TL`)),
       el("p", { class: "ikinci" }, "Son kapanış ", el("b", {}, `${sayi(k.son_kapanis, 2)} TL`), ` (${tarih(k.bilgi_gunu)})`));
-    const sag = el("div", { class: "hava" }, havaSimgesi(p), el("div", { class: "olasilik" }, yuzde(p, 0)),
-      el("div", { class: "ne" }, havaMetni(p)),
-      el("div", { class: "tanim" }, `Hareketli gün olasılığı: fiyatın bir günde %${sayi(k.esik_pct, 0)}'den fazla değişme olasılığı.`));
+    const sag = el("div", { class: "hava" },
+      el("p", { class: "etiket" }, "Hareketli gün olasılığı"),
+      el("div", { class: "olasilik" }, yuzde(p, 0)),
+      el("div", { class: "ne" }, olasilikMetni(p)),
+      el("div", { class: "tanim" }, `Fiyatın bir günde %${sayi(k.esik_pct, 0)}'den fazla değişme olasılığı.`));
     kutu.replaceChildren(el("div", { class: "tahmin-ust" }, sol, sag), el("div", { class: "cetvel", id: "cetvel" }),
       el("p", { class: "not" }, "Koyu bant %80, açık bant %95 olasılık aralığı. Hafta sonu ve resmî tatiller işlem günü sayılmaz."));
     document.getElementById("cetvel").append(cetvel(k, genislik("cetvel")));
