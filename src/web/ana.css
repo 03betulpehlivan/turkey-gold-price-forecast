@@ -80,3 +80,5 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--cizgi)
 td.tuttu { color: var(--gercek); font-weight: 600; }
 td.tutmadi { color: var(--uyari); font-weight: 600; }
 #canli-son { margin-top: 18px; }
+#buyil-son { margin-top: 26px; }
+.alt-baslik { font-size: 1.05rem; font-weight: 600; margin: 0 0 6px; }

@@ -144,6 +144,23 @@ async function buYil() {
     document.getElementById("buyil").replaceChildren(s, el("div", { class: "lejant" },
       el("span", { class: "lg" }, "gerçekleşen kapanış"), el("span", { class: "l80" }, "%80 aralık"),
       el("span", { class: "l95" }, "%95 aralık"), el("span", { class: "ld" }, "%80 aralığın dışında kalan gün")));
+    const son = g.slice(-15).reverse();
+    const t80 = son.filter(r => r.gercek >= r.lo80 && r.gercek <= r.hi80).length;
+    const tbl = el("table", {}, el("thead", {}, el("tr", {}, el("th", {}, "Gün"), el("th", {}, "%80 aralık (TL)"),
+      el("th", {}, "%95 aralık (TL)"), el("th", {}, "Gerçekleşen"), el("th", {}, "Sonuç"))));
+    const gov = el("tbody");
+    son.forEach(r => {
+      const ok = r.gercek >= r.lo80 && r.gercek <= r.hi80, ok95 = r.gercek >= r.lo95 && r.gercek <= r.hi95;
+      gov.append(el("tr", {}, el("td", {}, kisa(r.tarih)), el("td", {}, `${sayi(r.lo80)} – ${sayi(r.hi80)}`),
+        el("td", {}, `${sayi(r.lo95)} – ${sayi(r.hi95)}`), el("td", {}, sayi(r.gercek)),
+        el("td", { class: ok ? "tuttu" : "tutmadi" }, ok ? "tuttu" : (ok95 ? "tutmadı (%95 tuttu)" : "tutmadı"))));
+    });
+    tbl.append(gov);
+    document.getElementById("buyil-son").replaceChildren(
+      el("h3", { class: "alt-baslik" }, `Son ${son.length} işlem günü: bir gün önceden verilen aralık tuttu mu?`),
+      el("p", { class: "aciklama" }, `${son.length} günün ${t80} tanesinde fiyat %80 aralığın içinde kaldı. ` +
+        "Bu bir geriye dönük sınamadır: her gün için model yalnızca o güne kadarki fiyatları gördü, ama hesap sonradan yapıldı. " +
+        "Gerçekten önceden kaydedilen tahminler aşağıdaki ileriye dönük karnede."), tbl);
     return g;
   } catch (e) {
     ozet.textContent = `Bu yılın tahminleri hesaplanamadı (${e.message}).`;
