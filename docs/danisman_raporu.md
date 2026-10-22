@@ -1,254 +1,178 @@
-# Türkiye'de Gram Altın Fiyatlarının Makine Öğrenmesi Tabanlı Tahmini ve Analiz Sistemi
+# Gram Altın Fiyat Aralığı Tahmini
 
-**Ara rapor — 17 Ekim 2026**
+**Ara rapor — 22 Ekim 2026**
 
 Fatma Betül Pehlivan · Selçuk Üniversitesi Bilgisayar Mühendisliği · github.com/03betulpehlivan/turkey-gold-price-forecast
 
 ---
 
-## Özet
+## 1. Kısaca
 
-Bu proje, Türkiye'deki **fiziki** gram altın fiyatı (Borsa İstanbul) ile ons altın ve USD/TRY'den hesaplanan **teorik** gram fiyatı için kısa vadeli tahmin üretir, tahminlerin belirsizliğini ölçer ve bütün sonuçları **sızıntısız, önceden kayıtlı ve bağımsız** testlerle değerlendirir. Bunların üzerine her gün kendiliğinden çalışan bir canlı tahmin sistemi, SQL Server veritabanı, REST API ve web panosu kuruldu.
+Bu proje, gram altının **1, 3 ve 5 gün sonra hangi fiyat aralığında olacağını** tahmin ediyor.
 
-**Ana bulgular:**
+Örnek bir çıktı:
 
-1. **Günlük fiyat yönü ve seviyesi, "yarın = bugün" yönteminden (RW) anlamlı biçimde daha iyi tahmin edilemiyor.** Üç bağımsız sınavın hiçbirinde model RW'yi geçemedi. Teorik fiyatta pratikte eşdeğer, fiziki fiyatta 2023–2026'da daha kötü sonuç verdi.
-2. **Literatürdeki yüksek başarı oranları büyük ölçüde değerlendirme hatalarından kaynaklanıyor.** Aynı veriyle, fiyat seviyesinde ölçülen R² "yarın = bugün" için bile 0,999 çıkıyor. Doğru kurulumda LSTM dahil hiçbir model RW'yi anlamlı biçimde geçmiyor.
-3. **Tahmin edilebilir olan şey oynaklık.** GARCH, oynaklığı sabit sayan modeli 11 yılın 10'unda geçiyor ve tahmin aralıklarının ihlallerini kümelenmekten kurtarıyor.
-4. **Fiziki fiyat için gerçek bir bilgi kaynağı bulundu, ama kırılgan.** Gece gelen ons ve kur hareketi 2012–2022'de hatayı %22 azalttı. Ancak 2023'ten sonra fiziki prim kalıcı biçimde açıldı ve bu ilişki bozuldu. Prim, 2006–2022 boyunca hep sıfır civarında kalmıştı (yarı ömür 0,5 hafta); bu kırılmanın geçmişte bir emsali yok.
-5. **Veri kaynağında ciddi sorunlar tespit edildi.** Yahoo Finance günlük verisinde ons ve kur 13–16 saat farklı anlara ait. Vadeli ons serisinde sahte sıçramalar var. 2005–2010 kur verisi geleceği sızdırıyor.
-6. **Canlı sistem 15 Ekim 2026'dan beri çalışıyor.** Dört protokol önceden kayıtlı kurallarla kayıt tutuyor. 120 tahmin dolunca (yaklaşık Nisan 2027) değerlendirme bir kez yapılacak. Güç analizine göre bu örneklem, fiziki tarafta %20 ve üzeri bir iyileşmeyi güvenle görebilir.
+> 20 Ekim 2026 kapanışı 6.560 TL.
+> Bir sonraki işlem günü, **%80 olasılıkla 6.490 – 6.675 TL**, **%95 olasılıkla 6.414 – 6.753 TL** arasında olacak.
 
-![Bağımsız sınavlar](figures/sinavlar.png)
+Üç ana sonuç:
+
+1. **Tahminler tutuyor.** Sistem, hiç görmediği 2023–2026 döneminde (yaklaşık 940 işlem günü) "%95 olasılıkla" dediği aralıkların **%95–96'sında** haklı çıktı.
+2. **Basit yöntemden daha faydalı.** Aynı güvenle, basit yöntemin verdiği aralıktan **%25–30 daha dar** aralıklar veriyor. Fark istatistiksel olarak anlamlı (p < 0,01).
+3. **Fiyatın yönü tahmin edilemiyor.** "Yarın altın yükselecek mi?" sorusunda hiçbir model yazı-turadan iyi olmadı. Bu yüzden sistem yön değil, **aralık** tahmin ediyor.
+
+## 2. Neden aralık tahmini?
+
+Projenin ilk aşamasında yarınki fiyatı ve yönünü tahmin etmeye çalıştım. Doğrusal model, XGBoost ve LSTM gibi yöntemleri dikkatli testlerle sınadım. Hiçbiri "yarın = bugün" diyen en basit tahminden daha iyi olmadı. Yön tahmininde isabet %51–53 kaldı; yazı-turada bu oran %50.
+
+Bunun nedeni şu: altın dünyanın en çok işlem gören varlıklarından biri. Fiyatın yarın yükseleceği bugünden bilinseydi, herkes bugün alırdı ve fiyat hemen bugün yükselirdi. Bu yüzden günlük yön büyük ölçüde rastgeledir.
+
+Ama fiyatın **ne kadar oynayacağı** tahmin edilebiliyor. Hava durumuna benziyor: yarın yağmurun tam olarak nereye düşeceği bilinmez, ama havanın fırtınalı mı sakin mi olacağı tahmin edilebilir. Altında da çalkantılı günler art arda gelir. Sistem bunu kullanarak "fiyat şu iki değer arasında olacak" diye bir aralık veriyor.
+
+## 3. Nasıl test ettim?
+
+Bir tahmin sisteminin gerçekten işe yarayıp yaramadığını anlamak için, onu **geleceği bilmediği** bir durumda sınamak gerekir. Bunun için iki kural koydum.
+
+**Kural 1: Model her zaman yalnızca geçmişi görür.** Her ayın başında model, o güne kadarki son 3 yılın verisiyle yeniden kuruluyor. Sonra o ayın her günü için 1, 3 ve 5 gün sonrasını tahmin ediyor. Hiçbir tahmin, o günden sonraki fiyatları görmüyor.
+
+**Kural 2: En iyi model, son sınavdan önce seçilir.** Veriyi ikiye ayırdım:
+
+| Dönem | Ne için kullanıldı? |
+| --- | --- |
+| 2012–2022 | Modeller yarıştı, en iyisi burada seçildi. |
+| 2023–2026 | Seçilen model ilk kez burada sınandı (son sınav). |
+
+**"En iyi model" ne demek?** İki şeye birden bakıldı:
+
+- **Tutma oranı:** "%95 olasılıkla" dediği aralık, gerçekten günlerin yaklaşık %95'inde tuttu mu?
+- **Darlık:** Aralık ne kadar dar? Çok geniş bir aralık her zaman tutar ama işe yaramaz. "Yarın 1.000 ile 20.000 TL arası" doğrudur ama bilgi vermez.
+
+Tutma oranı hedefe yakın olan modeller arasında **en dar aralığı veren** model kazandı.
+
+## 4. Model yarışması
+
+16 model yarıştı. Bir kısmı basit, bir kısmı istatistik, bir kısmı yapay zekâ modeli:
+
+| Grup | Modeller |
+| --- | --- |
+| Basit yöntemler | Sabit aralık, geçmiş benzer günler, EWMA |
+| Oynaklık modelleri | GARCH-t, GJR-GARCH, ARIMA-GARCH, HAR, rejim modeli (Markov) |
+| Ayarlı sürümler | GARCH-t + ayar, EWMA + ayar (aralık ıskaladıkça kendini genişletir) |
+| Makine öğrenmesi ve yapay zekâ | XGBoost, Chronos (Amazon'un hazır modeli) |
+| Ek bilgili modeller | HAR-X (petrol, dolar, korku endeksi), GARCH-t + Fed günleri |
+| Birleşimler | Üç modelin ortalaması; ARIMA-GARCH ile Chronos'un ortalaması |
+
+**Kazananlar:**
+
+| Tahmin | Kazanan model |
+| --- | --- |
+| 1 gün sonra | ARIMA-GARCH |
+| 3 gün sonra | ARIMA-GARCH + Chronos (istatistik ve yapay zekâ birlikte) |
+| 5 gün sonra | ARIMA-GARCH + Chronos |
+
+## 5. Sonuç: hiç görülmemiş dönemde ne oldu?
+
+Kazanan modeller 2023–2026'da şu sonuçları verdi:
+
+| Tahmin | "%95 olasılıkla" dediği aralık tuttu | "%80 olasılıkla" dediği aralık tuttu | Basit yönteme göre |
+| --- | --- | --- | --- |
+| 1 gün sonra | **%94,7** | %77,3 | %13 daha iyi (p = 0,0005) |
+| 3 gün sonra | **%96,2** | %84,3 | %13 daha iyi (p < 0,0001) |
+| 5 gün sonra | **%96,2** | %84,0 | %10 daha iyi (p = 0,002) |
+
+"Daha iyi" oranı, aralığın hem darlığını hem de tutma oranını birlikte ölçen bir puana göre hesaplandı. Küçük p değerleri, farkın şans eseri olmadığını gösteriyor.
+
+Kullanıcı için anlamı şu grafikte:
+
+![Aralık genişliği karşılaştırması](figures/yarisma.png)
+
+Örneğin 1 gün sonrası için basit yöntem ortalama **356 TL** genişliğinde bir aralık veriyor. Bu sistem ise **252 TL** genişliğinde bir aralık veriyor ve yine %95 güvenilir. Yani kullanıcı, aynı güvenle daha net bir bilgi alıyor.
+
+**Zayıf yanlar:**
+
+- Ertesi gün için "%80" dediği aralık %77 tuttu; hedefin biraz altında. En zayıf yıl 2023 (%71). O yıl fiziki altın, uluslararası fiyattan beklenmedik biçimde ayrıştı.
+- 3 ve 5 günde "%80" dediği aralık %84 tuttu; yani aralık gerekenden biraz geniş. Bu, ters yönde hata yapmaktan, yani aralığın tutmamasından iyidir.
+
+## 6. Denediğim ama işe yaramayanlar
+
+Olumsuz sonuçları da raporluyorum, çünkü neyin işe yaramadığını bilmek de önemli.
+
+| Ne denedim? | Sonuç |
+| --- | --- |
+| Fiyatın yönünü tahmin etmek (LSTM, XGBoost dahil) | Yazı-turadan iyi değil (%51–53). |
+| Makine öğrenmesiyle aralık (XGBoost) | Aralıkları fazla dar tuttu; "%80" dediği %74–76 tuttu. |
+| Dış piyasa verisi (petrol, dolar endeksi, korku endeksi, kur) | Modeli iyileştirmedi, biraz kötüleştirdi. |
+| Fed toplantı günleri (2012–2026, 119 gün) | Ek bilgi katmadı. GARCH, olaylardan sonra oynaklığa zaten hızla uyum sağlıyor. |
+| Kronos (finans için hazır yapay zekâ modeli) | 1 günde ARIMA-GARCH ile aynı; 3 ve 5 günde aralıkları fazla dar. Kronos mum grafiğiyle (açılış, en yüksek, en düşük, kapanış) eğitilmiş; bizde yalnızca kapanış fiyatı var. |
+
+## 7. Kullanıcı ne görüyor?
+
+Sistemin bir web arayüzü var. Açıldığında kullanıcı şunları görüyor:
+
+1. Son 30 günün fiyatı ve 1, 3, 5 gün sonrası için **yelpaze şeklinde** tahmin aralıkları.
+2. Her ufuk için aralık kartı: "%80 olasılıkla … TL".
+3. **Hareketli gün uyarısı:** ertesi gün fiyatın %1'den fazla değişme olasılığı yüksekse uyarı.
+4. **Ne kadar güvenilir?** Hiç görülmemiş dönemin sonuçları.
+5. **Bu yıl:** 2026'da 197 işlem gününün 155'inde fiyat, bir gün önceden verilen %80 aralığın içinde kaldı (%78,7). %95 aralık %95,4 tuttu.
+6. **İleriye dönük karne:** sistem Ekim 2026'dan beri her sabah tahminini, gerçek fiyat belli olmadan önce değiştirilemez biçimde kaydediyor. Karne gün geçtikçe doluyor.
+7. Model yarışması tablosu.
+8. "Bu bir yatırım tavsiyesi değil, istatistiksel bir risk aralığıdır" notu.
+
+![Ana ekran](figures/ana_ekran.png)
+
+## 8. Sistemin teknik yapısı (kısaca)
+
+- **Veri:** fiziki gram altın kapanışları Merkez Bankası'ndan (TCMB EVDS), ons ve kur fiyatları Yahoo Finance'tan.
+- **Otomatik çalışma:** bilgisayar her iş günü kendiliğinden yeni veriyi indiriyor ve tahmin üretiyor.
+- **Veritabanı ve arayüz:** Microsoft SQL Server, FastAPI ile yazılmış bir REST API ve web arayüzü.
+- **Güvenilirlik:** 690'dan fazla otomatik test; kayıtların değiştirilmediğini her gün kontrol eden bir denetim; görev çalışmazsa e-posta gönderen bir bekçi.
+
+## 9. Sınırlar
+
+- Fiziki fiyat, Borsa İstanbul'daki toptan fiyattır; kuyumcu fiyatını kapsamaz.
+- Sistem yön tahmin etmez; yalnızca aralık verir.
+- 2023–2026 sonuçlarını yarışmaya yeni modeller eklerken birkaç kez gördüm. Bu yüzden en temiz kanıt, **ileriye dönük karne** olacak.
+- Araştırma ve eğitim amaçlıdır; yatırım tavsiyesi değildir.
+
+## 10. Gelecek çalışmalar
+
+1. **İleriye dönük karnenin büyümesi.** Birkaç ay içinde biriken kayıtlarla, sistemin gerçekten ileriye dönük başarısı ölçülecek.
+2. **TL'ye özgü olay günleri.** Fed günleri bir şey katmadı. TL bazında altın için TCMB faiz kararları ve Türkiye enflasyon verisi daha etkili olabilir.
+3. **Mum grafiği verisi.** Gün içi veriyle (açılış, en yüksek, en düşük) Kronos gibi modeller adil biçimde yeniden sınanabilir.
+4. **Yeni yapay zekâ modelleri.** Chronos'un yeni sürümü Chronos-2 ve Google'ın TimesFM modeli aynı yarışmayla denenebilir.
+5. **Kullanıcı özellikleri.** Herkese açık bir web sayfası, hareketli gün bildirimi, çeyrek ve Cumhuriyet altını gibi farklı ürünler.
 
 ---
 
-## 1. Problem ve motivasyon
+## Ek: İlk aşamanın grafikleri
 
-Gram altın Türkiye'de en yaygın birikim araçlarından biri. Fiyatı esas olarak uluslararası ons fiyatına ve USD/TRY kuruna bağlı, ama yurt içi fiziki piyasa zaman zaman uluslararası fiyattan ayrışıyor.
+Projenin ilk aşamasında yön tahminini ve oynaklığı ayrıntılı inceledim. Bu grafikler o çalışmaya ait; ayrıntılı açıklamalar web arayüzündeki "Ayrıntılı araştırma panosu" sayfasında.
 
-Literatürde altın fiyatını yüksek doğrulukla tahmin ettiğini söyleyen çok sayıda çalışma var (23 çalışmalık literatür taraması: `Literatur_Taramasi_Raporu_Gram_Altin.pdf`). Bu çalışmaların çoğu rastgele bölme, bütün veriyle ölçekleme ve fiyat seviyesinde R² gibi, geleceği farkında olmadan modele sızdıran yöntemler kullanıyor. Bu projenin çıkış noktası şu soru oldu: **Bu başarılar, gerçek bir tahmin ortamında, yani yalnızca o gün bilinebilen bilgiyle de geçerli mi?**
+**Bağımsız sınavlar:** yön tahmini üç ayrı sınavda da "yarın = bugün"den iyi olmadı.
 
-Bu yüzden projede yöntemsel titizlik, model karmaşıklığından önce geliyor. Her sonuç, türüyle birlikte raporlanıyor:
+![Bağımsız sınavlar](figures/sinavlar.png)
 
-- **Keşif:** geliştirme verisi; model seçimi burada yapılır; kanıt değeri sınırlıdır.
-- **Bağımsız sınav:** önceden kayıtlı, tek seferlik, hiç görülmemiş veri.
-- **Canlı:** ileriye dönük, değiştirilemez kayıt.
-
-## 2. Araştırma soruları ve hipotezler
-
-| Soru | Hipotez | Test | Durum |
-| --- | --- | --- | --- |
-| **S1.** Günlük teorik fiyat RW'den iyi tahmin edilebilir mi? | Model RW'den daha az hata yapar | `FINAL_EXAM_V1` (2026, bağımsız) | **Desteklenmedi:** pratikte eşdeğer (+%0,2 [−1,2, +1,3]) |
-| **S2.** Gece bilgisi fiziki fiyatı tahmin etmeye yardım eder mi? | Boşluk modeli RW'den daha az hata yapar | `FINAL_EXAM_PHYS_V1` (2023–2026, bağımsız) | **Desteklenmedi:** RW'den %9,1 kötü [−20,8, −0,3], p = 0,03 |
-| | Yalnız gece ons bilgisi, hiç görülmemiş dönemde de işe yarar | `BACK_EXAM_ONS_V1` (2001–2004, geriye dönük bağımsız) | **Desteklenmedi:** +%0,5 [−3,8, +5,1], p = 0,81 |
-| **S3.** Tahmin belirsizliği güvenilir ölçülebilir mi? | Oynaklığa duyarlı aralıklar kalibre olur | Teorik: teyit testi + 2026 sınavı | Teyit testinde **desteklendi**; 2026'da %80 aralıkta ihlaller kümelendi, **desteklenmedi** |
-| | Oynaklık tahmin edilebilir | Oynaklık çalışması (keşif) | **Evet:** GARCH 11 yılın 10'unda sabit oynaklığı geçiyor |
-| **S4.** Sonuçlar canlı ortamda geçerli mi? | Ön kayıtlı canlı protokoller | `LIVE_PHYS_V1`, `LIVE_PHYS_INT_V1`, `LIVE_V1`, `LIVE_V2` | **Kayıt sürüyor;** değerlendirme 120 tahminden sonra |
-
-## 3. Veri
-
-| Veri | Kaynak | Dönem |
-| --- | --- | --- |
-| Fiziki altın kapanışı (TL/gr) ve Borsa İstanbul USD/ons | TCMB EVDS (İstanbul Altın Borsası arşivi 1995–2018, Borsa İstanbul 2018–) | 1995 → bugün |
-| Ons (GC=F), USD/TRY ve 9 piyasa göstergesi (GVZ dahil) | Yahoo Finance, günlük | 2005 → bugün |
-| Ons, USD/TRY ve GLD, saatlik | Yahoo Finance; her gün arşivleniyor | 2024-10 → bugün |
-| TÜFE, TR ve ABD politika faizi | TCMB EVDS, aylık | 2004 → bugün |
-
-Bütün indirmeler değiştirilemez anlık görüntüler olarak md5 özetiyle saklanıyor. EVDS'nin yanıtları sessizce 1.000 satırda kestiği tespit edildi; indirme bu sınıra göre otomatik bölünüyor.
-
-**Projeye özgün veri bulguları:**
-
-- **Zamanlama uyumsuzluğu:** Yahoo'nun günlük ons kapanışı yaklaşık 18:00 UTC'ye, USD/TRY kapanışı 02:00–05:00 UTC'ye ait. Yaygın kullanılan "teorik gram fiyatı" bu yüzden 13–16 saat farklı anların çarpımı. Proje, iki değeri aynı saatlik çubuktan alan eşzamanlı bir seri kurdu.
-- **Sızıntı:** 2005–2010 Yahoo kur verisi Borsa İstanbul kapanışından **sonraki** bir saate ait. O dönemle yapılan sabah tahminleri geleceği görür; bu yıllar eğitimden çıkarıldı.
-- **Vadeli kontrat sıçramaları:** GC=F, kontrat değişim günlerinde %1,5–1,9'luk sahte sıçramalar yapıyor. Önceden kayıtlı bir taramayla spot ons yerine kullanılabilecek kaynak arandı; GLD uygun bulundu ve `LIVE_V2` protokolü onunla kuruldu.
-
-## 4. Yöntem ilkeleri
-
-- **Zamana göre ilerleyen değerlendirme (walk-forward):** eğitim penceresi genişleyerek ilerliyor, model her 63 işlem gününde yeniden eğitiliyor. Rastgele bölme hiç kullanılmıyor.
-- **Sızıntı kontrolleri:** her girdinin açık bir zaman damgası var. Otomatik testler, tahmin anında bilinmeyen bütün bilgiyi bozup tahminin değişmediğini doğruluyor.
-- **Ön kayıt:** her kesin testin hipotezi, karar kuralı, kodu ve veri özetleri sonuçtan **önce** Git'e kaydediliyor. Kesin testler tek bir kez çalıştırılabiliyor; her deneme `research/registry.jsonl` dosyasına yazılıyor.
-- **Kilitli kod:** canlı protokollerin kodu ön kayıtla kilitli. Kod değişirse o tahminler değerlendirmeye girmiyor.
-- **Olumsuz sonuçlar saklanmıyor:** desteklenmeyen hipotezler de aynı biçimde raporlanıyor.
-- **İstatistik:**
-  - Nokta tahminleri: Diebold–Mariano testi (küçük örneklem düzeltmesiyle), çoklu karşılaştırmada Holm düzeltmesi, blok bootstrap güven aralıkları.
-  - Aralıklar: Kupiec ve Christoffersen testleri, Winkler skoru.
-  - Oynaklık: QLIKE kaybı.
-
-## 5. Sonuçlar
-
-### 5.1 Bağımsız sınavlar
-
-| Sınav | Veri | Sonuç |
-| --- | --- | --- |
-| `FINAL_EXAM_V1` | Teorik fiyat, 2026, 194 gün | Nokta: **pratikte eşdeğer** (+%0,2 [−1,2, +1,3], p = 0,76). Aralık: Kupiec geçti, %80 aralıkta ihlaller kümelendi |
-| `FINAL_EXAM_PHYS_V1` | Fiziki fiyat, 2023–2026, 874 gün | Boşluk modeli **RW'den %9,1 kötü** [−20,8, −0,3], p = 0,03 |
-| `BACK_EXAM_ONS_V1` | Fiziki fiyat, 2001–2004, 497 gün (hiç kullanılmamış veri) | Gece ons bilgisi: **ayırt edilemedi** (RW'ye göre +%0,5, eğilime göre +%3,0; Holm p 0,81 ve 0,29) |
-
-**Fiziki sınavın yorumu:** 2023–2024'te fiziki altın uluslararası fiyatın %1–5 üzerinde işlem gördü. Geçmişten öğrenilen "fiziki fiyat teorik fiyata yakınsar" ilişkisi bu dönemde bozuldu. Prim çalışması (5.5) bu durumun 2006–2022 arasında hiç görülmediğini gösteriyor.
-
-### 5.2 Literatürdeki başarı neden yanıltıcı? (Sızıntı gösterimi, keşif)
-
-Aynı fiziki veri (2006–2022) ve aynı modeller (doğrusal model, XGBoost, sıfırdan yazılmış LSTM, "yarın = bugün") üç farklı kurulumda değerlendirildi:
-
-| Kurulum | "Yarın = bugün" | LSTM | Asıl soru: RW'yi geçiyor mu? |
-| --- | --- | --- | --- |
-| Literatür (rastgele bölme, fiyat seviyesi) | R² 0,9993 | R² 0,9981 | LSTM **%73 daha kötü** |
-| Kronolojik bölme, fiyat seviyesi | R² 0,997 | R² 0,10 | XGBoost ve LSTM çöküyor |
-| **Doğru kurulum** (getiri, walk-forward 2012–2022) | referans | +%0,6, p = 0,19 | **Hiçbir model anlamlı değil;** yön isabeti %51–53 |
+**Literatürdeki yüksek başarılar neden yanıltıcı:** yanlış ölçüldüğünde "yarın = bugün" bile %99,9 başarılı görünüyor.
 
 ![Sızıntı gösterimi](figures/sizinti.png)
 
-**Sonuç:** Fiyat seviyesinde R², bugünün fiyatı yarınınkine çok yakın olduğu için hiçbir şeyi kanıtlamıyor. LSTM, numpy ile sıfırdan yazıldı ve doğruluğu sayısal gradyan kontrolüyle doğrulandı (en büyük göreli fark 6×10⁻⁷).
-
-### 5.3 Oynaklık tahmin edilebilir (keşif)
-
-| Model | Sabit oynaklığa göre QLIKE | Kazandığı yıl | %80 kapsam | İhlaller kümeleniyor mu? |
-| --- | --- | --- | --- | --- |
-| Sabit | referans | – | %88,3 | evet |
-| **GARCH** | **+0,41** | **10/11** | **%82,9** | **hayır** (p = 0,54) |
-| GVZ (yalnız altın oynaklığı) | −0,53 | 8/11 | %75,3 | evet |
-| GVZ + kur bileşeni | +0,34 | – | %79,8 | evet |
+**Oynaklık tahmin edilebiliyor:** GARCH modeli 11 yılın 10'unda sabit oynaklık varsayımını geçti.
 
 ![Oynaklık](figures/oynaklik.png)
 
-- GVZ, dolar bazında altın oynaklığını ölçtüğü için TL krizlerini (2018, 2021) kaçırıyor. Kur bileşeni eklenince bu düzeliyor (2018: −4,14 → +0,28; 2021: −2,68 → +2,21). Yine de hiçbir bileşen modeli GARCH'ı anlamlı biçimde geçmiyor.
-- Ortalama kayıp testi, birkaç kriz gününün ağırlığı yüzünden anlamlı çıkmıyor (p = 0,92). Bu nedenle bulgu, yıllar arası tutarlılıkla birlikte raporlanıyor.
-
-### 5.4 Haftalık ve aylık trend, makro göstergeler (keşif)
-
-Özellikler: momentum, kur, ons, ABD 10 yıllık faizi ve TL reel faizi. Reel faiz, TÜFE ve politika faizinin **yayımlanma gecikmesi** hesaba katılarak hesaplanıyor; model hiçbir veriyi açıklanmadan önce görmüyor.
-
-| Ufuk | Yalnız TL eğilimi, RW'ye göre | Makro + momentum modeli, eğilime göre | Yön modeli isabeti | "Her zaman yükselir" isabeti |
-| --- | --- | --- | --- | --- |
-| Haftalık (571 hafta) | +%1,9 (p = 0,03) | −%2,4 | %54,1 | %55,5 |
-| Aylık (120 ay) | +%5,7 (p = 0,055) | −%9,8 | %54,2 | %60,0 |
-
-**Sonuç:** Makro göstergeler ve momentum ek bilgi taşımıyor; bu bilgi zaten fiyatta. Tek işe yarayan TL'nin değer kaybından gelen eğilim, ama o da döneme bağlı: 2001–2004'te anlamlı biçimde zarar verdi.
-
-### 5.5 Fiziki prim (keşif)
+**Fiziki prim:** 2023'e kadar fiziki ve uluslararası fiyat arasındaki fark sıfıra yakındı.
 
 ![Fiziki prim](figures/prim.png)
 
-- Haftalık prim katsayısı 0,28 [0,15, 0,41], yani bir sapmanın yarısı yaklaşık yarım haftada kapanıyor.
-- Gelecek haftanın primini tahminde AR(1) modeli RW'den %20,5 daha iyi (p < 0,001).
-- 2023 sonrasında görülen kalıcı prim bu dönemde **emsalsiz**. Fiziki sınavın başarısızlığı bu yapısal kırılmayla açıklanabiliyor.
-
-### 5.6 Kazancın kaynağı (keşif, 2012–2022)
-
-| Bilgi | RW'ye göre | Zamanlama varsayımına bağlı mı? |
-| --- | --- | --- |
-| Yalnız gece ons hareketi | +%5,1 [+3,0, +7,6] | Hayır (11 yılın 11'inde) |
-| Yalnız gece kur hareketi | +%8,2 | Evet |
-| İkisi birlikte | +%21,7 | Evet |
-
-Zamanlamadan bağımsız ons etkisi, 2001–2004 geriye dönük sınavında doğrulanamadı (5.1).
-
-## 6. Canlı sistem
-
-| Protokol | Ne üretir | Başlangıç |
-| --- | --- | --- |
-| `LIVE_PHYS_V1` | Bugünün fiziki kapanışı için 4 model: RW, Boşluk, Boşluk-Kayan, Prim-Çapa | 15.10.2026 |
-| `LIVE_PHYS_INT_V1` | Bu modellerin etrafında oynaklığa duyarlı %80 ve %95 aralıklar | 15.10.2026 |
-| `LIVE_V1` | Eşzamanlı teorik fiyat (vadeli ons GC=F) için ertesi gün tahmini | 15.10.2026 |
-| `LIVE_V2` | Aynı model, ons kaynağı GLD (kontrat sıçraması yok) | 15.10.2026 |
-
-**İlk puanlanan gün (15.10.2026, yalnızca betimleyici):**
-
-| Protokol | Model hatası | "Yarın = bugün" hatası | %80 aralıkta mı? |
-| --- | --- | --- | --- |
-| Fiziki, Boşluk | 48,5 TL | 80,0 TL | evet |
-| Teorik, GC=F | 19,4 TL | 30,4 TL | evet |
-| Teorik, GLD | 24,6 TL | 35,6 TL | evet |
-
-Tek günlük sonuçlardan çıkarım yapılmaz. Değerlendirme, 120 puanlanmış tahminden sonra önceden belirlenen testle **bir kez** yapılacak.
-
-**Güç analizi — 120 gün neyi görebilir?**
+**Güç analizi:** 120 günlük bir değerlendirmenin hangi büyüklükte farkı görebileceği.
 
 ![Güç analizi](figures/guc.png)
-
-- **Fiziki:** %80 olasılıkla fark edilebilecek en küçük iyileşme %20. Geliştirme döneminde gözlenen etki %23 ve 120 günlük pencerelerin %99'unda anlamlıydı. Sonuç "ayırt edilemedi" çıkarsa bu, gerçek etkinin büyük olasılıkla %15–20'nin altında olduğu anlamına gelir.
-- **Teorik:** %2 kadar küçük farklar bile görülebiliyor; büyük olasılıkla güvenilir bir "pratikte eşdeğer" sonucu çıkacak.
-- **Aralıklar:** %80'lik aralığın gerçek kapsamı %75'e düşse bunu Kupiec testi yalnızca %29, %70'e düşse %76 olasılıkla yakalar. "Aralık testleri geçti" sonucu bu yüzden "büyük bir kalibrasyon hatasına rastlanmadı" diye okunmalı.
-
-## 7. Sistem mimarisi
-
-```
-Yahoo Finance, TCMB EVDS
-        │  (her gün, değiştirilemez anlık görüntüler)
-        ▼
-Veri boru hattı ─► Modeller ─► Canlı kayıtlar (Git, satır özetli, değiştirilemez)
-                                        │
-                                        ▼
-                           SQL Server (salt okunur ayna)
-                                        │
-                                        ▼
-                        FastAPI (salt okunur REST API)
-                                        │
-                                        ▼
-                                  Web panosu
-```
-
-- **Otomasyon:** Windows Görev Zamanlayıcı ile hafta içi 12:30 (yedek 13:30) ve 22:30.
-- **Veritabanı:** Microsoft SQL Server (LocalDB). Git'teki kayıtlar her görevden sonra doğrulanıp veritabanına yansıtılıyor; bozuk bir kayıt varsa hiçbir şey yazılmıyor.
-- **REST API (FastAPI):** yalnızca okuma yapıyor: tahminler, karne, fiyatlar, performans eğrisi, sınavlar, araştırma bulguları, sistem durumu. Belgeleri `/docs` adresinde.
-- **Web panosu:** bugünün tahminleri (aralık bantlarıyla), son puanlanan gün, fiyat grafiği, ara karne, canlı performans eğrisi, bağımsız sınavlar ve araştırma bulguları.
-
-![Web panosu: bugünün fiziki tahmini ve son puanlanan gün](figures/pano_tahmin.png)
-
-![Web panosu: araştırma bulguları (sayılar kayıtlı sonuç dosyalarından otomatik okunur)](figures/pano_bulgular.png)
-
-- **Güvenlik:**
-  - Pano yalnızca yerel bilgisayardan erişilebiliyor; sıkı bir içerik güvenlik politikası (CSP) uygulanıyor.
-  - GitHub'da `main` dalı korumalı: silinemez, zorla push yapılamaz.
-  - Dış GitHub eylemleri commit SHA'sıyla sabitlenmiş; bağımlılık açıkları haftalık taranıyor.
-- **Bütünlük denetimi:** her push'ta ve her gün 31 denetim çalışıyor: kilitli kodlar, ön kayıtlar, kayıtların geçmişi ve depo hijyeni.
-- **Bekçi:** GitHub, bilgisayardan bağımsız olarak her gün görevlerin çalıştığını denetliyor; bir görev çalışmazsa e-posta gönderiyor.
-- **Yeniden üretim:** `python -m src.repro`, bütün keşif çalışmalarını ve geriye dönük sınavı baştan hesaplayıp kayıtlı sonuçlarla birebir karşılaştırıyor; şu an hepsi aynı.
-- **Testler:** 620'den fazla otomatik test, tamamı geçiyor. Testlerin hata yakaladığı, koda bilinçli hatalar sokularak (mutasyon testi) doğrulandı.
-
-## 8. Proje kapsamına göre durum
-
-| Kapsam maddesi | Durum |
-| --- | --- |
-| Veri toplama ve doğrulama (Yahoo, EVDS) | ✓ |
-| Temel ve makine öğrenmesi modelleri (doğrusal, RF, XGBoost) | ✓ |
-| LSTM | ✓ (sıfırdan, gradyan kontrollü; sızıntı gösteriminde) |
-| Haftalık ve aylık trend | ✓ |
-| Makro göstergeler (enflasyon, politika faizi) | ✓ |
-| Olasılıksal tahmin (aralıklar, oynaklık) | ✓ |
-| Sızıntısız değerlendirme, istatistiksel testler, bağımsız sınavlar | ✓ |
-| Canlı tahmin sistemi ve otomasyon | ✓ (15.10.2026'dan beri) |
-| Microsoft SQL Server | ✓ |
-| REST API | ✓ |
-| Web arayüzü | ✓ |
-| Canlı protokollerin değerlendirmesi | ⏳ 120 tahmin sonra (yaklaşık Nisan 2027) |
-| Bitirme raporu | ⏳ |
-
-## 9. Sınırlılıklar
-
-- Fiziki fiyat **toptan** piyasa fiyatı; kuyumcu fiyatı ve işçilik kapsam dışında.
-- 2023 sonrası fiziki veri bağımsız sınavda kullanıldı. Bu dönemden sonra önerilen modeller (Boşluk-Kayan, Prim-Çapa) yalnızca ileriye dönük değerlendirilebilir.
-- Yahoo'nun saatlik verisi yalnızca son 2 yılı kapsıyor; sistem bu yüzden her gün arşivliyor.
-- 2001–2004 İAB arşivi seyrek (yılda yaklaşık 170 gün); bu durum geriye dönük sınavın gücünü sınırladı.
-- Aralık testlerinin 120 günlük örneklemdeki gücü sınırlı (6. bölüm).
-- **Bu çalışma araştırma ve eğitim amaçlıdır; yatırım tavsiyesi değildir.**
-
-## 10. Takvim
-
-| Dönem | İş |
-| --- | --- |
-| Ekim 2026 – Nisan 2027 | Canlı kayıt (hafta içi her gün, kendiliğinden) |
-| Kasım 2026 sonu | Vadeli kontrat değişimi: `LIVE_V1` ve `LIVE_V2` karşılaştırması |
-| ~Nisan 2027 | Canlı protokollerin tek seferlik değerlendirmesi |
-| Nisan – Mayıs 2027 | Bitirme raporu ve sunum |
 
 ## Ek: Gösterim komutları
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pano.ps1   # web panosu (http://127.0.0.1:8000)
-python -m src.audit                                                    # bütünlük denetimi (31 denetim)
-python -m src.repro --sadece prim                                      # bir sonucu baştan üretip karşılaştır
-python -m src.report_figures                                           # rapor grafiklerini yeniden çiz
-git log --oneline -- research/live/                                    # günlük, zaman damgalı tahmin kayıtları
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pano.ps1    # web arayüzü
+python -m src.tool.yarisma --chronos                                    # model yarışması
+python -m src.tool.canli_karne karne                                    # ileriye dönük karne
+python -m unittest discover -s tests                                    # bütün testler
 ```

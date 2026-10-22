@@ -139,7 +139,34 @@ def fig_power(plt, out):
     plt.close(fig)
 
 
-FIGURES = {"sinavlar": fig_exams, "sizinti": fig_leakage, "oynaklik": fig_volatility, "prim": fig_premium, "guc": fig_power}
+def fig_yarisma(plt, out):
+    d = _load("research/tool/yarisma_1-3-5_chronos.json")
+    P = 6560.0
+    h = ["1", "3", "5"]
+    sabit = [d["ufuklar"][x]["final"]["Sabit aralik"]["genislik80"] / 100 * P for x in h]
+    biz = [d["ufuklar"][x]["final"][d["ufuklar"][x]["kazanan"]]["genislik80"] / 100 * P for x in h]
+    t95 = [d["ufuklar"][x]["final"][d["ufuklar"][x]["kazanan"]]["tutma95"] for x in h]
+    fig, ax = plt.subplots(figsize=(9, 4))
+    xs = range(len(h))
+    ax.bar([i - 0.2 for i in xs], sabit, 0.38, color=C["acik"], label="Basit y\u00f6ntem (sabit aral\u0131k)")
+    ax.bar([i + 0.2 for i in xs], biz, 0.38, color=C["iyi"], label="Bu sistem")
+    for i in xs:
+        ax.text(i - 0.2, sabit[i] + 8, f"{sabit[i]:.0f} TL", ha="center", fontsize=9)
+        ax.text(i + 0.2, biz[i] + 8, f"{biz[i]:.0f} TL", ha="center", fontsize=9, fontweight="bold")
+        ax.text(i + 0.2, biz[i] / 2, f"%95 aral\u0131k\n%{t95[i]:.1f}\ntuttu".replace(".", ","), ha="center", va="center",
+                fontsize=8, color="white")
+    ax.set_xticks(list(xs), ["1 g\u00fcn sonra", "3 g\u00fcn sonra", "5 g\u00fcn sonra"])
+    ax.set_ylabel("%80 aral\u0131\u011f\u0131n ortalama geni\u015fli\u011fi (TL)")
+    ax.set_title("Hi\u00e7 g\u00f6r\u00fclmemi\u015f 2023\u20132026: ayn\u0131 g\u00fcvenle daha dar aral\u0131k")
+    ax.legend(frameon=False, loc="upper left")
+    ax.text(0.99, -0.16, "Gram fiyat\u0131 6.560 TL al\u0131narak hesapland\u0131.", transform=ax.transAxes, ha="right", fontsize=8,
+            color=C["notr"])
+    fig.tight_layout()
+    fig.savefig(out / "yarisma.png")
+    plt.close(fig)
+
+
+FIGURES = {"yarisma": fig_yarisma, "sinavlar": fig_exams, "sizinti": fig_leakage, "oynaklik": fig_volatility, "prim": fig_premium, "guc": fig_power}
 
 
 def main(argv=None) -> int:
