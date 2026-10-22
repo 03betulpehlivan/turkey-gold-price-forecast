@@ -166,7 +166,40 @@ def fig_yarisma(plt, out):
     plt.close(fig)
 
 
-FIGURES = {"yarisma": fig_yarisma, "sinavlar": fig_exams, "sizinti": fig_leakage, "oynaklik": fig_volatility, "prim": fig_premium, "guc": fig_power}
+def fig_kriz(plt, out):
+    d = _load("research/tool/yarisma_1-3-5_chronos.json")
+    u = d["ufuklar"]["1"]
+    biz = {r["yil"]: r for r in u["yillar"][u["kazanan"]]}
+    sab = {r["yil"]: r for r in u["yillar"]["Sabit aralik"]}
+    yil = sorted(biz)
+    kriz = {2018: "TL krizi", 2020: "pandemi", 2021: "kur krizi", 2023: "prim\nk\u0131r\u0131lmas\u0131"}
+    fig, (a1, a2) = plt.subplots(2, 1, figsize=(10, 6.4), sharex=True)
+    for ax in (a1, a2):
+        for y in kriz:
+            ax.axvspan(y - 0.5, y + 0.5, color="#f1e3c8", zorder=0)
+    a1.plot(yil, [sab[y]["genislik80"] for y in yil], "o-", color=C["notr"], label="Basit y\u00f6ntem (sabit aral\u0131k)")
+    a1.plot(yil, [biz[y]["genislik80"] for y in yil], "o-", color=C["iyi"], lw=2.4, label="Bu sistem")
+    a1.set_ylabel("%80 aral\u0131\u011f\u0131n\ngeni\u015fli\u011fi (%)")
+    a1.set_title("Ertesi g\u00fcn tahmini: aral\u0131k krizde geni\u015fliyor, kriz ge\u00e7ince daral\u0131yor")
+    a1.legend(frameon=False, loc="upper left")
+    for y, ad in kriz.items():
+        a1.text(y, a1.get_ylim()[1] * 0.97, ad, ha="center", va="top", fontsize=8, color=C["notr"])
+    a2.axhline(80, color="black", lw=1, ls="--")
+    a2.plot(yil, [sab[y]["tutma80"] for y in yil], "o-", color=C["notr"])
+    a2.plot(yil, [biz[y]["tutma80"] for y in yil], "o-", color=C["iyi"], lw=2.4)
+    a2.set_ylabel("%80 aral\u0131k\ntuttu (%)")
+    a2.set_ylim(65, 100)
+    a2.text(2011.6, 80.8, "hedef %80", fontsize=8)
+    a2.axvline(2022.5, color=C["notr"], lw=1)
+    a2.text(2022.6, 97, "test d\u00f6nemi \u2192", fontsize=8, color=C["notr"])
+    a2.set_xticks(yil)
+    a2.tick_params(axis="x", labelsize=8)
+    fig.tight_layout()
+    fig.savefig(out / "kriz.png")
+    plt.close(fig)
+
+
+FIGURES = {"yarisma": fig_yarisma, "kriz": fig_kriz, "sinavlar": fig_exams, "sizinti": fig_leakage, "oynaklik": fig_volatility, "prim": fig_premium, "guc": fig_power}
 
 
 def main(argv=None) -> int:

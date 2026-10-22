@@ -93,7 +93,48 @@ Kullanıcı için anlamı şu grafikte:
 - Ertesi gün için "%80" dediği aralık %77 tuttu; hedefin biraz altında. En zayıf yıl 2023 (%71). O yıl fiziki altın, uluslararası fiyattan beklenmedik biçimde ayrıştı.
 - 3 ve 5 günde "%80" dediği aralık %84 tuttu; yani aralık gerekenden biraz geniş. Bu, ters yönde hata yapmaktan, yani aralığın tutmamasından iyidir.
 
-## 6. Denediğim ama işe yaramayanlar
+## 6. Kriz yıllarında ne oldu?
+
+Altın fiyatı her yıl aynı şekilde davranmıyor. Bazı yıllar sakin geçiyor, bazı yıllarda fiyat sert hareket ediyor. Bir tahmin sisteminin asıl sınavı, çalkantılı dönemlerde de çalışıp çalışmadığıdır.
+
+**Model krize nasıl uyum sağlıyor?**
+
+Sistem, son günlerde fiyatın ne kadar oynadığına bakıyor. Fiyat sert hareket etmeye başlarsa, ertesi gün için verdiği aralığı kendiliğinden **genişletiyor**. Ortalık sakinleşince aralığı yeniden **daraltıyor**. Ayrıca model her ay, yalnızca son 3 yılın verisiyle yeniden kuruluyor; böylece eski dönemlere takılı kalmıyor.
+
+Bir benzetme: deneyimli bir sürücü yağmurda yavaşlar, yol kuruyunca yeniden hızlanır. Hep aynı hızla giden sürücü ise ya yağmurda kaza yapar ya da kuru yolda gereksiz yavaş gider.
+
+Aşağıdaki grafik bunu gösteriyor. Sarı şeritler kriz yılları:
+
+![Kriz yıllarında aralık genişliği ve tutma oranı](figures/kriz.png)
+
+- **Üst grafik:** bu sistemin aralığı sakin yıllarda yaklaşık %2,3 genişliğindeyken, 2021 kur krizinde %3,8'e çıktı. Kriz geçince 2022'de %3,3'e indi.
+- **Alt grafik:** bu sistem her yıl hedefe (%80) yakın kaldı. Basit yöntem ise 2022'den sonra %90'ın üzerinde tuttu. İlk bakışta iyi görünse de bu, aralığının **gereğinden çok geniş** olduğu anlamına geliyor. Basit yöntem geçmişteki krizi unutamadığı için, sakin günlerde bile çok geniş aralık verdi.
+
+**Yıllara göre sonuçlar** (ertesi gün tahmini, ARIMA-GARCH):
+
+| Yıl | Ne oldu? | "%80" dediği aralık tuttu | "%95" dediği aralık tuttu |
+| --- | --- | --- | --- |
+| 2012–2017 | Görece sakin | %76 – %84 | %95 – %96 |
+| 2018 | TL krizi | %75,5 | %92,8 |
+| 2020 | Pandemi şoku | %71,2 | %91,6 |
+| 2021 | Kur krizi | **%80,9** | **%95,5** |
+| 2022 | | %80,4 | %95,6 |
+| 2023 | Fiziki altında prim kırılması | %71,3 | %91,2 |
+| 2024 | | %79,8 | %95,1 |
+| 2025 | | %79,9 | %97,2 |
+| 2026 (Ekim'e kadar) | | %78,7 | %95,4 |
+
+**Bu tablodan çıkan sonuçlar:**
+
+1. **Sürekli çalkantılı dönemleri iyi idare ediyor.** 2021'de TL çok sert değer kaybetti, ama sistem aralığı genişleterek tam hedefi tutturdu.
+2. **Ani şoklarda zorlanıyor.** 2020 Mart'ındaki pandemi çöküşü ve 2023'te fiziki altının uluslararası fiyattan birden ayrışması gibi olaylarda tutma oranı %71'e düştü. Bu tür olaylar hiçbir geçmiş veride görülmediği için hiçbir modelin önceden bilmesi beklenemez. Yine de sistem çökmedi: "%95" dediği aralık bu yıllarda bile %91–93 tuttu.
+3. **Kriz sonrasında hızla toparlanıyor.** 2023'teki düşüşten sonra 2024 ve 2025'te yeniden hedefe döndü.
+
+**Test dönemini neden sakin yıllardan seçmedim?**
+
+Test dönemi olarak 2023–2026'yı, sonuçlara bakmadan, **en son dönem olduğu için** seçtim. Sakin yılları seçseydim sonuçlar biraz daha iyi görünürdü. Ama bu, kolay soruları seçip sınava girmek gibi olurdu. Ayrıca kullanıcı sisteme en çok çalkantılı dönemlerde ihtiyaç duyar; "fiyat yarın ne kadar düşebilir?" sorusu en çok kriz zamanında önemlidir. Bu yüzden zor bir yılı da içeren bir dönemde iyi sonuç almak, daha güçlü bir kanıttır.
+
+## 7. Denediğim ama işe yaramayanlar
 
 Olumsuz sonuçları da raporluyorum, çünkü neyin işe yaramadığını bilmek de önemli.
 
@@ -105,7 +146,7 @@ Olumsuz sonuçları da raporluyorum, çünkü neyin işe yaramadığını bilmek
 | Fed toplantı günleri (2012–2026, 119 gün) | Ek bilgi katmadı. GARCH, olaylardan sonra oynaklığa zaten hızla uyum sağlıyor. |
 | Kronos (finans için hazır yapay zekâ modeli) | 1 günde ARIMA-GARCH ile aynı; 3 ve 5 günde aralıkları fazla dar. Kronos mum grafiğiyle (açılış, en yüksek, en düşük, kapanış) eğitilmiş; bizde yalnızca kapanış fiyatı var. |
 
-## 7. Kullanıcı ne görüyor?
+## 8. Kullanıcı ne görüyor?
 
 Sistemin bir web arayüzü var. Açıldığında kullanıcı şunları görüyor:
 
@@ -120,21 +161,21 @@ Sistemin bir web arayüzü var. Açıldığında kullanıcı şunları görüyor
 
 ![Ana ekran](figures/ana_ekran.png)
 
-## 8. Sistemin teknik yapısı (kısaca)
+## 9. Sistemin teknik yapısı (kısaca)
 
 - **Veri:** fiziki gram altın kapanışları Merkez Bankası'ndan (TCMB EVDS), ons ve kur fiyatları Yahoo Finance'tan.
 - **Otomatik çalışma:** bilgisayar her iş günü kendiliğinden yeni veriyi indiriyor ve tahmin üretiyor.
 - **Veritabanı ve arayüz:** Microsoft SQL Server, FastAPI ile yazılmış bir REST API ve web arayüzü.
 - **Güvenilirlik:** 690'dan fazla otomatik test; kayıtların değiştirilmediğini her gün kontrol eden bir denetim; görev çalışmazsa e-posta gönderen bir bekçi.
 
-## 9. Sınırlar
+## 10. Sınırlar
 
 - Fiziki fiyat, Borsa İstanbul'daki toptan fiyattır; kuyumcu fiyatını kapsamaz.
 - Sistem yön tahmin etmez; yalnızca aralık verir.
 - 2023–2026 sonuçlarını yarışmaya yeni modeller eklerken birkaç kez gördüm. Bu yüzden en temiz kanıt, **ileriye dönük karne** olacak.
 - Araştırma ve eğitim amaçlıdır; yatırım tavsiyesi değildir.
 
-## 10. Gelecek çalışmalar
+## 11. Gelecek çalışmalar
 
 1. **İleriye dönük karnenin büyümesi.** Birkaç ay içinde biriken kayıtlarla, sistemin gerçekten ileriye dönük başarısı ölçülecek.
 2. **TL'ye özgü olay günleri.** Fed günleri bir şey katmadı. TL bazında altın için TCMB faiz kararları ve Türkiye enflasyon verisi daha etkili olabilir.

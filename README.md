@@ -34,6 +34,8 @@ Bu sistemin aralıkları, aynı güvenle, hiçbir şey öğrenmeyen basit yönte
 
 ![Aralık genişliği karşılaştırması](docs/figures/yarisma.png)
 
+**Kriz yıllarında:** sistem, fiyat sert hareket etmeye başlayınca aralığı kendiliğinden genişletiyor, ortalık sakinleşince daraltıyor. 2021 kur krizinde bile "%80" dediği aralık %80,9 tuttu. Ani şoklarda (2020 pandemi, 2023) zorlandı ama çökmedi. Ayrıntılar raporun 6. bölümünde.
+
 **İşe yaramayanlar** (onları da raporluyorum): fiyatın yönünü tahmin etmek, XGBoost ile aralık tahmini, petrol ve dolar gibi dış piyasa verileri, Fed toplantı günleri ve finans için hazırlanmış Kronos modeli. Ayrıntılar raporda.
 
 ## Nasıl test edildi?
