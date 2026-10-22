@@ -186,6 +186,12 @@ def tahmin_canli_karne():
     return _tahmin(ts.canli_karne)
 
 
+@app.get("/api/tahmin/merkez")
+def tahmin_merkez():
+    """Merkez tahmin (araligin ortasi) icin hic gorulmemis donemdeki ortalama hata."""
+    return _tahmin(ts.merkez)
+
+
 @app.get("/api/tahmin/karne")
 def tahmin_karne():
     """Kayitli basari karnesi (egitim 2012-2017, test 2018-2022)."""

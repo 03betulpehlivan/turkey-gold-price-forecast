@@ -153,6 +153,25 @@ class TestYarismaService(Base):
             ts.yarisma_dosyasi(self.tmp)
 
 
+class TestMerkez(Base):
+    def test_merkez_summary_and_missing(self):
+        sahte = {"ufuklar": {str(h): {"yontemler": {
+            "Araligin ortasi": {"final": {"hata_tl": 80.0 + h, "hata_pct": 1.2, "yarin_bugune_gore_pct": 1.5, "p_degeri": 0.05, "gun": 900}},
+            "Yarin = bugun": {"final": {"hata_tl": 85.0 + h, "hata_pct": 1.3, "gun": 900}}}} for h in (5, 1, 3)}}
+        (self.tmp / "merkez_tahmin.json").write_text(json.dumps(sahte), encoding="utf-8")
+        d = ts.merkez(self.tmp)
+        self.assertEqual([u["ufuk_gun"] for u in d["ufuklar"]], [1, 3, 5])
+        self.assertEqual(d["ufuklar"][0]["hata_tl"], 81.0)
+        self.assertEqual(d["ufuklar"][0]["rw_hata_tl"], 86.0)
+        self.assertIn("(%80 araligin alt siniri + ust siniri) / 2", d["formul"])
+        (self.tmp / "merkez_tahmin.json").unlink()
+        with self.assertRaisesRegex(FileNotFoundError, "Merkez tahmin sonucu yok"):
+            ts.merkez(self.tmp)
+        js = (PROJECT_ROOT / "src" / "web" / "ana.js").read_text(encoding="utf-8")
+        self.assertIn("/api/tahmin/merkez", js)
+        self.assertIn("(f.aralik80[0] + f.aralik80[1]) / 2", js)
+
+
 class TestApiAndPage(Base):
     def client(self):
         return TestClient(api.app, base_url="http://127.0.0.1")

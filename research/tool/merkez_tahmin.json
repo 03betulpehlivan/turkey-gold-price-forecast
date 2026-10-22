@@ -1,0 +1,711 @@
+{
+  "ufuklar": {
+    "1": {
+      "ufuk_gun": 1,
+      "model": "ARIMA-GARCH",
+      "fiyat_olcegi_tl": 6575.0,
+      "formul": {
+        "ozellikler": [
+          "sabit",
+          "model_orta",
+          "son_getiri",
+          "genislik",
+          "kayiklik"
+        ],
+        "katsayi": [
+          0.0020286412914626148,
+          0.5008156780351861,
+          0.03598686413400267,
+          -0.05215227354424239,
+          -3.981723150747717e-15
+        ],
+        "std_hata": [
+          0.0019409998582848263,
+          0.7128690462101115,
+          0.0496168581449846,
+          0.07693970153701211,
+          242930920733622.8
+        ],
+        "t": [
+          1.0451527251811512,
+          0.7025353123378223,
+          0.7252951008878081,
+          -0.6778330628063894,
+          -1.6390351375293772e-29
+        ],
+        "p": [
+          0.29595238884289965,
+          0.482345387785704,
+          0.4682710106193124,
+          0.49787754511007654,
+          1.0
+        ],
+        "egitim": "secim donemi 2012-2022"
+      },
+      "yontemler": {
+        "Yarin = bugun": {
+          "secim": {
+            "gun": 2737,
+            "hata_pct": 0.9103764972434546,
+            "hata_tl": 59.85725469375714,
+            "yon_isabeti_pct": null
+          },
+          "final": {
+            "gun": 945,
+            "hata_pct": 1.2964983093608247,
+            "hata_tl": 85.24476384047422,
+            "yon_isabeti_pct": null
+          }
+        },
+        "Araligin ortasi": {
+          "secim": {
+            "gun": 2737,
+            "hata_pct": 0.9084545940458597,
+            "hata_tl": 59.73088955851528,
+            "yon_isabeti_pct": 52.007434944237914,
+            "yarin_bugune_gore_pct": 0.21111081002357368,
+            "p_degeri": 0.4585470522786006
+          },
+          "final": {
+            "gun": 945,
+            "hata_pct": 1.2745421917579287,
+            "hata_tl": 83.8011491080838,
+            "yon_isabeti_pct": 55.04291845493562,
+            "yarin_bugune_gore_pct": 1.693493731875384,
+            "p_degeri": 0.04913731188870737
+          }
+        },
+        "Modelin orta degeri": {
+          "secim": {
+            "gun": 2737,
+            "hata_pct": 0.9084730838170971,
+            "hata_tl": 59.73210526097414,
+            "yon_isabeti_pct": 51.412639405204466,
+            "yarin_bugune_gore_pct": 0.2090798073237754,
+            "p_degeri": 0.37654887430931355
+          },
+          "final": {
+            "gun": 945,
+            "hata_pct": 1.276356016345972,
+            "hata_tl": 83.92040807474766,
+            "yon_isabeti_pct": 55.47210300429185,
+            "yarin_bugune_gore_pct": 1.5535919229067718,
+            "p_degeri": 0.06331154033807514
+          }
+        },
+        "Ozel formul": {
+          "secim": {
+            "gun": 2737,
+            "hata_pct": 0.9118739394933357,
+            "hata_tl": 59.95571152168682,
+            "yon_isabeti_pct": 51.6728624535316,
+            "yarin_bugune_gore_pct": -0.1644860400521475,
+            "p_degeri": 0.4693139675592047
+          },
+          "final": {
+            "gun": 945,
+            "hata_pct": 1.288087653133981,
+            "hata_tl": 84.69176319355925,
+            "yon_isabeti_pct": 55.5793991416309,
+            "yarin_bugune_gore_pct": 0.6487209559872142,
+            "p_degeri": 0.08417363316717484
+          }
+        }
+      },
+      "yillar": [
+        {
+          "yil": 2012,
+          "gun": 253,
+          "Yarin = bugun": 39.83617963398383,
+          "Araligin ortasi": 40.124769454144904,
+          "Modelin orta degeri": 40.090507719894354,
+          "Ozel formul": 40.720395339821984
+        },
+        {
+          "yil": 2013,
+          "gun": 247,
+          "Yarin = bugun": 58.81765030074315,
+          "Araligin ortasi": 59.281949930857785,
+          "Modelin orta degeri": 59.24364352480305,
+          "Ozel formul": 59.523086221822616
+        },
+        {
+          "yil": 2014,
+          "gun": 248,
+          "Yarin = bugun": 49.8882445028431,
+          "Araligin ortasi": 49.89815027769268,
+          "Modelin orta degeri": 49.872132218367184,
+          "Ozel formul": 50.277334201157736
+        },
+        {
+          "yil": 2015,
+          "gun": 249,
+          "Yarin = bugun": 46.796101809100634,
+          "Araligin ortasi": 46.8517745703891,
+          "Modelin orta degeri": 46.872926691122046,
+          "Ozel formul": 46.967386931068276
+        },
+        {
+          "yil": 2016,
+          "gun": 248,
+          "Yarin = bugun": 54.74199061367493,
+          "Araligin ortasi": 54.821086469795816,
+          "Modelin orta degeri": 54.81752284651422,
+          "Ozel formul": 54.81210014681879
+        },
+        {
+          "yil": 2017,
+          "gun": 251,
+          "Yarin = bugun": 46.26495479049682,
+          "Araligin ortasi": 46.004998948576464,
+          "Modelin orta degeri": 46.01874514976217,
+          "Ozel formul": 46.27565615872473
+        },
+        {
+          "yil": 2018,
+          "gun": 249,
+          "Yarin = bugun": 72.0241629415881,
+          "Araligin ortasi": 72.3243554761071,
+          "Modelin orta degeri": 72.34149659315527,
+          "Ozel formul": 72.34570392677824
+        },
+        {
+          "yil": 2019,
+          "gun": 247,
+          "Yarin = bugun": 55.38872774292081,
+          "Araligin ortasi": 54.79874909332611,
+          "Modelin orta degeri": 54.851643234527714,
+          "Ozel formul": 55.27014738330854
+        },
+        {
+          "yil": 2020,
+          "gun": 250,
+          "Yarin = bugun": 82.55458073405258,
+          "Araligin ortasi": 81.52886916426738,
+          "Modelin orta degeri": 81.68951633954343,
+          "Ozel formul": 82.13905009364254
+        },
+        {
+          "yil": 2021,
+          "gun": 246,
+          "Yarin = bugun": 83.37984258676663,
+          "Araligin ortasi": 84.1282813989203,
+          "Modelin orta degeri": 84.0088486604621,
+          "Ozel formul": 82.71918591637291
+        },
+        {
+          "yil": 2022,
+          "gun": 250,
+          "Yarin = bugun": 69.26485446032068,
+          "Araligin ortasi": 67.85190067429659,
+          "Modelin orta degeri": 67.8173026423935,
+          "Ozel formul": 69.01627674929418
+        },
+        {
+          "yil": 2023,
+          "gun": 251,
+          "Yarin = bugun": 111.35032239865411,
+          "Araligin ortasi": 108.42008251086494,
+          "Modelin orta degeri": 108.85734301598049,
+          "Ozel formul": 111.65429245451314
+        },
+        {
+          "yil": 2024,
+          "gun": 247,
+          "Yarin = bugun": 79.6490540132145,
+          "Araligin ortasi": 77.6884402978333,
+          "Modelin orta degeri": 77.9092624298556,
+          "Ozel formul": 79.38755510031957
+        },
+        {
+          "yil": 2025,
+          "gun": 249,
+          "Yarin = bugun": 67.13961072789715,
+          "Araligin ortasi": 65.61728799686125,
+          "Modelin orta degeri": 65.67459450493085,
+          "Ozel formul": 65.23976814135277
+        },
+        {
+          "yil": 2026,
+          "gun": 198,
+          "Yarin = bugun": 81.90046209432116,
+          "Araligin ortasi": 83.08533198044861,
+          "Modelin orta degeri": 82.75268021072387,
+          "Ozel formul": 81.59121431744911
+        }
+      ]
+    },
+    "3": {
+      "ufuk_gun": 3,
+      "model": "Birlesim-2",
+      "fiyat_olcegi_tl": 6575.0,
+      "formul": {
+        "ozellikler": [
+          "sabit",
+          "model_orta",
+          "son_getiri",
+          "genislik",
+          "kayiklik"
+        ],
+        "katsayi": [
+          0.008079770259468313,
+          0.6855278255517294,
+          -0.06707949114468531,
+          -0.13416554774000242,
+          0.5127972166093253
+        ],
+        "std_hata": [
+          0.007180224593478263,
+          0.40707652620535545,
+          0.06433914740910184,
+          0.15690456931805324,
+          0.9785117677378015
+        ],
+        "t": [
+          1.1252809928546108,
+          1.6840269124383391,
+          -1.042592167380754,
+          -0.8550773780720323,
+          0.5240583031462659
+        ],
+        "p": [
+          0.26046998144644107,
+          0.09217646776010824,
+          0.29713721842934193,
+          0.3925083122789559,
+          0.6002379888231186
+        ],
+        "egitim": "secim donemi 2012-2022"
+      },
+      "yontemler": {
+        "Yarin = bugun": {
+          "secim": {
+            "gun": 2735,
+            "hata_pct": 1.5947793364488423,
+            "hata_tl": 104.85674137151139,
+            "yon_isabeti_pct": null
+          },
+          "final": {
+            "gun": 943,
+            "hata_pct": 1.9952168109152413,
+            "hata_tl": 131.1855053176771,
+            "yon_isabeti_pct": null
+          }
+        },
+        "Araligin ortasi": {
+          "secim": {
+            "gun": 2735,
+            "hata_pct": 1.5931336164605232,
+            "hata_tl": 104.7485352822794,
+            "yon_isabeti_pct": 54.18356063398452,
+            "yarin_bugune_gore_pct": 0.10319421318711886,
+            "p_degeri": 0.8993787279643154
+          },
+          "final": {
+            "gun": 943,
+            "hata_pct": 1.9556602692357952,
+            "hata_tl": 128.58466270225352,
+            "yon_isabeti_pct": 60.89743589743589,
+            "yarin_bugune_gore_pct": 1.9825685841781127,
+            "p_degeri": 0.24095453652046095
+          }
+        },
+        "Modelin orta degeri": {
+          "secim": {
+            "gun": 2735,
+            "hata_pct": 1.5924726170411352,
+            "hata_tl": 104.70507457045464,
+            "yon_isabeti_pct": 55.21562845558422,
+            "yarin_bugune_gore_pct": 0.14464191722245445,
+            "p_degeri": 0.8522491897646995
+          },
+          "final": {
+            "gun": 943,
+            "hata_pct": 1.95646053567036,
+            "hata_tl": 128.63728022032618,
+            "yon_isabeti_pct": 60.68376068376068,
+            "yarin_bugune_gore_pct": 1.9424593373941645,
+            "p_degeri": 0.24435388576157338
+          }
+        },
+        "Ozel formul": {
+          "secim": {
+            "gun": 2735,
+            "hata_pct": 1.5929724302884685,
+            "hata_tl": 104.7379372914668,
+            "yon_isabeti_pct": 54.62587541467011,
+            "yarin_bugune_gore_pct": 0.11330132759290734,
+            "p_degeri": 0.8636340237044279
+          },
+          "final": {
+            "gun": 943,
+            "hata_pct": 1.965503477842681,
+            "hata_tl": 129.23185366815628,
+            "yon_isabeti_pct": 58.01282051282052,
+            "yarin_bugune_gore_pct": 1.4892282838640525,
+            "p_degeri": 0.15100929151428463
+          }
+        }
+      },
+      "yillar": [
+        {
+          "yil": 2012,
+          "gun": 253,
+          "Yarin = bugun": 73.2010385157672,
+          "Araligin ortasi": 74.80886262854163,
+          "Modelin orta degeri": 75.43912833691233,
+          "Ozel formul": 76.97666851108745
+        },
+        {
+          "yil": 2013,
+          "gun": 247,
+          "Yarin = bugun": 105.43323102480406,
+          "Araligin ortasi": 105.22148198877231,
+          "Modelin orta degeri": 105.32892076327863,
+          "Ozel formul": 107.54657843021488
+        },
+        {
+          "yil": 2014,
+          "gun": 248,
+          "Yarin = bugun": 84.5487708555905,
+          "Araligin ortasi": 86.57759595213346,
+          "Modelin orta degeri": 86.65221320967932,
+          "Ozel formul": 85.44528105486143
+        },
+        {
+          "yil": 2015,
+          "gun": 249,
+          "Yarin = bugun": 83.87798836059503,
+          "Araligin ortasi": 83.1507527752689,
+          "Modelin orta degeri": 83.29175103969328,
+          "Ozel formul": 83.63981338603777
+        },
+        {
+          "yil": 2016,
+          "gun": 248,
+          "Yarin = bugun": 89.96012138037386,
+          "Araligin ortasi": 88.84233824291614,
+          "Modelin orta degeri": 88.79879277403283,
+          "Ozel formul": 87.8126227184483
+        },
+        {
+          "yil": 2017,
+          "gun": 251,
+          "Yarin = bugun": 78.50465917567662,
+          "Araligin ortasi": 78.40439861748315,
+          "Modelin orta degeri": 78.48888286677041,
+          "Ozel formul": 78.59911611727465
+        },
+        {
+          "yil": 2018,
+          "gun": 249,
+          "Yarin = bugun": 141.96545856174868,
+          "Araligin ortasi": 142.27338855160403,
+          "Modelin orta degeri": 142.635702448274,
+          "Ozel formul": 140.5753242807987
+        },
+        {
+          "yil": 2019,
+          "gun": 247,
+          "Yarin = bugun": 88.08558615819358,
+          "Araligin ortasi": 87.26839547418948,
+          "Modelin orta degeri": 87.41289327213235,
+          "Ozel formul": 86.36607208045436
+        },
+        {
+          "yil": 2020,
+          "gun": 250,
+          "Yarin = bugun": 140.06658919100167,
+          "Araligin ortasi": 139.77092347846389,
+          "Modelin orta degeri": 140.01639679429653,
+          "Ozel formul": 140.00312473557366
+        },
+        {
+          "yil": 2021,
+          "gun": 246,
+          "Yarin = bugun": 167.52852788046445,
+          "Araligin ortasi": 164.10838348221714,
+          "Modelin orta degeri": 162.5582764950312,
+          "Ozel formul": 165.85579184553072
+        },
+        {
+          "yil": 2022,
+          "gun": 250,
+          "Yarin = bugun": 101.52592060535721,
+          "Araligin ortasi": 102.63994688831654,
+          "Modelin orta degeri": 101.96701191863309,
+          "Ozel formul": 100.20572695907235
+        },
+        {
+          "yil": 2023,
+          "gun": 251,
+          "Yarin = bugun": 151.34582816774628,
+          "Araligin ortasi": 142.34820881849203,
+          "Modelin orta degeri": 143.36505927605933,
+          "Ozel formul": 148.16713023981958
+        },
+        {
+          "yil": 2024,
+          "gun": 247,
+          "Yarin = bugun": 122.7191503983135,
+          "Araligin ortasi": 124.95496523243911,
+          "Modelin orta degeri": 125.2902939203001,
+          "Ozel formul": 124.93071887197296
+        },
+        {
+          "yil": 2025,
+          "gun": 249,
+          "Yarin = bugun": 113.21417494571145,
+          "Araligin ortasi": 106.62895361540673,
+          "Modelin orta degeri": 106.05051314352167,
+          "Ozel formul": 105.43260190571418
+        },
+        {
+          "yil": 2026,
+          "gun": 196,
+          "Yarin = bugun": 138.86820884999807,
+          "Araligin ortasi": 143.42576863334094,
+          "Modelin orta degeri": 142.68900509400854,
+          "Ozel formul": 140.63817797436997
+        }
+      ]
+    },
+    "5": {
+      "ufuk_gun": 5,
+      "model": "Birlesim-2",
+      "fiyat_olcegi_tl": 6575.0,
+      "formul": {
+        "ozellikler": [
+          "sabit",
+          "model_orta",
+          "son_getiri",
+          "genislik",
+          "kayiklik"
+        ],
+        "katsayi": [
+          0.007608561572144453,
+          0.7030459190468362,
+          -0.11731539194361604,
+          -0.07182360337143276,
+          1.4381243998409547
+        ],
+        "std_hata": [
+          0.008520211346764162,
+          0.38699075975474406,
+          0.0920698441714261,
+          0.14774304855504597,
+          0.9798950108998687
+        ],
+        "t": [
+          0.8930015069443156,
+          1.8166994981802473,
+          -1.274199961989562,
+          -0.48613863104816596,
+          1.467631107255337
+        ],
+        "p": [
+          0.37185636566710345,
+          0.06926313863261879,
+          0.20259255868964532,
+          0.6268688788178656,
+          0.1422044534878042
+        ],
+        "egitim": "secim donemi 2012-2022"
+      },
+      "yontemler": {
+        "Yarin = bugun": {
+          "secim": {
+            "gun": 2733,
+            "hata_pct": 2.0538470256598567,
+            "hata_tl": 135.04044193713557,
+            "yon_isabeti_pct": null
+          },
+          "final": {
+            "gun": 941,
+            "hata_pct": 2.568758445932359,
+            "hata_tl": 168.8958678200526,
+            "yon_isabeti_pct": null
+          }
+        },
+        "Araligin ortasi": {
+          "secim": {
+            "gun": 2733,
+            "hata_pct": 2.034149182223702,
+            "hata_tl": 133.7453087312084,
+            "yon_isabeti_pct": 56.75874769797422,
+            "yarin_bugune_gore_pct": 0.9590706216216827,
+            "p_degeri": 0.374481973278287
+          },
+          "final": {
+            "gun": 941,
+            "hata_pct": 2.452529678181915,
+            "hata_tl": 161.2538263404609,
+            "yon_isabeti_pct": 64.11075612353568,
+            "yarin_bugune_gore_pct": 4.524706008635915,
+            "p_degeri": 0.0571311591598138
+          }
+        },
+        "Modelin orta degeri": {
+          "secim": {
+            "gun": 2733,
+            "hata_pct": 2.0365821017700525,
+            "hata_tl": 133.90527319138096,
+            "yon_isabeti_pct": 56.132596685082866,
+            "yarin_bugune_gore_pct": 0.8406139149656155,
+            "p_degeri": 0.4020523180423624
+          },
+          "final": {
+            "gun": 941,
+            "hata_pct": 2.4489925858790658,
+            "hata_tl": 161.02126252154858,
+            "yon_isabeti_pct": 63.684771033013845,
+            "yarin_bugune_gore_pct": 4.662402579851088,
+            "p_degeri": 0.04226003842650354
+          }
+        },
+        "Ozel formul": {
+          "secim": {
+            "gun": 2733,
+            "hata_pct": 2.0294259075235956,
+            "hata_tl": 133.4347534196764,
+            "yon_isabeti_pct": 55.58011049723757,
+            "yarin_bugune_gore_pct": 1.1890427004131454,
+            "p_degeri": 0.20416867908560388
+          },
+          "final": {
+            "gun": 941,
+            "hata_pct": 2.4612536370375806,
+            "hata_tl": 161.82742663522095,
+            "yon_isabeti_pct": 62.51331203407881,
+            "yarin_bugune_gore_pct": 4.185088289053129,
+            "p_degeri": 0.012016732514813664
+          }
+        }
+      },
+      "yillar": [
+        {
+          "yil": 2012,
+          "gun": 253,
+          "Yarin = bugun": 91.61070987415307,
+          "Araligin ortasi": 95.60704400099816,
+          "Modelin orta degeri": 96.18028802713577,
+          "Ozel formul": 97.74557003029508
+        },
+        {
+          "yil": 2013,
+          "gun": 247,
+          "Yarin = bugun": 135.87420052219898,
+          "Araligin ortasi": 135.50414686433874,
+          "Modelin orta degeri": 135.85787132267347,
+          "Ozel formul": 137.04923660550415
+        },
+        {
+          "yil": 2014,
+          "gun": 248,
+          "Yarin = bugun": 109.62640253961612,
+          "Araligin ortasi": 111.86011249984958,
+          "Modelin orta degeri": 112.31335928662347,
+          "Ozel formul": 111.67106663474196
+        },
+        {
+          "yil": 2015,
+          "gun": 249,
+          "Yarin = bugun": 113.13119593036254,
+          "Araligin ortasi": 110.90039469162494,
+          "Modelin orta degeri": 110.88888328309605,
+          "Ozel formul": 111.65340611402382
+        },
+        {
+          "yil": 2016,
+          "gun": 248,
+          "Yarin = bugun": 113.13648955063171,
+          "Araligin ortasi": 112.94215178412084,
+          "Modelin orta degeri": 113.08362546023562,
+          "Ozel formul": 112.00678118634998
+        },
+        {
+          "yil": 2017,
+          "gun": 251,
+          "Yarin = bugun": 97.67424322330072,
+          "Araligin ortasi": 95.1446996809433,
+          "Modelin orta degeri": 95.36346464852257,
+          "Ozel formul": 93.99901379233592
+        },
+        {
+          "yil": 2018,
+          "gun": 249,
+          "Yarin = bugun": 170.76200104084435,
+          "Araligin ortasi": 169.39637842086427,
+          "Modelin orta degeri": 169.14828877010558,
+          "Ozel formul": 166.84149871222783
+        },
+        {
+          "yil": 2019,
+          "gun": 247,
+          "Yarin = bugun": 118.98305831540793,
+          "Araligin ortasi": 116.44556936938231,
+          "Modelin orta degeri": 116.88479719736736,
+          "Ozel formul": 115.51161283917644
+        },
+        {
+          "yil": 2020,
+          "gun": 250,
+          "Yarin = bugun": 177.67465057217066,
+          "Araligin ortasi": 174.32483558131827,
+          "Modelin orta degeri": 174.80877650311797,
+          "Ozel formul": 171.79591734839696
+        },
+        {
+          "yil": 2021,
+          "gun": 246,
+          "Yarin = bugun": 227.78016615928533,
+          "Araligin ortasi": 215.90207847895033,
+          "Modelin orta degeri": 216.78694304665797,
+          "Ozel formul": 221.30696767276686
+        },
+        {
+          "yil": 2022,
+          "gun": 250,
+          "Yarin = bugun": 131.31761109732926,
+          "Araligin ortasi": 134.0662740932659,
+          "Modelin orta degeri": 132.61355725042435,
+          "Ozel formul": 129.22633123570057
+        },
+        {
+          "yil": 2023,
+          "gun": 251,
+          "Yarin = bugun": 179.12329104555462,
+          "Araligin ortasi": 165.72415859792326,
+          "Modelin orta degeri": 166.37822248203364,
+          "Ozel formul": 173.21072876394533
+        },
+        {
+          "yil": 2024,
+          "gun": 247,
+          "Yarin = bugun": 159.79302211614313,
+          "Araligin ortasi": 160.71833373614734,
+          "Modelin orta degeri": 160.7091557704784,
+          "Ozel formul": 158.63132961789768
+        },
+        {
+          "yil": 2025,
+          "gun": 249,
+          "Yarin = bugun": 157.079334242497,
+          "Araligin ortasi": 137.1853819742442,
+          "Modelin orta degeri": 136.67456894406357,
+          "Ozel formul": 136.81223834910546
+        },
+        {
+          "yil": 2026,
+          "gun": 194,
+          "Yarin = bugun": 182.4197674080731,
+          "Araligin ortasi": 187.04380532927723,
+          "Modelin orta degeri": 185.73683014127207,
+          "Ozel formul": 183.27592669816838
+        }
+      ]
+    }
+  },
+  "created_at_utc": "2026-10-22T19:11:00+00:00",
+  "not": "hata TL, son kapanis fiyati olceginde; secim 2012-2022 (formul burada egitildi), final 2023-2026"
+}

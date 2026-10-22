@@ -146,6 +146,22 @@ def canli_karne() -> dict:
     return _clean(dict(_canli_karne(_data_key(), log_key)))
 
 
+def merkez(tool_dir: Path = None) -> dict:
+    """Merkez tahmin (araligin ortasi) icin hic gorulmemis 2023-2026 ortalama hatasi ve 'yarin = bugun' hatasi."""
+    p = Path(tool_dir or TOOL_DIR) / "merkez_tahmin.json"
+    if not p.exists():
+        raise FileNotFoundError("Merkez tahmin sonucu yok (python -m src.tool.merkez)")
+    d = json.loads(p.read_text(encoding="utf-8"))
+    out = []
+    for h, u in sorted(d["ufuklar"].items(), key=lambda kv: int(kv[0])):
+        f = u["yontemler"]["Araligin ortasi"]["final"]
+        r = u["yontemler"]["Yarin = bugun"]["final"]
+        out.append({"ufuk_gun": int(h), "hata_tl": f["hata_tl"], "hata_pct": f["hata_pct"], "rw_hata_tl": r["hata_tl"],
+                    "iyilesme_pct": f["yarin_bugune_gore_pct"], "p_degeri": f["p_degeri"], "gun": f["gun"]})
+    return _clean({"kaynak": "research/tool/merkez_tahmin.json", "ufuklar": out,
+                   "formul": "merkez tahmin = (%80 araligin alt siniri + ust siniri) / 2"})
+
+
 def yarisma(tool_dir: Path = None) -> dict:
     p = yarisma_dosyasi(tool_dir)
     res = json.loads(p.read_text(encoding="utf-8"))

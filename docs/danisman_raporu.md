@@ -93,6 +93,18 @@ Kullanıcı için anlamı şu grafikte:
 - Ertesi gün için "%80" dediği aralık %77 tuttu; hedefin biraz altında. En zayıf yıl 2023 (%71). O yıl fiziki altın, uluslararası fiyattan beklenmedik biçimde ayrıştı.
 - 3 ve 5 günde "%80" dediği aralık %84 tuttu; yani aralık gerekenden biraz geniş. Bu, ters yönde hata yapmaktan, yani aralığın tutmamasından iyidir.
 
+**Tek bir fiyat tahmini de verilebilir mi?**
+
+Aralığın ortası, yani (alt sınır + üst sınır) ÷ 2, tek bir "merkez tahmin" olarak kullanılabilir. Aralık, gerçekleşen fiyat ve son günün hareketi arasında daha karmaşık bir formül de aradım. 2012–2022 verisiyle kurulan formülde hiçbir bilgi anlamlı bir katkı yapmadı; aralığın ortasından daha iyi bir formül bulunamadı. Hiç görülmemiş 2023–2026'da merkez tahminin ortalama hatası:
+
+| Tahmin | Merkez tahmin | "Yarın = bugün" |
+| --- | --- | --- |
+| 1 gün sonra | 84 TL | 85 TL |
+| 3 gün sonra | 129 TL | 131 TL |
+| 5 gün sonra | 161 TL | 169 TL |
+
+Merkez tahmin "yarın = bugün"den yalnızca biraz iyi; çünkü altının yönü tahmin edilemiyor. Bu yüzden ekranda merkez tahmin, aralığın yanında ve ortalama hatasıyla birlikte gösteriliyor; asıl bilgi aralık.
+
 ## 6. Kriz yıllarında ne oldu?
 
 Altın fiyatı her yıl aynı şekilde davranmıyor. Bazı yıllar sakin geçiyor, bazı yıllarda fiyat sert hareket ediyor. Bir tahmin sisteminin asıl sınavı, çalkantılı dönemlerde de çalışıp çalışmadığıdır.
