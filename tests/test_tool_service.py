@@ -9,6 +9,7 @@ from unittest import mock
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -126,6 +127,31 @@ class TestYarismaService(Base):
             self.assertTrue(w["uygun"])                                            # kazanan hedefe yakin olmali
             self.assertEqual(min(r["puan"] for r in u["modeller"] if r["uygun"]), w["puan"])
 
+    def test_summary_has_fixed_interval_comparison(self):
+        d = ts.yarisma()
+        src = json.loads((PROJECT_ROOT / d["kaynak"]).read_text(encoding="utf-8"))
+        for u in d["ufuklar"]:
+            s = src["ufuklar"][str(u["ufuk_gun"])]
+            self.assertNotEqual(u["kazanan"], ts.SABIT)
+            self.assertEqual(u["sabit"]["final"], s["final"][ts.SABIT])          # kazananin degil, basit yontemin sonucu
+            self.assertEqual(u["sabit"]["yillar"], s["yillar"][ts.SABIT])
+            self.assertEqual([r["yil"] for r in u["sabit"]["yillar"]], [r["yil"] for r in u["yillar"]])
+        u1 = d["ufuklar"][0]
+        self.assertLess(u1["final"]["genislik80"], u1["sabit"]["final"]["genislik80"])   # kayitli sonuc: daha dar aralik
+
+    def test_fixed_interval_missing_is_none(self):
+        res = json.loads(ts.yarisma_dosyasi().read_text(encoding="utf-8"))
+        for u in res["ufuklar"].values():
+            for part in ("secim", "final", "yillar"):
+                u[part].pop(ts.SABIT, None)
+            u.pop("anlamlilik_sabit_araliga_gore", None)
+        (self.tmp / "yarisma_1-3-5.json").write_text(json.dumps(res), encoding="utf-8")
+        d = ts.yarisma(self.tmp)
+        self.assertEqual(len(d["ufuklar"]), 3)
+        for u in d["ufuklar"]:
+            self.assertIsNone(u["sabit"]["final"])
+            self.assertIsNone(u["sabit"]["yillar"])
+
     def test_horizon_cards_with_fallback(self):
         d = ts.ufuklar()
         self.assertEqual([u["ufuk_gun"] for u in d["ufuklar"]], [1, 3, 5])
@@ -215,6 +241,42 @@ class TestApiAndPage(Base):
         self.assertNotIn("innerHTML", js)
         self.assertNotIn("style:", js)                                            # CSP: satir ici stil yok
         self.assertEqual(cl.get("/static/ana.css").status_code, 200)
+
+
+    def test_main_page_sections_and_csp_rules(self):
+        html = (PROJECT_ROOT / "src" / "web" / "index.html").read_text(encoding="utf-8")
+        js = (PROJECT_ROOT / "src" / "web" / "ana.js").read_text(encoding="utf-8")
+        css = (PROJECT_ROOT / "src" / "web" / "ana.css").read_text(encoding="utf-8")
+        for sid in ("tahmin", "aralik", "tuttu", "kriz", "nasil", "model", "veri", "denenen", "sozluk"):
+            self.assertIn(f'<section id="{sid}"', html)                         # bolum var
+            self.assertIn(f'href="#{sid}"', html)                                # ust menude baglantisi var
+        for i in ("cetvel", "ufuk-sec", "duzey-sec", "tekrar", "oynat", "panel-aralik", "panel-merkez",
+                  "yillar", "dar-genis", "sakin-calkanti", "guven", "canli", "yarisma"):
+            self.assertIn(f'id="{i}"', html)
+            self.assertTrue(i in js, f"{i} ana.js icinde kullanilmiyor")          # JS bu ogeyi dolduruyor
+        self.assertIsNone(re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html))     # satir ici betik yok
+        self.assertNotIn("<style", html)
+        self.assertNotIn(" style=", html)
+        self.assertIsNone(re.search(r"\son[a-z]+=", html))                     # satir ici olay isleyici yok
+        for bad in ("innerHTML", "outerHTML", "insertAdjacentHTML", "eval(", "new Function", "document.write",
+                    "style:", 'setAttribute("style"', "localStorage"):
+            self.assertNotIn(bad, js)
+        self.assertIn("TL eksik", js)                                            # merkez tahmin sapmasi, yonuyle
+        self.assertIn("TL fazla", js)
+        self.assertIn("r.gercek - (r.lo80 + r.hi80) / 2", js)                    # sapma = gerceklesen - merkez
+        self.assertIn("u.sabit", js)                                             # sabit aralik karsilastirmasi
+        self.assertIn("prefers-reduced-motion", css)                             # hareket azaltma tercihi
+        self.assertIn("prefers-reduced-motion", js)
+        self.assertIn('href="/detay"', html)
+        for metin in (html.lower(), js.lower()):                                 # "secim donemi" siyasi secimle karisiyordu
+            self.assertNotIn("se\u00e7im d\u00f6nemi", metin)
+        self.assertIn("haz\u0131rl\u0131k d\u00f6nemi", js)
+        self.assertIn('NE[m] ? el("small", {}, NE[m])', js)                      # her modelin sade aciklamasi tabloda
+        ne = js[js.index("const NE = {"): js.index("};", js.index("const NE = {"))]
+        res = json.loads(ts.yarisma_dosyasi().read_text(encoding="utf-8"))
+        for m in res["ufuklar"]["1"]["secim"]:
+            self.assertIn(f'"{m}": "', ne, f"{m} icin sade aciklama yok")
+        self.assertIn("r.tutma80", js)                                           # yarisma tablosunda tutma oranlari
 
 
 _REAL = [PROJECT_ROOT / "research", PROJECT_ROOT / "data"]

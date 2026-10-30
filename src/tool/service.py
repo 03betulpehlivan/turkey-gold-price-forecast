@@ -6,7 +6,8 @@ Web panosunun ana ekranini besler:
   bu_yil()    icinde bulunulan yilin gunluk tahminleri ve gerceklesen fiyatlar (gercek, ileriye donuk sinama)
   karne()     kayitli basari karnesi (research/tool/), testi 2018-2022
   ufuklar()   1, 3 ve 5 gun sonrasi icin araliklar; her ufukta model yarismasinin kazanani (research/tool/yarisma_*.json)
-  yarisma()   yarisma ozeti: modeller, kazananlar, hic gorulmemis 2023-2026 sonuclari ve anlamlilik
+  yarisma()   yarisma ozeti: modeller, kazananlar, hic gorulmemis 2023-2026 sonuclari ve anlamlilik;
+              karsilastirma icin 'Sabit aralik' yonteminin final sonucu ve yillik tutma/genislik degerleri
 Model ve pencere onceden sabittir: GARCH-t + ACI, pencere dogrulamada secilen (research/tool/pencere_*.json).
 Hesaplar gunluk fiyat dosyasi degismedikce onbellekte tutulur. Hicbir dosyaya yazmaz.
 """
@@ -26,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TOOL_DIR = ROOT / "research" / "tool"
 EGITIM, TEST = (2012, 2017), (2018, 2022)
 VARSAYILAN_PENCERE = 750
+SABIT = "Sabit aralik"                                    # yarismadaki basit karsilastirma yontemi
 
 
 def _clean(x):
@@ -173,9 +175,11 @@ def yarisma(tool_dir: Path = None) -> dict:
                             "uygun": bool(abs(s["tutma80"] - 80) <= yr.HEDEF[80] and abs(s["tutma95"] - 95) <= yr.HEDEF[95])}
                            for m, s in u["secim"].items()), key=lambda r: r["puan"])
         anl = u.get("anlamlilik_sabit_araliga_gore", {})
+        sabit = {"final": u["final"].get(SABIT) if u.get("final") else None,
+                 "yillar": u.get("yillar", {}).get(SABIT)}                   # karsilastirma: basit yontem
         out.append({"ufuk_gun": int(h), "kazanan": w, "modeller": modeller, "donem": u["donem"],
                     "final": u["final"].get(w) if u.get("final") else None, "anlamlilik": anl,
-                    "yillar": u["yillar"][w]})
+                    "yillar": u["yillar"][w], "sabit": sabit})
     return _clean({"kaynak": f"research/tool/{p.name}", "pencere_gun": res.get("pencere_gun"), "ufuklar": out,
                    "hedef_sapma": {"80": yr.HEDEF[80], "95": yr.HEDEF[95]},
                    "model_sayisi": len(out[0]["modeller"]) if out else 0})

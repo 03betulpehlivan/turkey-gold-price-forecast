@@ -4,66 +4,306 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gram altın: önümüzdeki günler için fiyat aralığı</title>
+<meta name="description" content="Gram altının 1, 3 ve 5 işlem günü sonra hangi fiyat aralığında olacağını %80 ve %95 olasılıkla tahmin eden ve bu tahminlerin ne kadar tuttuğunu gösteren bitirme projesi.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%226%22 width=%2212%22 height=%224%22 fill=%22%238a6d22%22/%3E%3Crect x=%227.25%22 y=%223%22 width=%221.5%22 height=%2210%22 fill=%22%231f2a33%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/ana.css">
 </head>
 <body>
+<a class="atla" href="#tahmin">İçeriğe geç</a>
+
+<header class="serit">
+  <div class="serit-ic">
+    <a class="marka" href="#tahmin"><span class="marka-isaret" aria-hidden="true"></span>Gram altın aralık tahmini</a>
+    <nav aria-label="Bölümler" id="menu">
+      <a href="#tahmin">Tahmin</a>
+      <a href="#aralik">Aralık nedir?</a>
+      <a href="#tuttu">Tuttu mu?</a>
+      <a href="#kriz">Kriz yılları</a>
+      <a href="#nasil">Nasıl çalışıyor?</a>
+      <a href="#model">Model yarışması</a>
+      <a href="#veri">Veri</a>
+      <a href="#denenen">Denenenler</a>
+      <a href="#sozluk">Sözlük</a>
+    </nav>
+  </div>
+</header>
+
 <main>
-  <header>
-    <h1>Gram altın, önümüzdeki günler</h1>
+
+  <!-- 1. Bugunku tahmin -->
+  <section id="tahmin" class="kahraman" aria-labelledby="tahmin-baslik">
+    <h1 id="tahmin-baslik">Gram altın önümüzdeki günlerde hangi aralıkta olacak?</h1>
     <p class="ust" id="ust">Tahmin hazırlanıyor…</p>
-  </header>
 
-  <section class="tahmin" aria-live="polite">
-    <div class="yelpaze" id="yelpaze"></div>
-    <div class="kartlar" id="kartlar"></div>
+    <div class="secimler">
+      <div class="secim">
+        <span class="secim-ad" id="ufuk-ad">Ne zaman için?</span>
+        <div class="dugmeler" id="ufuk-sec" role="group" aria-labelledby="ufuk-ad"></div>
+      </div>
+      <div class="secim">
+        <span class="secim-ad" id="duzey-ad">Ne kadar emin?</span>
+        <div class="dugmeler" id="duzey-sec" role="group" aria-labelledby="duzey-ad">
+          <button type="button" data-duzey="80" aria-pressed="true">%80 aralık</button>
+          <button type="button" data-duzey="95" aria-pressed="false">%95 aralık</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cetvel" id="cetvel"></div>
+
+    <div class="sonuc" aria-live="polite">
+      <p class="buyuk-aralik" id="buyuk-aralik"></p>
+      <p class="cumle" id="cumle"></p>
+    </div>
+    <dl class="olgular" id="olgular"></dl>
     <p class="not" id="hareket"></p>
+
+    <figure class="yelpaze-kutu">
+      <div id="yelpaze"></div>
+      <figcaption>Son 30 işlem gününün kapanış fiyatları ve önümüzdeki 1, 3, 5 işlem günü için aralıklar. Gün ilerledikçe belirsizlik artar, bu yüzden aralık genişler.</figcaption>
+    </figure>
   </section>
 
-  <section>
-    <h2>Ne kadar güvenilir?</h2>
-    <p class="aciklama" id="guven-ozet">Yükleniyor…</p>
-    <div class="guven" id="guven"></div>
+  <!-- 2. Aralik ne demek -->
+  <section id="aralik" aria-labelledby="aralik-baslik">
+    <h2 id="aralik-baslik">Aralık ne demek?</h2>
+    <p class="giris">Bu sistem yarının fiyatını tek bir sayı olarak söylemez. Onun yerine “fiyat büyük olasılıkla şu iki sayının arasında olacak” der. Bu iki sayının arasındaki bölgeye <b>aralık</b> diyoruz.</p>
+
+    <div class="hava">
+      <p class="hava-baslik">Hava durumu gibi düşünün</p>
+      <p>Meteoroloji “yarın kesin yağmur yağacak” demez; “%80 olasılıkla yağmur” der. Biz de “yarın altın şu kadar olacak” demiyoruz.</p>
+      <p class="hava-ornek" id="hava-ornek">“Yarın %80 olasılıkla … TL ile … TL arasında olacak” diyoruz.</p>
+    </div>
+
+    <div class="iki-aralik">
+      <div class="aralik-acik" id="nokta80">
+        <h3>%80 aralık</h3>
+        <div class="noktalar on" aria-hidden="true"></div>
+        <p><b>10 günün yaklaşık 8’inde</b> fiyat bu aralığın içinde kalır. Kalan 2 günde dışına çıkabilir. Bu bir hata değildir; “%80” zaten bunu söyler.</p>
+      </div>
+      <div class="aralik-acik" id="nokta95">
+        <h3>%95 aralık</h3>
+        <div class="noktalar yuz" aria-hidden="true"></div>
+        <p><b>100 günün yaklaşık 95’inde</b> fiyat bu aralığın içinde kalır. Daha emin olmak için aralık daha geniştir.</p>
+      </div>
+    </div>
+    <p class="not">Noktalar örnektir: dolu nokta fiyatın aralık içinde kaldığı günü, boş nokta dışına çıktığı günü gösterir.</p>
+
+    <h3 class="alt-baslik">Aralık neye göre belirleniyor?</h3>
+    <p class="giris">Fiyat son günlerde ne kadar inip çıktıysa, aralık o kadar geniş olur. Sakin dönemde dar, çalkantılı dönemde geniştir. Yani sistem fiyatın <b>yönünü</b> değil, <b>ne kadar oynayacağını</b> tahmin eder. Bu oynamaya <b>oynaklık</b> denir.</p>
+    <div class="sakin-calkanti" id="sakin-calkanti"></div>
+
+    <h3 class="alt-baslik">Aralık çok geniş değil mi?</h3>
+    <p class="giris">Karşılaştırma için basit bir yöntem kullandık: son 3 yılın ortalama hareketine bakarak aralık veren <b>sabit aralık</b>. Bu yöntem son günlerin sakin mi çalkantılı mı olduğuna bakmaz. Sistemimiz aynı güvenle daha dar aralık veriyor.</p>
+    <div class="dar-genis" id="dar-genis"></div>
+    <p class="not" id="dar-genis-not"></p>
+
+    <h3 class="alt-baslik">Tek bir fiyat da söylenebilir mi?</h3>
+    <p class="giris" id="merkez-aciklama">Evet. Aralığın tam ortasına <b>merkez tahmin</b> diyoruz. Ama altının yönü tahmin edilemediği için bu tek sayı her gün bir miktar sapar. Bu yüzden asıl bilgi aralıktır.</p>
   </section>
 
-  <section>
-    <h2>Bu yıl tahminler ne kadar tuttu?</h2>
-    <p class="aciklama" id="buyil-ozet">Yükleniyor…</p>
+  <!-- 3. Tuttu mu -->
+  <section id="tuttu" aria-labelledby="tuttu-baslik">
+    <h2 id="tuttu-baslik">Tahminler tuttu mu?</h2>
+    <p class="giris" id="guven-ozet">Yükleniyor…</p>
+    <div class="sinav" id="guven"></div>
+
+    <h3 class="alt-baslik">Son 15 işlem günü, gün gün</h3>
+    <p class="giris">Her gün için bir gün önceden verilen %80 aralığı ve ertesi gün gerçekleşen fiyatı görün. “Oynat” düğmesine basın ya da bir güne dokunun.</p>
+    <div class="tekrar" id="tekrar">
+      <div class="tekrar-ust">
+        <button type="button" class="oynat" id="oynat">Oynat</button>
+        <p class="tekrar-sayac" id="tekrar-sayac" aria-live="polite"></p>
+      </div>
+      <div class="cetvel kucuk" id="tekrar-cetvel"></div>
+      <p class="tekrar-yazi" id="tekrar-yazi"></p>
+      <div class="seritler" id="tekrar-seritler" role="group" aria-label="Son 15 işlem günü"></div>
+    </div>
+
+    <div class="sekmeler" role="tablist" aria-label="Son 15 günün tablosu">
+      <button type="button" role="tab" id="sekme-aralik" aria-controls="panel-aralik" aria-selected="true">Aralık tuttu mu?</button>
+      <button type="button" role="tab" id="sekme-merkez" aria-controls="panel-merkez" aria-selected="false" tabindex="-1">Merkez tahmin ne kadar saptı?</button>
+    </div>
+    <div class="tablo-kutu" id="panel-aralik" role="tabpanel" aria-labelledby="sekme-aralik"></div>
+    <div class="tablo-kutu" id="panel-merkez" role="tabpanel" aria-labelledby="sekme-merkez" hidden></div>
+
+    <h3 class="alt-baslik">Bu yılın tamamı</h3>
+    <p class="giris" id="buyil-ozet">Yükleniyor…</p>
     <div class="grafik-kutu" id="buyil"></div>
-    <div class="tablo-kutu" id="buyil-son"></div>
-  </section>
 
-  <section>
-    <h2>İleriye dönük karne</h2>
-    <p class="aciklama" id="canli-ozet">Yükleniyor…</p>
-    <div class="guven" id="canli"></div>
+    <h3 class="alt-baslik">İleriye dönük karne</h3>
+    <p class="giris" id="canli-ozet">Yükleniyor…</p>
+    <div class="karne" id="canli"></div>
     <div class="tablo-kutu" id="canli-son"></div>
   </section>
 
-  <section>
-    <h2>Model yarışması</h2>
-    <p class="aciklama" id="yarisma-ozet">Yükleniyor…</p>
+  <!-- 4. Kriz yillari -->
+  <section id="kriz" aria-labelledby="kriz-baslik">
+    <h2 id="kriz-baslik">Kriz yıllarında ne oldu?</h2>
+    <p class="giris">İyi bir sürücü yağmurda yavaşlar, hava açılınca hızlanır. Sistem de böyle davranır: krizde aralığı genişletir, kriz geçince daraltır. Sabit aralık ise havaya geç uyar: son 3 yılın ortalamasına baktığı için krizi geç fark eder, kriz geçince de uzun süre geniş kalır.</p>
+    <div class="grafik-kutu" id="yillar"></div>
+    <p class="not" id="yillar-ozet"></p>
+    <ul class="kriz-notlari">
+      <li><b>Süren çalkantıda iyi:</b> 2021 kur krizinde %80 aralık yine yaklaşık %80 tuttu, çünkü aralık zamanında genişledi.</li>
+      <li><b>Ani şokta zorlanıyor ama çökmüyor:</b> 2020 pandemisinde ve 2023’te fiyat birden sıçradı. %80 aralık %71’e düştü; %95 aralık yine %91–92 tuttu.</li>
+      <li><b>Kriz geçince daralıyor:</b> 2024–2026’da sistemin aralığı daraldı. Sabit aralık ise geniş kaldı ve gereğinden sık tuttu (%88–91). Bu iyi bir şey değil: söylediğinden geniş bir aralık, kullanıcıya gereksiz belirsizlik verir.</li>
+    </ul>
+  </section>
+
+  <!-- 5. Nasil calisiyor -->
+  <section id="nasil" aria-labelledby="nasil-baslik">
+    <h2 id="nasil-baslik">Nasıl çalışıyor?</h2>
+    <ol class="adimlar">
+      <li><b>Son 3 yıla bakar.</b> Son 750 işlem gününün (yaklaşık 3 yıl) kapanış fiyatlarını kullanır. Bu pencere her ay bir ay ileri kayar.</li>
+      <li><b>Oynaklığı tahmin eder.</b> Fiyatın önümüzdeki günlerde tipik olarak ne kadar inip çıkabileceğini hesaplar. Buna “tipik hareket” diyelim.</li>
+      <li><b>Aralığa çevirir.</b> Tipik hareketi bugünkü fiyatın iki yanına koyar: %80 aralık için yaklaşık 1,1 katı, %95 aralık için yaklaşık 2 katı. Altında büyük sıçramalar sık olduğu için bu katsayıları model her ay geçmişten yeniden hesaplar.</li>
+      <li><b>Gerçekle karşılaştırır.</b> Gün bitince gerçek fiyat aralığın içinde mi diye bakılır. Sonuçlar “Tuttu mu?” bölümünde.</li>
+    </ol>
+
+    <div class="donemler">
+      <h3>Hazırlık dönemi ve sınav dönemi ne demek?</h3>
+      <p>Bir öğrenci düşünün. Önce eski sınav sorularıyla çalışır ve hangi yöntemin işe yaradığına karar verir. Sonra hiç görmediği sorularla gerçek sınava girer.</p>
+      <div class="donem-serit" aria-hidden="true">
+        <span class="d-hazirlik">Hazırlık 2012–2022</span><span class="d-sinav">Sınav 2023–2026</span>
+      </div>
+      <p><b>Hazırlık dönemi (2012–2022):</b> Bütün modeller bu yılların verisiyle denendi ve en iyisi seçildi.<br>
+        <b>Sınav dönemi (2023–2026):</b> Seçilen model bu yılları hiç görmeden sınandı. Ekranda “sınav sonucu” olarak gösterilen sayılar buradan gelir.</p>
+    </div>
+
+    <div class="kurallar">
+      <h3>Dürüstlük kuralları</h3>
+      <ul>
+        <li><b>Geleceği görmez.</b> Her tahmin yalnızca o güne kadarki fiyatları kullanır.</li>
+        <li><b>Hazırlık ve sınav ayrı.</b> Model 2012–2022 verisiyle seçildi; 2023–2026’yı hiç görmeden sınandı. Sınav dönemi sonuçlara bakılmadan, en son dönem olduğu için belirlendi.</li>
+        <li><b>Veri uydurulmaz.</b> Tatil ve kapanış günleri doldurulmaz; pandemi gibi olağanüstü günler silinmez.</li>
+        <li><b>Kötü sonuçlar da yazılır.</b> İşe yaramayan denemeler aşağıda.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6. Model yarismasi -->
+  <section id="model" aria-labelledby="model-baslik">
+    <h2 id="model-baslik">Model yarışması</h2>
+    <p class="giris" id="yarisma-ozet">Yükleniyor…</p>
+    <ul class="modeller" id="kazananlar"></ul>
+    <div class="okuma">
+      <h3>Tablo nasıl okunur?</h3>
+      <ul>
+        <li><b>%80 ve %95 sütunları:</b> hazırlık döneminde (2012–2022) aralığın gerçekten kaç günde tuttuğu. İyi bir model için %80 aralık 80’e, %95 aralık 95’e yakın olmalı.</li>
+        <li><b>Puan:</b> aralığın hem genişliğini hem ıskaladığı günleri cezalandırır. Düşük puan daha iyi: hem dar hem isabetli.</li>
+        <li><b>● Kazanan:</b> hedefe yakın tutan modeller arasında puanı en düşük olan.</li>
+        <li><b>Soluk hücre:</b> tutma oranı hedeften fazla uzak. Puanı düşük olsa bile seçilemez.</li>
+      </ul>
+    </div>
     <div class="tablo-kutu" id="yarisma"></div>
+    <p class="not" id="yarisma-aciklama"></p>
+    <p class="not"><b>Kronos</b> (yapay zekâ) bu tabloya girmedi; ayrı ve daha küçük bir denemede sınandı. 1 gün için hazırlık döneminde ARIMA-GARCH’tan %40 kötü, sınav döneminde yaklaşık eşit çıktı. 3 ve 5 günde belirgin biçimde kötüydü, çünkü aralıkları fazla dardı.</p>
   </section>
 
-  <section>
-    <h2>Yıllara göre</h2>
-    <p class="aciklama" id="yillar-ozet">Bir sonraki gün için %80 aralığın her yıl tuttuğu günlerin oranı.</p>
-    <div class="yillar" id="yillar"></div>
+  <!-- 7. Veri ve incelemeler -->
+  <section id="veri" aria-labelledby="veri-baslik">
+    <h2 id="veri-baslik">Veri ve incelemeler</h2>
+    <p class="giris">Ana veri gram altının günlük kapanış fiyatı. Bunun yanında altını etkileyebilecek dış veriler toplandı ve tek tek incelendi.</p>
+
+    <h3 class="alt-baslik">Hangi verileri kullandık?</h3>
+    <div class="tablo-kutu">
+      <table class="kaynaklar">
+        <thead><tr><th>Veri</th><th>Kaynak</th><th>Ne için?</th></tr></thead>
+        <tbody>
+          <tr><td>Gram altın kapanışı (TL/gram)</td><td>TCMB EVDS: İstanbul Altın Borsası arşivi (1995–2018) ve Borsa İstanbul Kıymetli Madenler Piyasası (2018’den bugüne)</td><td>Ana veri. Tahminler bununla yapılır.</td></tr>
+          <tr><td>Ons altın, gümüş, Brent petrol</td><td>Yahoo Finance</td><td>Dış piyasa denemeleri</td></tr>
+          <tr><td>Dolar/TL, Euro/TL, dolar endeksi</td><td>Yahoo Finance</td><td>Kur etkisi denemeleri</td></tr>
+          <tr><td>ABD 10 yıllık faizi, VIX, GVZ, S&amp;P 500, BIST 100</td><td>Yahoo Finance</td><td>Piyasa korkusu ve borsa denemeleri</td></tr>
+          <tr><td>Enflasyon (TÜFE), politika faizi</td><td>TCMB EVDS (aylık)</td><td>Makro denemeler</td></tr>
+          <tr><td>Fed faiz kararı günleri</td><td>ABD Merkez Bankası takvimi (federalreserve.gov)</td><td>Olay günü denemesi: 2012–2026, 119 planlı karar günü</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="not">EVDS seri kodları: TP.MK.T.KAP.Y (1995–2018) ve TP.ALTINPIYASA.KAP02 (2018 sonrası); TL/kg değeri 1000’e bölünerek TL/gram yapıldı. VIX borsa korku endeksi, GVZ ise altının beklenen oynaklığıdır.</p>
+
+    <h3 class="alt-baslik">Veriyle ilgili kurallar</h3>
+    <ul class="veri-kurallari">
+      <li><b>2009 sonrası kullanıldı.</b> Eski yıllarda tutarsızlıklar var, 2005’te TL’den 6 sıfır atıldı; ayrıca model zaten son 3 yıla bakıyor.</li>
+      <li><b>Eksik gün doldurulmaz.</b> Tatil ve kapanış günleri (örneğin 2023 depremi sonrası) uydurulmaz; yalnızca işlem olan günler sırayla kullanılır.</li>
+      <li><b>Olağanüstü gün silinmez.</b> Pandemi gibi sert günler veride kalır.</li>
+      <li><b>Yayın gecikmesi hesaba katılır.</b> TCMB kapanışı ertesi gün yayımlar; dış verilerde en fazla 10 günlük eski değer kullanılır.</li>
+    </ul>
+
+    <h3 class="alt-baslik">Neleri inceledik, ne bulduk?</h3>
+    <p class="giris">Bu incelemelerin hepsi hazırlık dönemi (2012–2022) verisiyle yapıldı.</p>
+    <div class="incelemeler">
+      <article class="inceleme evet"><h4>Oynaklık tahmin edilebilir mi?</h4><p>GARCH modeli 11 yılın 10’unda “oynaklık hep aynı” varsayımından iyi çıktı.</p><p class="bulgu">Evet. Sistemin temeli bu.</p></article>
+      <article class="inceleme hayir"><h4>Altının korku endeksi (GVZ)</h4><p>ABD’de altının beklenen oynaklığını gösterir. 2018 ve 2021 TL krizlerinde işe yaramadı.</p><p class="bulgu">Türkiye’ye özgü kur şoklarını görmüyor.</p></article>
+      <article class="inceleme bilgi"><h4>Fiziki prim</h4><p>Gram altın fiyatı ile “ons × dolar/TL” arasındaki fark. Normalde yaklaşık yarım haftada kapanıyor.</p><p class="bulgu">2023’ten sonra kalıcı bir prim oluştu; daha önce hiç görülmemişti.</p></article>
+      <article class="inceleme hayir"><h4>Gece bilgisi</h4><p>Borsa kapandıktan sonra dünyada olanlar. 2012–2022’de %22 daha iyiydi.</p><p class="bulgu">2023’teki prim kırılmasıyla bozuldu; sınav döneminde %9 kötü çıktı.</p></article>
+      <article class="inceleme hayir"><h4>Enflasyon ve faiz</h4><p>Haftalık ve aylık makro veriler (TÜFE, politika faizi) denendi.</p><p class="bulgu">Ek bilgi taşımadı.</p></article>
+      <article class="inceleme hayir"><h4>Dış piyasa oynaklıkları</h4><p>GVZ, VIX, dolar/TL, Brent ve dolar endeksi modele eklendi (HAR-X).</p><p class="bulgu">Eklemeden önceki hâlinden kötü çıktı.</p></article>
+      <article class="inceleme hayir"><h4>Fed karar günleri</h4><p>119 planlı karar gününde, olay günü ve ertesi gün aralığı genişletmek denendi.</p><p class="bulgu">Fark yaratmadı; model olaydan sonra zaten hızla uyum sağlıyor.</p></article>
+      <article class="inceleme bilgi"><h4>Ne kadar süre test gerekir?</h4><p>120 günlük bir canlı testle ancak yaklaşık %20’lik büyük farklar güvenle görülebiliyor.</p><p class="bulgu">Bu yüzden asıl değerlendirme uzun sınav döneminde (944 gün) yapıldı.</p></article>
+    </div>
   </section>
 
-  <section class="nasil">
-    <h2>Nasıl çalışıyor?</h2>
-    <p>Sistem fiyatın yönünü değil, ne kadar oynayacağını tahmin eder ve bunu bir fiyat aralığına çevirir.
-      On beş model (ikisi birleşim) 2012–2022 arasında yarıştırıldı: her ay, yalnızca o güne kadar gerçekleşmiş fiyatlarla yeniden kurulup
-      o ayın her günü için 1, 3 ve 5 gün sonrası tahmin edildi. Her ufukta hedefi tutturan en dar aralığı veren model seçildi
-      ve hiç görmediği 2023–2026 döneminde sınandı. Hiçbir tahmin, o günden sonraki fiyatları görmedi.</p>
+  <!-- 8. Denenenler -->
+  <section id="denenen" aria-labelledby="denenen-baslik">
+    <h2 id="denenen-baslik">Neler denendi, neler işe yaramadı?</h2>
+    <p class="giris">Proje ilk olarak “yarın altın kaç TL olacak?” sorusuyla başladı. Bunun neden mümkün olmadığını ölçerek gösterdik ve aralık tahminine geçtik.</p>
+    <div class="denemeler">
+      <article class="deneme olmadi">
+        <h3>Yarın artar mı, azalır mı?</h3>
+        <p>Dört yöntem denendi (doğrusal model, XGBoost, LSTM yapay sinir ağı, gece bilgisi modeli). En iyisi bile yönü <b>%51–53</b> doğru bildi. Bu, yazı-turadan farksız.</p>
+      </article>
+      <article class="deneme olmadi">
+        <h3>Yarının tam fiyatı</h3>
+        <p>Hiçbir model, “yarın = bugün” demekten anlamlı biçimde iyi olmadı. Bu yüzden tek fiyat yerine aralık tahminine geçildi.</p>
+      </article>
+      <article class="deneme olmadi">
+        <h3>Literatürdeki %99 başarı</h3>
+        <p>Bazı çalışmalarda LSTM %99,9 başarılı görünüyor. Aynı kurulumu denedik: veri karıştırılarak bölününce gerçekten %99,9 çıkıyor, çünkü model geleceği “görüyor”. Doğru kurulumda “yarın = bugün”den <b>%73 kötü</b>.</p>
+      </article>
+      <article class="deneme olmadi">
+        <h3>Dış veriler</h3>
+        <p>Dolar/TL, ons altın, petrol, dolar endeksi, ABD faizi, piyasa korku endeksleri, borsalar, enflasyon ve politika faizi denendi. Aralıkları iyileştirmedi; bu bilgiler altın fiyatına zaten yansıyor.</p>
+      </article>
+      <article class="deneme olmadi">
+        <h3>Fed karar günleri</h3>
+        <p>ABD Merkez Bankası’nın faiz kararı günlerinde aralığı genişletmek denendi. Fark yaratmadı.</p>
+      </article>
+      <article class="deneme olmadi">
+        <h3>Kronos ve XGBoost</h3>
+        <p>İkisinin de aralıkları fazla dar çıktı: söyledikleri kadar sık tutmadılar. Kronos mum grafiği verisiyle eğitilmiş; bizde yalnızca kapanış fiyatı var.</p>
+      </article>
+      <article class="deneme oldu">
+        <h3>İşe yarayan: oynaklığı tahmin etmek</h3>
+        <p>Klasik istatistik modeli <b>ARIMA-GARCH</b> ve yapay zekâ modeli <b>Chronos</b> en iyi sonucu verdi. 1 gün için ARIMA-GARCH, 3 ve 5 gün için ikisinin birleşimi seçildi.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- 9. Sozluk -->
+  <section id="sozluk" aria-labelledby="sozluk-baslik">
+    <h2 id="sozluk-baslik">Sözlük</h2>
+    <div class="sozluk">
+      <details><summary>Aralık</summary><p>İki fiyat arasındaki bölge. “Fiyat büyük olasılıkla bu iki sayının arasında olacak” demektir.</p></details>
+      <details><summary>%80 aralık</summary><p>10 günün yaklaşık 8’inde tutması beklenen aralık. Daha dar, daha az emin.</p></details>
+      <details><summary>%95 aralık</summary><p>100 günün yaklaşık 95’inde tutması beklenen aralık. Daha geniş, daha emin.</p></details>
+      <details><summary>Tuttu / tutmadı</summary><p>Gerçekleşen kapanış fiyatı aralığın içindeyse tuttu, dışındaysa tutmadı.</p></details>
+      <details><summary>Merkez tahmin</summary><p>%80 aralığın tam ortası. Tek bir fiyat isteyenler için verilir. Altının yönü tahmin edilemediği için her gün bir miktar sapar.</p></details>
+      <details><summary>Oynaklık</summary><p>Fiyatın ne kadar inip çıktığı. Sistem yönü değil, oynaklığı tahmin eder.</p></details>
+      <details><summary>İşlem günü</summary><p>Borsanın açık olduğu gün. Hafta sonu ve resmî tatiller sayılmaz. “3 gün sonra” 3 işlem günü sonra demektir.</p></details>
+      <details><summary>Sabit aralık (basit yöntem)</summary><p>Son 3 yılın ortalama hareketine bakarak aralık veren basit yöntem. Son günlerin sakin mi çalkantılı mı olduğuna bakmaz; bu yüzden krizi geç fark eder. Karşılaştırma için kullanıldı.</p></details>
+      <details><summary>Aralık puanı</summary><p>Aralığın başarısını tek sayıyla ölçer: aralık genişse puan artar, fiyat dışarı çıkarsa ceza eklenir. Düşük puan iyidir. Hem dar hem isabetli olmayı birlikte ister; çok geniş aralık vererek kandırılamaz.</p></details>
+      <details><summary>Hazırlık dönemi / sınav dönemi</summary><p>Hazırlık dönemi (2012–2022): modellerin denendiği ve en iyisinin seçildiği yıllar. Sınav dönemi (2023–2026): seçilen modelin hiç görmeden sınandığı yıllar. Siyasi seçimle ilgisi yoktur.</p></details>
+      <details><summary>Pencere</summary><p>Modelin baktığı geçmiş dönem: son 750 işlem günü (yaklaşık 3 yıl). Her ay bir ay ileri kayar.</p></details>
+      <details><summary>Geriye dönük sınama</summary><p>Geçmiş günler için, yalnızca o güne kadarki veriyle tahmin yapıp sonucu kontrol etmek. Hesap sonradan yapılır ama model geleceği görmez.</p></details>
+      <details><summary>İleriye dönük karne</summary><p>Her sabah tahmin, fiyat belli olmadan önce kaydedilir ve sonradan değiştirilemez. Gün geçtikçe gerçek sonuçlarla dolar.</p></details>
+      <details><summary>p değeri</summary><p>Bir farkın şans eseri çıkma olasılığı. 0,05’ten küçükse fark şansa bağlı değil kabul edilir.</p></details>
+    </div>
   </section>
 
   <footer>
-    <a href="/detay">Ayrıntılı araştırma panosu</a>
-    <a href="/docs">API belgeleri</a>
-    <span>Fiziki gram altın, Borsa İstanbul kapanışı (TCMB EVDS). Araştırma ve eğitim amaçlıdır. Gösterilen aralıklar yatırım tavsiyesi değil, istatistiksel risk aralığıdır.</span>
+    <p class="imza">Gram altın fiyat aralığı tahmini. Bitirme projesi, Fatma Betül Pehlivan, Selçuk Üniversitesi Bilgisayar Mühendisliği.</p>
+    <p>Araştırma ve eğitim amaçlıdır. Gösterilen aralıklar yatırım tavsiyesi değil, istatistiksel risk aralığıdır.</p>
+    <p class="baglantilar"><a href="/detay">Ayrıntılı araştırma panosu (ilk aşama)</a> <a href="/docs">API belgeleri</a></p>
   </footer>
 </main>
 <script src="/static/ana.js"></script>
