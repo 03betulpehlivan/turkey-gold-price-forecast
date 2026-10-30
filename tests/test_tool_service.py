@@ -165,6 +165,8 @@ class TestYarismaService(Base):
         self.assertLess(w[0], w[1])
         self.assertLess(w[1], w[2])                                               # ufuk uzadikca aralik genisler
         self.assertTrue(0 <= d["hareketli_olasiligi_pct"] <= 100)
+        for u in d["ufuklar"]:                                                     # etiket: tatiller atlanir
+            self.assertEqual(u["hedef_gun_yaklasik"], ts.hedef_gun(d["bilgi_gunu"], u["ufuk_gun"]))
 
     def test_this_year_with_winner(self):
         d = ts.bu_yil_yarisma()
@@ -177,6 +179,37 @@ class TestYarismaService(Base):
     def test_missing_result_file(self):
         with self.assertRaisesRegex(FileNotFoundError, "Yarisma sonucu yok"):
             ts.yarisma_dosyasi(self.tmp)
+
+
+class TestHedefGun(Base):
+    def test_skips_weekends_and_holidays(self):
+        self.assertEqual(ts.hedef_gun("2026-10-27", 1), "2026-10-28")            # arife islem gunu sayilir
+        self.assertEqual(ts.hedef_gun("2026-10-27", 3), "2026-11-02")            # 29 Ekim ve hafta sonu atlanir
+        self.assertEqual(ts.hedef_gun("2026-10-27", 5), "2026-11-04")
+        self.assertEqual(ts.hedef_gun("2026-05-26", 1), "2026-06-01")            # Kurban Bayrami + hafta sonu
+        self.assertEqual(ts.hedef_gun("2026-10-23", 1), "2026-10-26")            # yalnizca hafta sonu
+        for t in ts.TATILLER:
+            self.assertLess(pd.Timestamp(t).weekday(), 5, t)                     # listede yalnizca hafta ici gunler
+
+    def test_horizon_labels_cross_holiday(self):
+        rng = np.random.default_rng(3)
+        d = pd.bdate_range("2021-01-04", "2026-10-27")
+        r = rng.normal(0, 0.01, len(d))
+        f = self.tmp / "fiyat_tatil.csv"
+        pd.DataFrame({"Date": d.strftime("%Y-%m-%d"), "kapanis_tl_gr": 1000 * np.exp(np.cumsum(r))}).to_csv(f, index=False)
+        out = ts._ufuklar.__wrapped__((str(f), 0), str(ts.yarisma_dosyasi()), False)
+        self.assertEqual(out["bilgi_gunu"], "2026-10-27")
+        self.assertEqual([u["hedef_gun_yaklasik"] for u in out["ufuklar"]], ["2026-10-28", "2026-11-02", "2026-11-04"])
+
+    def test_scorecard_waiting_rows_name_expected_close(self):
+        d = ts.canli_karne()
+        self.assertEqual(d["son_fiyat_gunu"], str(k.load_series().index[-1].date()))
+        self.assertTrue(d["son_kayitlar"])
+        for r in d["son_kayitlar"]:
+            if r["gercek"] is None:
+                self.assertEqual(r["beklenen_gun"], ts.hedef_gun(r["bilgi_gunu"], r["ufuk_gun"]))
+            else:
+                self.assertIsNone(r["beklenen_gun"])
 
 
 class TestMerkez(Base):
@@ -251,7 +284,8 @@ class TestApiAndPage(Base):
             self.assertIn(f'<section id="{sid}"', html)                         # bolum var
             self.assertIn(f'href="#{sid}"', html)                                # ust menude baglantisi var
         for i in ("cetvel", "ufuk-sec", "duzey-sec", "tekrar", "oynat", "panel-aralik", "panel-merkez",
-                  "yillar", "dar-genis", "sakin-calkanti", "guven", "canli", "yarisma"):
+                  "yillar", "dar-genis", "sakin-calkanti", "guven", "canli", "yarisma",
+                  "gosteri", "gosteri-cetvel", "gosteri-ileri", "yaris", "yaris-satirlar", "yaris-sec"):
             self.assertIn(f'id="{i}"', html)
             self.assertTrue(i in js, f"{i} ana.js icinde kullanilmiyor")          # JS bu ogeyi dolduruyor
         self.assertIsNone(re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html))     # satir ici betik yok
@@ -277,6 +311,10 @@ class TestApiAndPage(Base):
         for m in res["ufuklar"]["1"]["secim"]:
             self.assertIn(f'"{m}": "', ne, f"{m} icin sade aciklama yok")
         self.assertIn("r.tutma80", js)                                           # yarisma tablosunda tutma oranlari
+        self.assertNotIn('"Yar\u0131n"', js)                                    # dugme "Yarin" degil: tarih gecmiste kalabilir
+        self.assertIn("r.beklenen_gun", js)                                      # bekleyen satir hangi kapanisi bekliyor
+        self.assertIn("f.hedef_gun_yaklasik", js)
+        self.assertNotIn("deprem", html)                                         # dogrulanmamis ornek kaldirildi
 
 
 _REAL = [PROJECT_ROOT / "research", PROJECT_ROOT / "data"]

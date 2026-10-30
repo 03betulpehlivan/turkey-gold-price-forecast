@@ -6,6 +6,7 @@ Web panosunun ana ekranini besler:
   bu_yil()    icinde bulunulan yilin gunluk tahminleri ve gerceklesen fiyatlar (gercek, ileriye donuk sinama)
   karne()     kayitli basari karnesi (research/tool/), testi 2018-2022
   ufuklar()   1, 3 ve 5 gun sonrasi icin araliklar; her ufukta model yarismasinin kazanani (research/tool/yarisma_*.json)
+  hedef_gun() h islem gunu sonrasi (hafta sonu ve resmi tatiller atlanir; yalnizca ekran etiketi)
   yarisma()   yarisma ozeti: modeller, kazananlar, hic gorulmemis 2023-2026 sonuclari ve anlamlilik;
               karsilastirma icin 'Sabit aralik' yonteminin final sonucu ve yillik tutma/genislik degerleri
 Model ve pencere onceden sabittir: GARCH-t + ACI, pencere dogrulamada secilen (research/tool/pencere_*.json).
@@ -28,6 +29,28 @@ TOOL_DIR = ROOT / "research" / "tool"
 EGITIM, TEST = (2012, 2017), (2018, 2022)
 VARSAYILAN_PENCERE = 750
 SABIT = "Sabit aralik"                                    # yarismadaki basit karsilastirma yontemi
+
+# Borsa Istanbul'un TAM GUN kapali oldugu hafta ici resmi tatiller. Yalnizca EKRANDAKI hedef tarih etiketi ve
+# karnede "hangi gunun kapanisi bekleniyor" bilgisi icin kullanilir; tahmin ve puanlama her zaman fiyat
+# dosyasindaki gercek islem gunlerini sayar. Arife (yarim gun) islem gunu sayilir.
+# 2027 dini bayramlari (Ramazan, Kurban) resmi takvim aciklaninca eklenmeli.
+TATILLER = frozenset({
+    "2025-01-01", "2025-03-31", "2025-04-01", "2025-04-23", "2025-05-01", "2025-05-19", "2025-06-06", "2025-06-09",
+    "2025-07-15", "2025-10-29",
+    "2026-01-01", "2026-03-20", "2026-04-23", "2026-05-01", "2026-05-19", "2026-05-27", "2026-05-28", "2026-05-29",
+    "2026-07-15", "2026-10-29",
+    "2027-01-01", "2027-04-23", "2027-05-19", "2027-07-15", "2027-08-30", "2027-10-29",
+})
+
+
+def hedef_gun(son, h: int) -> str:
+    """son tarihten sonraki h. islem gunu: hafta sonu ve TATILLER atlanir."""
+    t, n = pd.Timestamp(son), 0
+    while n < int(h):
+        t += pd.Timedelta(days=1)
+        if t.weekday() < 5 and str(t.date()) not in TATILLER:
+            n += 1
+    return str(t.date())
 
 
 def _clean(x):
@@ -102,6 +125,7 @@ def _ufuklar(key, dosya, chronos_ok):
         c = yr.canli(prices, int(h), u["kazanan"], panel=panel, chronos_ok=chronos_ok)
         f = u["final"].get(u["kazanan"], {}) if u.get("final") else {}
         c["final"] = {"tutma80": f.get("tutma80"), "tutma95": f.get("tutma95"), "gun": f.get("gun")}
+        c["hedef_gun_yaklasik"] = hedef_gun(prices.index[-1], int(h))          # tatiller atlanir (yalnizca etiket)
         out.append(c)
     s = out[0]["gunluk_sigma_pct"] if out else float("nan")
     hareket = float(100 * 2 * (1 - float(k._cdf(1.0 / s, np.nan)))) if s and np.isfinite(s) else None
@@ -138,7 +162,12 @@ def bu_yil_yarisma() -> dict:
 @lru_cache(maxsize=4)
 def _canli_karne(key, log_key):
     from src.tool import canli_karne as ck
-    return ck.karne(k.load_series(Path(key[0])), Path(log_key[0]))
+    prices = k.load_series(Path(key[0]))
+    d = ck.karne(prices, Path(log_key[0]))
+    d["son_fiyat_gunu"] = str(prices.index[-1].date())                      # en son yayimlanan kapanis
+    for r in d["son_kayitlar"]:                                              # bekleyen satir: hangi gunun kapanisi?
+        r["beklenen_gun"] = None if r["gercek"] is not None else hedef_gun(r["bilgi_gunu"], r["ufuk_gun"])
+    return d
 
 
 def canli_karne() -> dict:

@@ -251,6 +251,34 @@ td.disarida { opacity: 0.45; }
 .acilir[open] summary { color: var(--pirinc); }
 .acilir .not { margin-top: 4px; }
 
+/* Adim adim gosteri */
+.gosteri { margin-top: 30px; padding: 18px 22px 16px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: 12px; }
+.gosteri-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px 20px; flex-wrap: wrap; }
+.gosteri-adim { margin: 0; flex: 1 1 420px; min-height: 3.2em; font-size: 1.02rem; }
+.gosteri-dugmeler { display: flex; gap: 8px; }
+.gosteri-dugmeler button { font: inherit; font-weight: 600; border: 1px solid var(--cizgi); background: var(--zemin); color: var(--murekkep);
+                           border-radius: 8px; padding: 6px 16px; cursor: pointer; }
+.gosteri-dugmeler button:disabled { opacity: 0.4; cursor: default; }
+.gosteri-noktalar { display: flex; gap: 6px; margin-top: 10px; }
+.gosteri-noktalar span { width: 28px; height: 4px; border-radius: 2px; background: var(--cizgi); transition: background 0.4s; }
+.gosteri-noktalar span.acik { background: var(--pirinc); }
+
+/* Kim kazandi */
+.yaris { margin: 26px 0 8px; padding: 18px 22px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: 12px; }
+.yaris-ust { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 18px; }
+.yaris-ust h3 { margin: 0; }
+.yaris .not { margin: 10px 0 12px; }
+.yr-satir { display: grid; grid-template-columns: 210px 1fr 250px; align-items: center; gap: 4px 14px; padding: 5px 0; font-size: 0.9rem; }
+.yr-ad { font-weight: 600; }
+.yr-bar { height: 12px; border-radius: 6px; background: var(--zemin); overflow: hidden; }
+.yr-ic { height: 100%; width: 0; border-radius: 6px; background: var(--bant80); transition: width 0.9s var(--gecis); }
+.yr-deger { color: var(--soluk); font-size: 0.84rem; }
+.yr-satir.kazanan .yr-ad, .yr-satir.kazanan .yr-deger { color: var(--gercek); font-weight: 700; }
+.yr-satir.kazanan .yr-ic { background: var(--gercek); }
+.yr-satir.elendi { opacity: 0.55; }
+.yr-satir.elendi .yr-bar { background: repeating-linear-gradient(135deg, var(--zemin) 0 6px, var(--cizgi) 6px 7px); }
+.blok .yorum { font-weight: 600; }
+
 /* Hazirlik / sinav donemi */
 .donemler { margin-top: 36px; max-width: 820px; }
 .donem-serit { display: flex; margin: 12px 0 14px; border-radius: 8px; overflow: hidden; font-size: 0.85rem; font-weight: 650; }
@@ -327,6 +355,9 @@ footer p { margin: 0 0 6px; }
   main > section { scroll-margin-top: 92px; padding-top: 40px; margin-top: 44px; }
   .c-sinir { font-size: 0.92rem; }
   .olgular dd { font-size: 1.08rem; }
+  .yr-satir { grid-template-columns: 1fr auto; }
+  .yr-bar { grid-column: 1 / -1; grid-row: 2; }
+  .gosteri, .yaris { padding: 14px; }
   .iki-aralik, .sinav, .karne, .kurallar ul, .sozluk, .denemeler, .adimlar, .incelemeler { grid-template-columns: 1fr; }
   .sc-satir { grid-template-columns: 1fr; gap: 4px; }
   .seritler { gap: 3px; }

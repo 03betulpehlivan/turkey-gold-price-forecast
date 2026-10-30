@@ -94,7 +94,7 @@
     <div class="sakin-calkanti" id="sakin-calkanti"></div>
 
     <h3 class="alt-baslik">Aralık çok geniş değil mi?</h3>
-    <p class="giris">Karşılaştırma için basit bir yöntem kullandık: son 3 yılın ortalama hareketine bakarak aralık veren <b>sabit aralık</b>. Bu yöntem son günlerin sakin mi çalkantılı mı olduğuna bakmaz. Sistemimiz aynı güvenle daha dar aralık veriyor.</p>
+    <p class="giris">Karşılaştırma için basit bir yöntem kullandık: son 3 yılın ortalama hareketine bakarak aralık veren <b>sabit aralık</b>. Bu yöntem son günlerin sakin mi çalkantılı mı olduğuna bakmaz. Sistemimiz aynı “%80” iddiasıyla daha dar aralık veriyor.</p>
     <div class="dar-genis" id="dar-genis"></div>
     <p class="not" id="dar-genis-not"></p>
 
@@ -160,6 +160,18 @@
       <li><b>Gerçekle karşılaştırır.</b> Gün bitince gerçek fiyat aralığın içinde mi diye bakılır. Sonuçlar “Tuttu mu?” bölümünde.</li>
     </ol>
 
+    <div class="gosteri" id="gosteri">
+      <div class="gosteri-ust">
+        <p class="gosteri-adim" id="gosteri-adim" aria-live="polite">Yükleniyor…</p>
+        <div class="gosteri-dugmeler">
+          <button type="button" id="gosteri-geri" aria-label="Önceki adım">Geri</button>
+          <button type="button" id="gosteri-ileri" aria-label="Sonraki adım">İleri</button>
+        </div>
+      </div>
+      <div class="gosteri-noktalar" id="gosteri-noktalar" aria-hidden="true"></div>
+      <div class="cetvel kucuk" id="gosteri-cetvel"></div>
+    </div>
+
     <div class="donemler">
       <h3>Hazırlık dönemi ve sınav dönemi ne demek?</h3>
       <p>Bir öğrenci düşünün. Önce eski sınav sorularıyla çalışır ve hangi yöntemin işe yaradığına karar verir. Sonra hiç görmediği sorularla gerçek sınava girer.</p>
@@ -186,6 +198,14 @@
     <h2 id="model-baslik">Model yarışması</h2>
     <p class="giris" id="yarisma-ozet">Yükleniyor…</p>
     <ul class="modeller" id="kazananlar"></ul>
+    <div class="yaris" id="yaris">
+      <div class="yaris-ust">
+        <h3>Kim kazandı?</h3>
+        <div class="dugmeler" id="yaris-sec" role="group" aria-label="Ne kadar sonrası için?"></div>
+      </div>
+      <p class="not">Her çubuk, modelin kazanandan ne kadar kötü olduğunu gösterir. Kısa çubuk daha iyi. Hedefe yeterince yakın tutmayan modeller elendi.</p>
+      <div class="yaris-satirlar" id="yaris-satirlar"></div>
+    </div>
     <div class="okuma">
       <h3>Tablo nasıl okunur?</h3>
       <ul>
@@ -224,7 +244,7 @@
     <h3 class="alt-baslik">Veriyle ilgili kurallar</h3>
     <ul class="veri-kurallari">
       <li><b>2009 sonrası kullanıldı.</b> Eski yıllarda tutarsızlıklar var, 2005’te TL’den 6 sıfır atıldı; ayrıca model zaten son 3 yıla bakıyor.</li>
-      <li><b>Eksik gün doldurulmaz.</b> Tatil ve kapanış günleri (örneğin 2023 depremi sonrası) uydurulmaz; yalnızca işlem olan günler sırayla kullanılır.</li>
+      <li><b>Eksik gün doldurulmaz.</b> Tatil günleri için fiyat uydurulmaz; yalnızca işlem olan günler sırayla kullanılır.</li>
       <li><b>Olağanüstü gün silinmez.</b> Pandemi gibi sert günler veride kalır.</li>
       <li><b>Yayın gecikmesi hesaba katılır.</b> TCMB kapanışı ertesi gün yayımlar; dış verilerde en fazla 10 günlük eski değer kullanılır.</li>
     </ul>
@@ -235,7 +255,7 @@
       <article class="inceleme evet"><h4>Oynaklık tahmin edilebilir mi?</h4><p>GARCH modeli 11 yılın 10’unda “oynaklık hep aynı” varsayımından iyi çıktı.</p><p class="bulgu">Evet. Sistemin temeli bu.</p></article>
       <article class="inceleme hayir"><h4>Altının korku endeksi (GVZ)</h4><p>ABD’de altının beklenen oynaklığını gösterir. 2018 ve 2021 TL krizlerinde işe yaramadı.</p><p class="bulgu">Türkiye’ye özgü kur şoklarını görmüyor.</p></article>
       <article class="inceleme bilgi"><h4>Fiziki prim</h4><p>Gram altın fiyatı ile “ons × dolar/TL” arasındaki fark. Normalde yaklaşık yarım haftada kapanıyor.</p><p class="bulgu">2023’ten sonra kalıcı bir prim oluştu; daha önce hiç görülmemişti.</p></article>
-      <article class="inceleme hayir"><h4>Gece bilgisi</h4><p>Borsa kapandıktan sonra dünyada olanlar. 2012–2022’de %22 daha iyiydi.</p><p class="bulgu">2023’teki prim kırılmasıyla bozuldu; sınav döneminde %9 kötü çıktı.</p></article>
+      <article class="inceleme hayir"><h4>Gece bilgisi</h4><p>Borsa kapandıktan sonra dünyada olanlar. Hazırlık döneminde “yarın = bugün” tahmininden iyi göründü.</p><p class="bulgu">2023’teki prim kırılmasıyla bozuldu; sınav döneminde “yarın = bugün”den %9 kötü çıktı.</p></article>
       <article class="inceleme hayir"><h4>Enflasyon ve faiz</h4><p>Haftalık ve aylık makro veriler (TÜFE, politika faizi) denendi.</p><p class="bulgu">Ek bilgi taşımadı.</p></article>
       <article class="inceleme hayir"><h4>Dış piyasa oynaklıkları</h4><p>GVZ, VIX, dolar/TL, Brent ve dolar endeksi modele eklendi (HAR-X).</p><p class="bulgu">Eklemeden önceki hâlinden kötü çıktı.</p></article>
       <article class="inceleme hayir"><h4>Fed karar günleri</h4><p>119 planlı karar gününde, olay günü ve ertesi gün aralığı genişletmek denendi.</p><p class="bulgu">Fark yaratmadı; model olaydan sonra zaten hızla uyum sağlıyor.</p></article>
@@ -254,19 +274,15 @@
       </article>
       <article class="deneme olmadi">
         <h3>Yarının tam fiyatı</h3>
-        <p>Hiçbir model, “yarın = bugün” demekten anlamlı biçimde iyi olmadı. Bu yüzden tek fiyat yerine aralık tahminine geçildi.</p>
+        <p>Hiç görmediği sınav döneminde hiçbir model, “yarın = bugün” demekten belirgin biçimde iyi olmadı. Gece bilgisi modeli hazırlık döneminde iyi göründü ama sınavda kötü çıktı. Bu yüzden tek fiyat yerine aralık tahminine geçildi.</p>
       </article>
       <article class="deneme olmadi">
         <h3>Literatürdeki %99 başarı</h3>
         <p>Bazı çalışmalarda LSTM %99,9 başarılı görünüyor. Aynı kurulumu denedik: veri karıştırılarak bölününce gerçekten %99,9 çıkıyor, çünkü model geleceği “görüyor”. Doğru kurulumda “yarın = bugün”den <b>%73 kötü</b>.</p>
       </article>
       <article class="deneme olmadi">
-        <h3>Dış veriler</h3>
-        <p>Dolar/TL, ons altın, petrol, dolar endeksi, ABD faizi, piyasa korku endeksleri, borsalar, enflasyon ve politika faizi denendi. Aralıkları iyileştirmedi; bu bilgiler altın fiyatına zaten yansıyor.</p>
-      </article>
-      <article class="deneme olmadi">
-        <h3>Fed karar günleri</h3>
-        <p>ABD Merkez Bankası’nın faiz kararı günlerinde aralığı genişletmek denendi. Fark yaratmadı.</p>
+        <h3>Dış veriler ve Fed günleri</h3>
+        <p>Dolar/TL, ons altın, petrol, faiz, korku endeksleri, enflasyon ve Fed karar günleri denendi. Hiçbiri aralıkları iyileştirmedi. Ayrıntısı <a href="#veri">Veri</a> bölümünde.</p>
       </article>
       <article class="deneme olmadi">
         <h3>Kronos ve XGBoost</h3>

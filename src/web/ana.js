@@ -63,7 +63,23 @@ const tarih = iso => { const [y, m, g] = iso.split("-").map(Number); return `${g
 const kisa = iso => { const [, m, g] = iso.split("-").map(Number); return `${g} ${AY[m - 1]}`; };
 const genislik = id => Math.max(300, Math.round(document.getElementById(id).clientWidth || 900));
 const pdeger = p => (p == null ? "—" : p < 0.0001 ? "p < 0,0001" : `p = ${sayi(p, 4)}`);
-const sans = p => (p == null ? "" : p < 0.05 ? `fark şansa bağlı değil (${pdeger(p)})` : `fark şansla da açıklanabilir (${pdeger(p)})`);
+const sans = p => (p == null ? "" : p < 0.05 ? `Bu fark tesadüf değil (${pdeger(p)})` : `Bu fark tesadüf de olabilir (${pdeger(p)})`);
+const AY_EK = ["’ta", "’ta", "’ta", "’da", "’ta", "’da", "’da", "’ta", "’de", "’de", "’da", "’ta"];
+const kisaDe = iso => kisa(iso) + AY_EK[Number(iso.split("-")[1]) - 1];   // "28 Ekim’de"
+const yorum80 = t => (t < 78 ? "Hedefin biraz altında: aralık biraz dar."
+  : t > 82 ? "Hedefin biraz üstünde: aralık biraz geniş, yani temkinli." : "Hedefe çok yakın.");
+
+/* Sayilari eski degerden yeni degere akarak degistir (hareket azaltma tercihinde aninda). */
+function sayiAkit(e, a, b) {
+  if (AZ_HAREKET || a == null || !isFinite(a) || Math.round(a) === Math.round(b)) { e.textContent = sayi(b); return; }
+  const t0 = performance.now(), sure = 650;
+  const adim = t => {
+    const x = Math.min(1, (t - t0) / sure), k = 1 - Math.pow(1 - x, 3);
+    e.textContent = sayi(a + (b - a) * k);
+    if (x < 1) requestAnimationFrame(adim);
+  };
+  requestAnimationFrame(adim);
+}
 const ufukAdi = h => (h === 1 ? "Bir sonraki işlem günü" : `${h} işlem günü sonra`);
 const kac = d => (d === 80 ? "10 benzer günün yaklaşık 8’inde" : "100 benzer günün yaklaşık 95’inde");
 const icinde = (v, a, b) => v >= a && v <= b;
@@ -122,7 +138,7 @@ function cetvel(kutu, olcekli) {
     bant(b80, v.lo80, v.hi80);
     altE.textContent = sayi(secili[0]); ustE.textContent = sayi(secili[1]);
     altE.style.left = yer(secili[0]); ustE.style.left = yer(secili[1]);
-    altE.classList.remove("gizli"); ustE.classList.remove("gizli");
+    altE.classList.toggle("gizli", !!v.etiketsiz); ustE.classList.toggle("gizli", !!v.etiketsiz);
     if (v.isaret != null) {
       isaret.classList.remove("gizli");
       isaret.style.left = yer(v.isaret);
@@ -156,14 +172,19 @@ function heroCiz() {
   const u = VERI.u;
   const f = u.ufuklar.find(x => x.ufuk_gun === H.ufuk) || u.ufuklar[0];
   const [lo, hi] = H.duzey === 80 ? f.aralik80 : f.aralik95;
-  const ne = `${ufukAdi(f.ufuk_gun)} (${kisa(f.hedef_gun_yaklasik)}${f.ufuk_gun === 1 ? "" : " civarı"})`;
+  const ne = `${ufukAdi(f.ufuk_gun)} (${kisa(f.hedef_gun_yaklasik)})`;
   H.cet.ciz({ alan: heroAlan(u), lo80: f.aralik80[0], hi80: f.aralik80[1], lo95: f.aralik95[0], hi95: f.aralik95[1],
     duzey: H.duzey, isaret: u.son_kapanis, isaretYazi: `son kapanış ${sayi(u.son_kapanis)}`, ilk: H.ilk,
     etiket: `${ne}: %${H.duzey} olasılıkla ${sayi(lo)} ile ${sayi(hi)} TL arası. Son kapanış ${sayi(u.son_kapanis)} TL.` });
   H.ilk = false;
-  document.getElementById("buyuk-aralik").replaceChildren(
-    el("span", { class: "sayi" }, sayi(lo)), el("span", { class: "tire" }, "–"), el("span", { class: "sayi" }, sayi(hi)),
-    el("span", { class: "tl" }, "TL"));
+  const ba = document.getElementById("buyuk-aralik");
+  if (!H.alt) {
+    H.alt = el("span", { class: "sayi" }); H.ust = el("span", { class: "sayi" });
+    ba.replaceChildren(H.alt, el("span", { class: "tire" }, "–"), H.ust, el("span", { class: "tl" }, "TL"));
+  }
+  sayiAkit(H.alt, H.onceki ? H.onceki[0] : null, lo);
+  sayiAkit(H.ust, H.onceki ? H.onceki[1] : null, hi);
+  H.onceki = [lo, hi];
   document.getElementById("cumle").textContent =
     `${ne} fiyatın bu aralıkta olma olasılığı %${H.duzey}. Yani ${kac(H.duzey)} fiyat bu aralıkta kalır.`;
   const fin = f.final ? (H.duzey === 80 ? f.final.tutma80 : f.final.tutma95) : null;
@@ -227,11 +248,12 @@ async function tahmin() {
     const u = await al("/api/tahmin/ufuklar");
     VERI.u = u;
     document.getElementById("ust").textContent =
-      `${tarih(u.bilgi_gunu)} kapanışı: ${sayi(u.son_kapanis, 2)} TL. Tahminler bu fiyata göre. Hafta sonu ve resmî tatiller sayılmaz.`;
+      `En son yayımlanan fiyat: ${tarih(u.bilgi_gunu)} kapanışı, ${sayi(u.son_kapanis, 2)} TL. TCMB fiyatı bir sonraki iş günü yayımlar; ` +
+      "tahminler bu fiyattan sonraki işlem günleri için. Hafta sonu ve resmî tatiller sayılmaz.";
     const us = document.getElementById("ufuk-sec");
     us.replaceChildren(...u.ufuklar.map(f => {
       const b = el("button", { type: "button", "data-ufuk": String(f.ufuk_gun), "aria-pressed": "false" },
-        f.ufuk_gun === 1 ? "Yarın" : `${f.ufuk_gun} gün sonra`, el("small", {}, kisa(f.hedef_gun_yaklasik)));
+        `${f.ufuk_gun} gün sonra`, el("small", {}, kisa(f.hedef_gun_yaklasik)));
       b.addEventListener("click", () => { H.ufuk = f.ufuk_gun; heroCiz(); });
       return b;
     }));
@@ -239,7 +261,7 @@ async function tahmin() {
     heroCiz();
     const f1 = u.ufuklar[0];
     document.getElementById("hava-ornek").textContent =
-      `“${f1.ufuk_gun === 1 ? "Yarın" : ufukAdi(f1.ufuk_gun)} %80 olasılıkla ${sayi(f1.aralik80[0])} TL ile ${sayi(f1.aralik80[1])} TL arasında olacak” diyoruz.`;
+      `“${kisaDe(f1.hedef_gun_yaklasik)} %80 olasılıkla ${sayi(f1.aralik80[0])} TL ile ${sayi(f1.aralik80[1])} TL arasında olacak” diyoruz.`;
     const hk = document.getElementById("hareket");
     if (u.hareketli_olasiligi_pct != null) {
       const p = u.hareketli_olasiligi_pct;
@@ -317,7 +339,11 @@ function darGenis() {
   if (u1.sabit && u1.sabit.final) document.getElementById("dar-genis-not").textContent =
     `%80 aralığın ortalama genişliği, hiç görülmemiş 2023–2026 döneminde, bugünkü ${sayi(P)} TL fiyata çevrilmiş hâli. ` +
     `Bir sonraki gün için sistemin %80 aralığı ${yuzde(u1.final.tutma80)} tuttu; sabit aralık ise ${yuzde(u1.sabit.final.tutma80)} tuttu. ` +
-    "Sabit aralık %80 dediği hâlde daha sık tutuyor, çünkü gereğinden geniş.";
+    "Sabit aralık %80 dediği hâlde daha sık tutuyor, çünkü gereğinden geniş. " +
+    (() => {
+      const f = VERI.u.ufuklar[0], w = f.aralik80[1] - f.aralik80[0], ort = P * u1.final.genislik80 / 100;
+      return `Bugünkü 1 günlük %80 aralık ${sayi(w)} TL; bu, ${sayi(ort)} TL’lik ortalamanın ${w < ort ? "altında, çünkü son günler ortalamadan sakin" : "üstünde, çünkü son günler ortalamadan hareketli"}.`;
+    })();
   const m = MERKEZ[1];
   if (m) document.getElementById("merkez-aciklama").textContent =
     `Evet. Aralığın tam ortasına merkez tahmin diyoruz. 2023–2026’da bir sonraki gün için merkez tahmin ortalama ${sayi(m.hata_tl)} TL saptı. ` +
@@ -337,8 +363,9 @@ function sinav() {
       el("div", { class: "cift" },
         el("p", {}, el("span", { class: "buyuk" }, yuzde(u.final.tutma80)), el("span", { class: "alt" }, "%80 aralık tuttu")),
         el("p", {}, el("span", { class: "buyuk" }, yuzde(u.final.tutma95)), el("span", { class: "alt" }, "%95 aralık tuttu"))),
+      el("p", { class: "satir yorum" }, yorum80(u.final.tutma80)),
       el("p", { class: "satir" }, `${sayi(u.final.gun)} gün sınandı.`),
-      a ? el("p", { class: "satir" }, `Sabit aralığa göre puanı ${yuzde(a.iyilesme_pct)} daha iyi; ${sans(a.p_degeri)}.`) : "");
+      a ? el("p", { class: "satir" }, `Basit yönteme (sabit aralık) göre ${yuzde(a.iyilesme_pct)} daha iyi. ${sans(a.p_degeri)}.`) : "");
   }));
 }
 
@@ -409,7 +436,7 @@ function tablolar(g) {
   tbl.append(gov);
   document.getElementById("panel-aralik").replaceChildren(
     el("p", { class: "giris" }, `${son.length} günün ${t80} tanesinde fiyat %80 aralığın içinde kaldı. ` +
-      "Bu bir geriye dönük sınamadır: her gün için model yalnızca o güne kadarki fiyatları gördü, ama hesap sonradan yapıldı."), tbl);
+      "Bu sonuçlar sonradan hesaplandı, ama her gün için model yalnızca o güne kadarki fiyatları gördü."), tbl);
   const sapmalar = son.map(r => r.gercek - (r.lo80 + r.hi80) / 2);
   const ort = sapmalar.reduce((a, b) => a + Math.abs(b), 0) / Math.max(sapmalar.length, 1);
   const mt = el("table", {}, el("thead", {}, el("tr", {}, el("th", {}, "Gün"), el("th", {}, "Merkez tahmin"),
@@ -493,7 +520,9 @@ async function canliKarne() {
       return;
     }
     ozet.textContent = "Yukarıdaki sonuçlar geriye dönük hesaplandı. Buradakiler ise gerçek: her sabah verilen aralık, fiyat belli olmadan önce " +
-      `değiştirilemez biçimde kaydediliyor (${tarih(d.baslangic)} kapanışından beri). Gün geçtikçe karne doluyor.`;
+      `değiştirilemez biçimde kaydediliyor (${tarih(d.baslangic)} kapanışından beri). ` +
+      (d.son_fiyat_gunu ? `En son yayımlanan kapanış ${tarih(d.son_fiyat_gunu)}. ` : "") +
+      "“Bekliyor” yazan tahminler hata değil: hedef günün kapanışı yayımlanınca kendiliğinden puanlanır.";
     document.getElementById("canli").replaceChildren(...d.ufuklar.map(u => el("div", { class: "blok" },
       el("p", { class: "baslik" }, u.ufuk_gun === 1 ? "1 gün sonrası" : `${u.ufuk_gun} gün sonrası`),
       el("p", { class: "buyuk" }, u.puanlanan ? `${u.tuttu80}/${u.puanlanan}` : "—"),
@@ -504,7 +533,7 @@ async function canliKarne() {
     const gov = el("tbody");
     d.son_kayitlar.slice().reverse().forEach(r => gov.append(el("tr", {}, el("td", {}, kisa(r.bilgi_gunu)),
       el("td", {}, `${r.ufuk_gun} gün`), el("td", {}, `${sayi(r.lo80)} – ${sayi(r.hi80)}`),
-      el("td", {}, r.gercek == null ? "bekliyor" : sayi(r.gercek)),
+      el("td", {}, r.gercek == null ? (r.beklenen_gun ? `bekliyor (${kisa(r.beklenen_gun)} kapanışı)` : "bekliyor") : sayi(r.gercek)),
       el("td", { class: r.in80 === true ? "tuttu" : (r.in80 === false ? "tutmadi" : "") },
          r.in80 == null ? "—" : (r.in80 ? "tuttu" : "tutmadı")))));
     tbl.append(gov);
@@ -612,10 +641,99 @@ function yarismaCiz() {
 async function yarisma() {
   try {
     VERI.y = await al("/api/tahmin/yarisma");
-    sinav(); yarismaCiz(); krizCiz(); sakinCalkanti();
+    sinav(); yarismaCiz(); yarisKur(); krizCiz(); sakinCalkanti();
   } catch (e) {
     document.getElementById("guven-ozet").textContent = `Yarışma sonucu okunamadı (${e.message}).`;
   }
+}
+
+/* ---------- Nasil calisiyor: adim adim gosteri (gercek bugunku sayilarla) ---------- */
+const G = { adim: 0, cet: null, zam: null, adimlar: [] };
+
+function gosteriAdimlari() {
+  const u = VERI.u, f = u.ufuklar[0], P = u.son_kapanis;
+  const m = (f.aralik80[0] + f.aralik80[1]) / 2;
+  const y80 = (f.aralik80[1] - f.aralik80[0]) / 2, y95 = (f.aralik95[1] - f.aralik95[0]) / 2;
+  const temel = { alan: [m - y95 * 1.6, m + y95 * 1.6], isaret: P, isaretYazi: `son kapanış ${sayi(P)}` };
+  const adimlar = [
+    { yazi: `1. Başlangıç: en son kapanış fiyatı ${sayi(P)} TL (${kisa(u.bilgi_gunu)}).`,
+      v: { ...temel, lo80: m, hi80: m, lo95: m, hi95: m, duzey: 80, etiketsiz: true } },
+    { yazi: `2. Model, ${kisa(f.hedef_gun_yaklasik)} kapanışının ne kadar oynayabileceğini hesaplar ve %80 aralığı koyar: ortadan iki yana yaklaşık ±${sayi(y80)} TL.`,
+      v: { ...temel, lo80: f.aralik80[0], hi80: f.aralik80[1], lo95: f.aralik80[0], hi95: f.aralik80[1], duzey: 80 } },
+    { yazi: `3. Daha emin olmak için %95 aralık: iki yana yaklaşık ±${sayi(y95)} TL. Daha çok günü kapsaması gerektiği için daha geniş.`,
+      v: { ...temel, lo80: f.aralik80[0], hi80: f.aralik80[1], lo95: f.aralik95[0], hi95: f.aralik95[1], duzey: 95 } },
+  ];
+  const g = VERI.g && VERI.g.length ? VERI.g[VERI.g.length - 1] : null;
+  if (g) {
+    const mg = (g.lo80 + g.hi80) / 2, yg = Math.max((g.hi95 - g.lo95) / 2 * 1.6, Math.abs(g.gercek - mg) * 1.25);
+    const ok = icinde(g.gercek, g.lo80, g.hi80);
+    adimlar.push({ yazi: `4. Gün bitince gerçek fiyat gelir ve aralığın içinde mi diye bakılır. Örnek: ${kisa(g.tarih)} için verilen %80 aralık ` +
+        `${sayi(g.lo80)} – ${sayi(g.hi80)} TL, gerçekleşen ${sayi(g.gercek)} TL: ${ok ? "tuttu" : "tutmadı"}.`,
+      v: { alan: [mg - yg, mg + yg], lo80: g.lo80, hi80: g.hi80, lo95: g.lo95, hi95: g.hi95, duzey: 80,
+           gercek: g.gercek, gercekYazi: `gerçekleşen ${sayi(g.gercek)}` } });
+  }
+  return adimlar;
+}
+function gosteriDur() { if (G.zam) { clearInterval(G.zam); G.zam = null; } }
+function gosteriGit(i) {
+  G.adim = Math.max(0, Math.min(G.adimlar.length - 1, i));
+  const a = G.adimlar[G.adim];
+  G.cet.ciz({ ...a.v, etiket: a.yazi });
+  document.getElementById("gosteri-adim").textContent = a.yazi;
+  document.querySelectorAll("#gosteri-noktalar span").forEach((n, k) => n.classList.toggle("acik", k <= G.adim));
+  document.getElementById("gosteri-geri").disabled = G.adim === 0;
+  document.getElementById("gosteri-ileri").disabled = G.adim === G.adimlar.length - 1;
+}
+function gosteriKur() {
+  G.adimlar = gosteriAdimlari();
+  document.getElementById("gosteri-noktalar").replaceChildren(...G.adimlar.map(() => el("span")));
+  if (!G.cet) {
+    G.cet = cetvel(document.getElementById("gosteri-cetvel"), false);
+    document.getElementById("gosteri-geri").addEventListener("click", () => { gosteriDur(); gosteriGit(G.adim - 1); });
+    document.getElementById("gosteri-ileri").addEventListener("click", () => { gosteriDur(); gosteriGit(G.adim + 1); });
+    gorununce(document.getElementById("gosteri"), () => {
+      if (AZ_HAREKET) return;                                       // hareket azaltma: kendiliginden ilerlemez
+      G.zam = setInterval(() => { if (G.adim >= G.adimlar.length - 1) gosteriDur(); else gosteriGit(G.adim + 1); }, 2800);
+    });
+  }
+  gosteriGit(0);
+}
+
+/* ---------- Model yarismasi: kim kazandi? (cubuk = kazanandan ne kadar kotu) ---------- */
+const Y = { ufuk: 1, goruldu: false };
+
+function yarisKur() {
+  document.getElementById("yaris-sec").replaceChildren(...VERI.y.ufuklar.map(u => {
+    const b = el("button", { type: "button", "data-ufuk": String(u.ufuk_gun), "aria-pressed": "false" }, `${u.ufuk_gun} gün sonrası`);
+    b.addEventListener("click", () => { Y.ufuk = u.ufuk_gun; yarisCiz(); });
+    return b;
+  }));
+  yarisCiz();
+}
+function yarisCiz() {
+  const d = VERI.y, u = d.ufuklar.find(x => x.ufuk_gun === Y.ufuk) || d.ufuklar[0];
+  document.querySelectorAll("#yaris-sec button").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.ufuk) === u.ufuk_gun)));
+  const kaz = u.modeller.find(r => r.model === u.kazanan);
+  const sira = r => (r.model === u.kazanan ? 0 : r.uygun ? 1 : 2);                // kazanan, sonra yarisanlar, en altta elenenler
+  const sirali = u.modeller.slice().sort((a, b) => sira(a) - sira(b) || a.puan - b.puan);
+  const enKotu = Math.max(0.01, ...sirali.filter(r => r.uygun && r.model !== u.kazanan).map(r => r.puan / kaz.puan - 1));
+  const h80 = d.hedef_sapma["80"];
+  const kutu = document.getElementById("yaris-satirlar");
+  kutu.replaceChildren(...sirali.map((r, k) => {
+    const kazanan = r.model === u.kazanan, fark = r.puan / kaz.puan - 1;
+    const ic = el("div", { class: "yr-ic" });
+    ic.style.transitionDelay = `${k * 45}ms`;
+    ic.dataset.hedef = kazanan ? "2" : (r.uygun ? (100 * fark / enKotu).toFixed(1) : "0");
+    let yazi;
+    if (kazanan) yazi = "● kazanan";
+    else if (!r.uygun) yazi = `elendi: ${Math.abs(r.tutma80 - 80) > h80 ? `%80 aralık ${sayi(r.tutma80, 1)} tuttu` : `%95 aralık ${sayi(r.tutma95, 1)} tuttu`}`;
+    else if (100 * fark < 0.5) yazi = "kazananla neredeyse aynı";
+    else yazi = `kazanandan %${sayi(100 * fark, 1)} kötü`;
+    return el("div", { class: `yr-satir${kazanan ? " kazanan" : ""}${r.uygun ? "" : " elendi"}` },
+      el("span", { class: "yr-ad" }, ad(r.model)), el("div", { class: "yr-bar" }, ic), el("span", { class: "yr-deger" }, yazi));
+  }));
+  const uygula = () => sonraki().then(() => kutu.querySelectorAll(".yr-ic").forEach(i => { i.style.width = `${i.dataset.hedef}%`; }));
+  if (Y.goruldu) uygula(); else gorununce(kutu, () => { Y.goruldu = true; uygula(); });
 }
 
 /* ---------- Ust menu: bulunulan bolumu isaretle ---------- */
@@ -641,6 +759,7 @@ async function hepsi() {
   await Promise.all([buYil(), tahmin(), yarisma()]);
   if (VERI.u && VERI.g && VERI.g.length > 2) yelpazeCiz();
   if (VERI.u && VERI.y) { darGenis(); sakinCalkanti(); }
+  if (VERI.u) gosteriKur();
   canliKarne();
 }
 hepsi();
