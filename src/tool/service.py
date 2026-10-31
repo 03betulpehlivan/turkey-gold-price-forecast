@@ -30,16 +30,17 @@ EGITIM, TEST = (2012, 2017), (2018, 2022)
 VARSAYILAN_PENCERE = 750
 SABIT = "Sabit aralik"                                    # yarismadaki basit karsilastirma yontemi
 
-# Borsa Istanbul'un TAM GUN kapali oldugu hafta ici resmi tatiller. Yalnizca EKRANDAKI hedef tarih etiketi ve
-# karnede "hangi gunun kapanisi bekleniyor" bilgisi icin kullanilir; tahmin ve puanlama her zaman fiyat
-# dosyasindaki gercek islem gunlerini sayar. Arife (yarim gun) islem gunu sayilir.
+# Fiziki altin kapanisi OLUSMAYAN hafta ici gunler: resmi tatiller ve arifeler. Yalnizca EKRANDAKI hedef tarih
+# etiketi ve karnede "hangi gunun kapanisi bekleniyor" bilgisi icin kullanilir; tahmin ve puanlama her zaman
+# fiyat dosyasindaki gercek islem gunlerini sayar. Arifeler: 2024-04-09, 2024-10-28, 2025-06-05, 2025-10-28,
+# 2026-03-19, 2026-05-26 ve 2026-10-28 fiyat dosyasinda YOK (31.10.2026'da kontrol edildi), bu yuzden sayilmaz.
 # 2027 dini bayramlari (Ramazan, Kurban) resmi takvim aciklaninca eklenmeli.
 TATILLER = frozenset({
     "2025-01-01", "2025-03-31", "2025-04-01", "2025-04-23", "2025-05-01", "2025-05-19", "2025-06-06", "2025-06-09",
-    "2025-07-15", "2025-10-29",
+    "2025-07-15", "2025-10-29", "2025-06-05", "2025-10-28",                     # son ikisi arife
     "2026-01-01", "2026-03-20", "2026-04-23", "2026-05-01", "2026-05-19", "2026-05-27", "2026-05-28", "2026-05-29",
-    "2026-07-15", "2026-10-29",
-    "2027-01-01", "2027-04-23", "2027-05-19", "2027-07-15", "2027-08-30", "2027-10-29",
+    "2026-07-15", "2026-10-29", "2026-03-19", "2026-05-26", "2026-10-28",       # son ucu arife
+    "2027-01-01", "2027-04-23", "2027-05-19", "2027-07-15", "2027-08-30", "2027-10-29", "2027-10-28",  # sonuncusu arife
 })
 
 

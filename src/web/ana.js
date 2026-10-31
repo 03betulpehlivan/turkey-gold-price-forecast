@@ -249,7 +249,7 @@ async function tahmin() {
     VERI.u = u;
     document.getElementById("ust").textContent =
       `En son yayımlanan fiyat: ${tarih(u.bilgi_gunu)} kapanışı, ${sayi(u.son_kapanis, 2)} TL. TCMB fiyatı bir sonraki iş günü yayımlar; ` +
-      "tahminler bu fiyattan sonraki işlem günleri için. Hafta sonu ve resmî tatiller sayılmaz.";
+      "tahminler bu fiyattan sonraki işlem günleri için. Hafta sonu, resmî tatiller ve arife günleri sayılmaz.";
     const us = document.getElementById("ufuk-sec");
     us.replaceChildren(...u.ufuklar.map(f => {
       const b = el("button", { type: "button", "data-ufuk": String(f.ufuk_gun), "aria-pressed": "false" },

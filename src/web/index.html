@@ -187,7 +187,7 @@
       <ul>
         <li><b>Geleceği görmez.</b> Her tahmin yalnızca o güne kadarki fiyatları kullanır.</li>
         <li><b>Hazırlık ve sınav ayrı.</b> Model 2012–2022 verisiyle seçildi; 2023–2026’yı hiç görmeden sınandı. Sınav dönemi sonuçlara bakılmadan, en son dönem olduğu için belirlendi.</li>
-        <li><b>Veri uydurulmaz.</b> Tatil ve kapanış günleri doldurulmaz; pandemi gibi olağanüstü günler silinmez.</li>
+        <li><b>Veri uydurulmaz.</b> Tatil ve arife günleri için fiyat uydurulmaz; pandemi gibi olağanüstü günler silinmez.</li>
         <li><b>Kötü sonuçlar da yazılır.</b> İşe yaramayan denemeler aşağıda.</li>
       </ul>
     </div>
@@ -244,7 +244,7 @@
     <h3 class="alt-baslik">Veriyle ilgili kurallar</h3>
     <ul class="veri-kurallari">
       <li><b>2009 sonrası kullanıldı.</b> Eski yıllarda tutarsızlıklar var, 2005’te TL’den 6 sıfır atıldı; ayrıca model zaten son 3 yıla bakıyor.</li>
-      <li><b>Eksik gün doldurulmaz.</b> Tatil günleri için fiyat uydurulmaz; yalnızca işlem olan günler sırayla kullanılır.</li>
+      <li><b>Eksik gün doldurulmaz.</b> Tatil ve arife günleri için fiyat uydurulmaz (arifede kapanış oluşmuyor); yalnızca işlem olan günler sırayla kullanılır.</li>
       <li><b>Olağanüstü gün silinmez.</b> Pandemi gibi sert günler veride kalır.</li>
       <li><b>Yayın gecikmesi hesaba katılır.</b> TCMB kapanışı ertesi gün yayımlar; dış verilerde en fazla 10 günlük eski değer kullanılır.</li>
     </ul>
@@ -286,7 +286,7 @@
       </article>
       <article class="deneme olmadi">
         <h3>Kronos ve XGBoost</h3>
-        <p>İkisinin de aralıkları fazla dar çıktı: söyledikleri kadar sık tutmadılar. Kronos mum grafiği verisiyle eğitilmiş; bizde yalnızca kapanış fiyatı var.</p>
+        <p>Aralıkları fazla dar çıktı, yani söyledikleri kadar sık tutmadılar: XGBoost her ufukta, Kronos 3 ve 5 günde. Kronos mum grafiği verisiyle eğitilmiş; bizde yalnızca kapanış fiyatı var.</p>
       </article>
       <article class="deneme oldu">
         <h3>İşe yarayan: oynaklığı tahmin etmek</h3>
@@ -305,7 +305,7 @@
       <details><summary>Tuttu / tutmadı</summary><p>Gerçekleşen kapanış fiyatı aralığın içindeyse tuttu, dışındaysa tutmadı.</p></details>
       <details><summary>Merkez tahmin</summary><p>%80 aralığın tam ortası. Tek bir fiyat isteyenler için verilir. Altının yönü tahmin edilemediği için her gün bir miktar sapar.</p></details>
       <details><summary>Oynaklık</summary><p>Fiyatın ne kadar inip çıktığı. Sistem yönü değil, oynaklığı tahmin eder.</p></details>
-      <details><summary>İşlem günü</summary><p>Borsanın açık olduğu gün. Hafta sonu ve resmî tatiller sayılmaz. “3 gün sonra” 3 işlem günü sonra demektir.</p></details>
+      <details><summary>İşlem günü</summary><p>Fiziki altın piyasasında kapanış fiyatı oluşan gün. Hafta sonu, resmî tatiller ve arife günleri sayılmaz; arifede kapanış oluşmuyor. “3 gün sonra” 3 işlem günü sonra demektir.</p></details>
       <details><summary>Sabit aralık (basit yöntem)</summary><p>Son 3 yılın ortalama hareketine bakarak aralık veren basit yöntem. Son günlerin sakin mi çalkantılı mı olduğuna bakmaz; bu yüzden krizi geç fark eder. Karşılaştırma için kullanıldı.</p></details>
       <details><summary>Aralık puanı</summary><p>Aralığın başarısını tek sayıyla ölçer: aralık genişse puan artar, fiyat dışarı çıkarsa ceza eklenir. Düşük puan iyidir. Hem dar hem isabetli olmayı birlikte ister; çok geniş aralık vererek kandırılamaz.</p></details>
       <details><summary>Hazırlık dönemi / sınav dönemi</summary><p>Hazırlık dönemi (2012–2022): modellerin denendiği ve en iyisinin seçildiği yıllar. Sınav dönemi (2023–2026): seçilen modelin hiç görmeden sınandığı yıllar. Siyasi seçimle ilgisi yoktur.</p></details>

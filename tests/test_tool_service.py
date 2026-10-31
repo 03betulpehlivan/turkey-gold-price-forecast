@@ -183,10 +183,14 @@ class TestYarismaService(Base):
 
 class TestHedefGun(Base):
     def test_skips_weekends_and_holidays(self):
-        self.assertEqual(ts.hedef_gun("2026-10-27", 1), "2026-10-28")            # arife islem gunu sayilir
-        self.assertEqual(ts.hedef_gun("2026-10-27", 3), "2026-11-02")            # 29 Ekim ve hafta sonu atlanir
-        self.assertEqual(ts.hedef_gun("2026-10-27", 5), "2026-11-04")
-        self.assertEqual(ts.hedef_gun("2026-05-26", 1), "2026-06-01")            # Kurban Bayrami + hafta sonu
+        self.assertEqual(ts.hedef_gun("2026-10-27", 1), "2026-10-30")            # arife (28) ve bayram (29) atlanir
+        self.assertEqual(ts.hedef_gun("2026-10-27", 3), "2026-11-03")            # ... ve hafta sonu
+        self.assertEqual(ts.hedef_gun("2026-10-27", 5), "2026-11-05")
+        self.assertEqual(ts.hedef_gun("2026-10-30", 1), "2026-11-02")
+        self.assertEqual(ts.hedef_gun("2026-03-18", 1), "2026-03-23")            # arife (19) + bayram (20) + hafta sonu
+        for arife in ("2025-06-05", "2025-10-28", "2026-03-19", "2026-05-26", "2026-10-28"):
+            self.assertIn(arife, ts.TATILLER)                                    # fiyat dosyasinda kapanis yok
+        self.assertEqual(ts.hedef_gun("2026-05-25", 1), "2026-06-01")            # arife + Kurban Bayrami + hafta sonu
         self.assertEqual(ts.hedef_gun("2026-10-23", 1), "2026-10-26")            # yalnizca hafta sonu
         for t in ts.TATILLER:
             self.assertLess(pd.Timestamp(t).weekday(), 5, t)                     # listede yalnizca hafta ici gunler
@@ -199,7 +203,7 @@ class TestHedefGun(Base):
         pd.DataFrame({"Date": d.strftime("%Y-%m-%d"), "kapanis_tl_gr": 1000 * np.exp(np.cumsum(r))}).to_csv(f, index=False)
         out = ts._ufuklar.__wrapped__((str(f), 0), str(ts.yarisma_dosyasi()), False)
         self.assertEqual(out["bilgi_gunu"], "2026-10-27")
-        self.assertEqual([u["hedef_gun_yaklasik"] for u in out["ufuklar"]], ["2026-10-28", "2026-11-02", "2026-11-04"])
+        self.assertEqual([u["hedef_gun_yaklasik"] for u in out["ufuklar"]], ["2026-10-30", "2026-11-03", "2026-11-05"])
 
     def test_scorecard_waiting_rows_name_expected_close(self):
         d = ts.canli_karne()
@@ -315,6 +319,8 @@ class TestApiAndPage(Base):
         self.assertIn("r.beklenen_gun", js)                                      # bekleyen satir hangi kapanisi bekliyor
         self.assertIn("f.hedef_gun_yaklasik", js)
         self.assertNotIn("deprem", html)                                         # dogrulanmamis ornek kaldirildi
+        self.assertNotIn("kapan\u0131\u015f g\u00fcnleri doldurulmaz", html)  # belirsiz ifade duzeltildi
+        self.assertIn("arife", html)                                             # arifede kapanis olusmadigi yazili
 
 
 _REAL = [PROJECT_ROOT / "research", PROJECT_ROOT / "data"]
