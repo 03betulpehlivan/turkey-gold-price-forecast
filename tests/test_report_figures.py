@@ -6,6 +6,7 @@ Grafikler kayitli sonuc dosyalarindan gecici klasore cizilir; depodaki docs/figu
 
 from pathlib import Path
 import contextlib
+import inspect
 import io
 import shutil
 import sys
@@ -36,6 +37,21 @@ class TestFigures(unittest.TestCase):
         for name in rf.FIGURES:
             self.assertTrue((PROJECT_ROOT / "docs" / "figures" / f"{name}.png").exists(), name)
             self.assertIn(f"figures/{name}.png", report)
+
+    def test_report_and_readme_use_plain_terms(self):
+        for name in ("docs/danisman_raporu.md", "README.md"):
+            text = (PROJECT_ROOT / name).read_text(encoding="utf-8")
+            self.assertNotIn("se\u00e7im d\u00f6nemi", text.lower(), name)       # siyasi secimle karisiyordu
+            self.assertIn("Haz\u0131rl\u0131k d\u00f6nemi", text, name)
+            self.assertIn("S\u0131nav d\u00f6nemi", text, name)
+        report = (PROJECT_ROOT / "docs" / "danisman_raporu.md").read_text(encoding="utf-8")
+        self.assertNotIn("yine %95 g\u00fcvenilir", report)                     # %80 genislik ile %95 tutma karismasin
+        self.assertIn("arife", report)
+
+    def test_width_figure_reports_80_percent_hit_rate(self):
+        src = inspect.getsource(rf.fig_yarisma)
+        self.assertIn('["tutma80"]', src)                                        # cubuklar %80 genislik: yazi da %80
+        self.assertNotIn('["tutma95"]', src)
 
 
 if __name__ == "__main__":
