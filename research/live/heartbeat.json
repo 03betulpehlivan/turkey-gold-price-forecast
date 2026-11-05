@@ -1,9 +1,11 @@
 {
   "aksam": {
-    "at": "2026-11-04T22:30:59+03:00",
+    "at": "2026-11-05T22:58:46+03:00",
     "kod": 0,
-    "overall": "TAMAM",
-    "problems": []
+    "overall": "UYARI",
+    "problems": [
+      "tahmin"
+    ]
   },
   "sabah": {
     "at": "2026-11-05T18:40:35+03:00",
