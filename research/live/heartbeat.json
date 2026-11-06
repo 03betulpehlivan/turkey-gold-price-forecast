@@ -8,12 +8,9 @@
     ]
   },
   "sabah": {
-    "at": "2026-11-05T18:40:35+03:00",
+    "at": "2026-11-06T12:31:46+03:00",
     "kod": 0,
-    "overall": "UYARI",
-    "problems": [
-      "gunluk",
-      "tahmin"
-    ]
+    "overall": "TAMAM",
+    "problems": []
   }
 }
