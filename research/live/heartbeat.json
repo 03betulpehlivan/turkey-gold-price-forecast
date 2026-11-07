@@ -1,10 +1,11 @@
 {
   "aksam": {
-    "at": "2026-11-05T22:58:46+03:00",
-    "kod": 0,
-    "overall": "UYARI",
+    "at": "2026-11-07T19:58:02+03:00",
+    "kod": 1,
+    "overall": "HATA",
     "problems": [
-      "tahmin"
+      "gorev",
+      "gunluk"
     ]
   },
   "sabah": {
