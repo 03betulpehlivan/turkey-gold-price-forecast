@@ -29,6 +29,14 @@ class TestWrapper(unittest.TestCase):
         self.assertIn("$kod = $LASTEXITCODE", WRAP)
         self.assertTrue(WRAP.rstrip().endswith("exit $kod"))
 
+    def test_sabah_syncs_with_github_before_running(self):
+        """Bulut gorevi kaydi coktan almis olabilir: sabah betigi calismadan once GitHub'dan alinir."""
+        ilk = WRAP.index('& ".\\scripts\\git_esitle.ps1"')
+        self.assertLess(ilk, WRAP.index('& ".\\$betik"'))
+        blok = WRAP[WRAP.rindex('if ($Gorev -eq "sabah")', 0, ilk): WRAP.index('& ".\\$betik"')]
+        self.assertIn("try {", blok)
+        self.assertIn("catch {", blok)                                              # esitleme hatasi gorevi durdurmaz
+
     def test_logs_go_to_logs_folder(self):
         self.assertRegex(WRAP, r'logs\\\{0\}_\{1\}\.log')
 

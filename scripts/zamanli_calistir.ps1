@@ -12,6 +12,14 @@ $kod = 1
 try {
     Write-Host "Baslangic: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | gorev: $Gorev | betik: $betik"
     if (-not $env:EVDS_API_KEY -and $Gorev -eq "sabah") { Write-Host "UYARI: EVDS_API_KEY tanimli degil." }
+    if ($Gorev -eq "sabah") {
+        # Bulut gorevi (sabah_bulut.yml) bugunun karne kaydini coktan almis olabilir: once GitHub'dan al.
+        try {
+            & ".\scripts\git_esitle.ps1"
+            if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: baslangic esitlemesi yapilamadi (bulut kaydi gorulmeyebilir)." }
+        }
+        catch { Write-Host "UYARI: baslangic esitleme hatasi: $_" }
+    }
     & ".\$betik"
     $kod = $LASTEXITCODE
     # Sonraki adimlarin SONUCLARI (cikis kodlarina gore) ayrica $durum dosyasina yazilir; sistem durumu

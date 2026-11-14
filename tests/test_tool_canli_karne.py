@@ -7,7 +7,9 @@ Gecici klasorler ve sentetik fiyatlar; gercek research/ ve data/ kullanilmaz (md
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
+import contextlib
 import hashlib
+import io
 import shutil
 import sys
 import tempfile
@@ -101,6 +103,61 @@ class TestKarne(unittest.TestCase):
     def test_empty(self):
         c = ck.karne(pd.Series(dtype=float), Path(tempfile.gettempdir()) / "yok_ck.csv")
         self.assertEqual(c["kayit"], 0)
+
+
+class TestBulut(unittest.TestCase):
+    """Bulut gorevi (sabah_bulut.yml) ve bilgisayar ayni gunu ayri ayri kaydedebilir."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="ck3_"))
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        d = pd.bdate_range("2026-10-01", "2026-10-23")
+        self.prices = pd.Series(6560.0, index=d)
+
+    def test_first_record_wins_when_two_writers_record_same_day(self):
+        bulut, pc = self.tmp / "bulut.csv", self.tmp / "pc.csv"
+        ck.kaydet(ufuk(P=6560.0), now=SABAH, path=bulut)                              # 12:45 Istanbul
+        ck.kaydet(ufuk(P=6600.0), now=datetime(2026, 10, 21, 10, 30, tzinfo=timezone.utc), path=pc)   # 13:30, farkli aralik
+        b, p = bulut.read_bytes(), pc.read_bytes()
+        govde = lambda x: x.split(b"\n", 1)[1]
+        for ad, icerik in (("bulut_once", b + govde(p)), ("pc_once", p + govde(b))):   # git union: iki tarafin satirlari
+            with self.subTest(ad):
+                f = self.tmp / f"{ad}.csv"
+                f.write_bytes(icerik)
+                self.assertEqual(len(ck.oku(f)), 6)
+                c = ck.karne(self.prices, f)
+                self.assertEqual((c["kayit"], c["bozuk"]), (3, 0))                     # 6 satir, 3 gecerli kayit
+                self.assertEqual({u["ufuk_gun"]: u["kayit"] for u in c["ufuklar"]}, {1: 1, 3: 1, 5: 1})
+                son = {r["ufuk_gun"]: r for r in c["son_kayitlar"]}
+                self.assertAlmostEqual(son[1]["lo80"], 6560.0 * 0.99, places=3)        # erken (bulut) kayit gecerli
+
+    def test_chronos_required_refuses_fallback_model(self):
+        log = self.tmp / "log.csv"
+        yedek = ufuk()
+        yedek["ufuklar"][1]["yedek"] = True                                           # Chronos yok: ARIMA-GARCH'a donulmus
+        with mock.patch.object(ck, "LOG", log), mock.patch.object(ts, "ufuklar", return_value=yedek), \
+                contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(ck.main(["kaydet", "--chronos-zorunlu"]), 1)
+        self.assertFalse(log.exists())
+        self.assertIn("Chronos", out.getvalue())
+        tam = ufuk()
+        with mock.patch.object(ck, "LOG", log), mock.patch.object(ts, "ufuklar", return_value=tam), \
+                mock.patch.object(ck, "kaydet", return_value={"eklenen": 3, "neden": ""}) as kay, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(ck.main(["kaydet", "--chronos-zorunlu"]), 0)
+        kay.assert_called_once_with(tam)
+
+    def test_late_is_error_on_pc_but_only_a_note_in_cloud(self):
+        """Bilgisayarda 'gec' gercek bir kacirmadir (hata). Bulutta sabah erken denemede fiyat henuz yayimlanmamis
+        olabilir: hata sayilmaz, sonraki deneme kaydi alir. Baska ret nedenleri bulutta da hatadir."""
+        gec = {"eklenen": 0, "neden": "gec: 2026-10-20 kapanisina gore kayit 21.10 14:00 oncesinde yapilmaliydi"}
+        for argv, ret, beklenen in ((["kaydet"], gec, 1), (["kaydet", "--gec-uyari"], gec, 0),
+                                    (["kaydet", "--gec-uyari"], {"eklenen": 0, "neden": "baska"}, 1),
+                                    (["kaydet", "--gec-uyari"], {"eklenen": 3, "neden": ""}, 0)):
+            with self.subTest(argv=argv, neden=ret["neden"]):
+                with mock.patch.object(ts, "ufuklar", return_value=ufuk()), mock.patch.object(ck, "kaydet", return_value=ret), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(ck.main(argv), beklenen)
 
 
 class TestIntegration(unittest.TestCase):

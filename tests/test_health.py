@@ -231,8 +231,11 @@ class TestScripts(unittest.TestCase):
         w = self.code(self.wrap)
         order = ['& ".\\$betik"', "teorik_v2.ps1", "src.db.store load", "yedekle.ps1", "git_esitle.ps1",
                  "src.health write", 'Write-Host "Bitis']
-        pos = [w.index(s) for s in order]
+        yedek = w.index("yedekle.ps1")                                              # sondaki esitleme: yedekten sonra
+        pos = [w.index(s, yedek) if s == "git_esitle.ps1" else w.index(s) for s in order]
         self.assertEqual(pos, sorted(pos))
+        self.assertLess(w.index("git_esitle.ps1"), w.index('& ".\\$betik"'))          # sabah: once GitHub'dan al (bulut kaydi)
+        self.assertEqual(w.count("git_esitle.ps1"), 3)                              # bas, son, kalp atisi
         tail = w[w.index("$kod = $LASTEXITCODE") + 20:w.index('Write-Host "Bitis')]
         self.assertNotRegex(tail, r"\$kod\s*=")
         self.assertNotIn("*>&1", w)                                                 # PS 5.1 stderr tuzagi

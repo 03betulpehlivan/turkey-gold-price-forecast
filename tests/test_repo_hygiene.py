@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REQ = ROOT / "requirements.txt"
 CI = ROOT / ".github" / "workflows" / "tests.yml"
 WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+BULUT = "sabah_bulut.yml"          # gizli anahtar kullanan ve depoya yazan tek gorev (bulut karne kaydi)
 
 
 class TestRequirements(unittest.TestCase):
@@ -60,16 +61,57 @@ class TestWorkflowSecurity(unittest.TestCase):
             text = wf.read_text(encoding="utf-8")
             with self.subTest(wf.name):
                 text.encode("ascii")
-                self.assertRegex(text, r"permissions:\s*\n\s*contents: read")
                 self.assertNotIn("pull_request_target", text)
-                self.assertNotIn("contents: write", text)
-                self.assertNotIn("secrets.", text)
+                if wf.name != BULUT:                                   # tek istisna; kendi testiyle denetlenir
+                    self.assertRegex(text, r"permissions:\s*\n\s*contents: read")
+                    self.assertNotIn("contents: write", text)
+                    self.assertNotIn("secrets.", text)
                 uses = re.findall(r"uses:\s*(\S+)", text)
                 self.assertTrue(uses)
                 for u in uses:
                     self.assertRegex(u, r"^[\w.-]+/[\w.-]+@[0-9a-f]{40}$", f"surum SHA ile sabitlenmemis: {u}")
                 for block in re.findall(r"uses: actions/checkout@\S+.*?\n(?:\s+with:\n(?:\s{10}.*\n)+)?", text):
                     self.assertIn("persist-credentials: false", block)
+
+    def test_cloud_morning_job_is_the_only_writer_and_tightly_scoped(self):
+        """sabah_bulut.yml: gizli anahtar kullanan ve depoya yazan TEK gorev. Yalnizca zamanlayici/elle calisir,
+        yalnizca EVDS anahtarini kullanir, yalnizca karne kaydini commit eder, kayit penceresinin icinde calisir."""
+        text = (ROOT / ".github" / "workflows" / BULUT).read_text(encoding="utf-8")
+        tetik = text[text.index("\non:"): text.index("\npermissions:")]
+        self.assertIn("schedule:", tetik)
+        self.assertIn("workflow_dispatch:", tetik)
+        for bad in ("push", "pull_request", "workflow_run", "issue", "release"):
+            self.assertNotIn(bad, tetik)
+        self.assertEqual(set(re.findall(r"secrets\.(\w+)", text)), {"EVDS_API_KEY"})
+        self.assertRegex(text, r"\npermissions:\n  contents: write\n\n")                 # baska yetki yok
+        crons = re.findall(r'cron: "(\d+) (\d+) \* \* 1-5"', text)
+        self.assertGreaterEqual(len(crons), 2)
+        self.assertEqual(len(crons), text.count("cron:"))                                 # hepsi hafta ici
+        for m, h in crons:
+            ist = (int(h) + 3) * 60 + int(m)                                              # UTC -> Istanbul
+            self.assertTrue(8 * 60 <= ist <= 13 * 60 + 15, f"kayit penceresi disinda: {h}:{m} UTC")
+        self.assertIn("pip install -r requirements-chronos.txt", text)
+        self.assertIn("src.live.physical_forecast refresh --arsivsiz", text)
+        self.assertIn("src.tool.canli_karne kaydet --chronos-zorunlu --gec-uyari", text)    # yedek modelle kayit yok
+        self.assertIn("f=research/tool/canli_aralik_log.csv", text)
+        self.assertIn('git add -- "$f"', text)
+        self.assertNotRegex(text, r"git add (-A|\.|--all)")
+        self.assertNotIn("--force", text)
+        self.assertIn("timeout-minutes:", text)
+        self.assertRegex(text, r"concurrency:\n  group: sabah-bulut\n  cancel-in-progress: false")
+        others = [w.name for w in WORKFLOWS if w.name != BULUT and
+                  ("contents: write" in w.read_text(encoding="utf-8") or "secrets." in w.read_text(encoding="utf-8"))]
+        self.assertEqual(others, [])
+
+    def test_chronos_requirements_pinned_and_log_merges_by_union(self):
+        lines = [l.strip() for l in (ROOT / "requirements-chronos.txt").read_text(encoding="utf-8").splitlines()]
+        pkgs = [l for l in lines if l and not l.startswith(("#", "--"))]
+        self.assertEqual({l.split("==")[0] for l in pkgs},
+                         {"torch", "chronos-forecasting", "transformers", "accelerate", "huggingface_hub"})
+        for l in pkgs:
+            self.assertRegex(l, r"^[\w.-]+==\d+\.\d+\.\d+$", f"surum sabit degil: {l}")
+        attrs = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+        self.assertIn("research/tool/canli_aralik_log.csv merge=union", attrs)
 
     def test_integrity_runs_on_every_push_with_full_history(self):
         text = (ROOT / ".github" / "workflows" / "integrity.yml").read_text(encoding="utf-8")

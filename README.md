@@ -57,7 +57,7 @@ Bu sistemin %80 aralıkları, aynı "%80" iddiasıyla, basit bir yöntemin aral�
 - **Model yalnızca geçmişi görür.** Her ayın başında, o güne kadarki son 3 yılın verisiyle yeniden kurulur ve o ayın günlerini tahmin eder.
 - **Hazırlık ve sınav ayrı.** Model 2012–2022'de seçildi; 2023–2026 yalnızca sınav. Sınav dönemi, sonuçlara bakılmadan en son dönem olduğu için belirlendi.
 - **Veri uydurulmaz.** Tatil ve arife günleri için fiyat uydurulmaz; olağanüstü günler silinmez.
-- **İleriye dönük karne.** 21 Ekim 2026'dan beri sistem her sabah tahminini, gerçek fiyat belli olmadan önce değiştirilemez biçimde kaydediyor; fiyat gelince kendiliğinden puanlanıyor.
+- **İleriye dönük karne.** 21 Ekim 2026'dan beri sistem her sabah tahminini, gerçek fiyat belli olmadan önce değiştirilemez biçimde kaydediyor; fiyat gelince kendiliğinden puanlanıyor. Kayıt, bilgisayar kapalı olsa da her iş günü GitHub Actions üzerinde alınır.
 
 ## Web arayüzü
 
@@ -82,7 +82,7 @@ py -3.11 -m venv .venv
 pip install -r requirements.txt
 ```
 
-Chronos modeli isteğe bağlıdır (birkaç yüz MB indirir): `pip install chronos-forecasting`. Kurulu değilse sistem kendiliğinden ARIMA-GARCH'ı kullanır.
+Chronos modeli isteğe bağlıdır (birkaç yüz MB indirir): `pip install -r requirements-chronos.txt`. 3 ve 5 günlük kazanan yöntem Chronos'u kullanır; kurulu değilse sistem kendiliğinden ARIMA-GARCH'a döner.
 
 Fiziki altın verisi için ücretsiz bir TCMB EVDS anahtarı gerekir. Anahtar yalnızca ortam değişkeninde tutulur, dosyalara yazılmaz:
 
@@ -113,7 +113,8 @@ src/data/      veri indirme (TCMB EVDS, Yahoo Finance, Fed takvimi)
 src/models/    ilk aşamanın modelleri ve sınavları
 src/analysis/  ilk aşamanın araştırma çalışmaları
 research/      sonuç dosyaları, tahmin kayıtları
-scripts/       her gün kendiliğinden çalışan görevler
+scripts/       her gün kendiliğinden çalışan görevler (Windows)
+.github/       GitHub Actions: testler, bütünlük denetimi, bekçi ve bulutta karne kaydı
 tests/         otomatik testler
 docs/          rapor ve grafikler
 ```
@@ -124,6 +125,12 @@ docs/          rapor ve grafikler
 - **Modeller:** GARCH ailesi, ARIMA-GARCH, HAR, Markov rejim modeli, XGBoost, Amazon Chronos, Kronos ve birleşimleri.
 - **Altyapı:** Python, Microsoft SQL Server, FastAPI, Windows Görev Zamanlayıcı, GitHub Actions.
 - **Güvenilirlik:** her kod değişikliğinde otomatik testler; kayıtların değiştirilmediğini her gün kontrol eden bütünlük denetimi; görev çalışmazsa e-posta gönderen bekçi.
+
+## Raporlar
+
+- [Proje raporu](docs/Gram_Altin_Proje_Raporu.pdf): amaç, yöntem, sonuçlar ve literatür taraması tek belgede.
+- [Ayrıntılı literatür taraması](docs/Literatur_Taramasi_Raporu.pdf): incelenen 23 çalışma ve projeye yansımaları.
+- [Danışman raporu](docs/danisman_raporu.md): sade dille özet.
 
 ## Lisans
 

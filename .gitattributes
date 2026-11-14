@@ -1,1 +1,4 @@
 *.py text eol=lf
+# Karne kaydi yalnizca sona eklenir. Bilgisayar ve bulut ayni anda eklerse iki tarafin satirlari da korunur;
+# ayni gun icin ilk kayit gecerlidir (src/tool/canli_karne.tekil).
+research/tool/canli_aralik_log.csv merge=union

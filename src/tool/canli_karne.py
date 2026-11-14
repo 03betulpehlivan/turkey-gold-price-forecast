@@ -48,6 +48,12 @@ def dogrula(log: pd.DataFrame) -> np.ndarray:
     return np.array([_ozet(r) == r["satir_ozeti"] for r in log.to_dict("records")], dtype=bool)
 
 
+def tekil(log: pd.DataFrame) -> pd.DataFrame:
+    """Ayni (bilgi gunu, ufuk) icin en erken kayit gecerlidir. Bilgisayar ve bulut gorevi ayni gunu ayri ayri
+    kaydederse (git birlestirmesi iki satiri da tutar) karne tek kayit sayar; sonraki kayit yok sayilir."""
+    return log.sort_values("kayit_utc", kind="stable").drop_duplicates(["bilgi_gunu", "ufuk_gun"], keep="first")
+
+
 def son_zaman(bilgi_gunu: str) -> pd.Timestamp:
     return (pd.Timestamp(bilgi_gunu) + pd.offsets.BDay(1)).tz_localize(TZ) + pd.Timedelta(hours=SON_SAAT)
 
@@ -93,7 +99,7 @@ def karne(prices: pd.Series, path: Path = None, son: int = 15) -> dict:
     if len(log) == 0:
         return {"kayit": 0, "ufuklar": [], "son_kayitlar": [], "baslangic": None, "bozuk": 0}
     ok = dogrula(log)
-    log = log[ok].copy()
+    log = tekil(log[ok])
     dates = prices.index
     pos = {str(t.date()): i for i, t in enumerate(dates)}
     rows = []
@@ -122,13 +128,25 @@ def karne(prices: pd.Series, path: Path = None, son: int = 15) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Ileriye donuk karne (1/3/5 gun araliklari).")
     ap.add_argument("komut", choices=["kaydet", "karne"])
+    ap.add_argument("--chronos-zorunlu", action="store_true",
+                    help="kaydet: Chronos kurulu degilse ya da yedek model devreye girdiyse kayit yapma (bulut gorevi).")
+    ap.add_argument("--gec-uyari", action="store_true",
+                    help="kaydet: 'gec' reddi hata sayilmaz (bulut: guncel fiyat henuz yayimlanmamis olabilir; "
+                         "sonraki deneme kaydi alir).")
     args = ap.parse_args([] if argv is None else argv)
     from src.tool import karne as k
     from src.tool import service as ts
     print("=" * 70 + "\nILERIYE DONUK KARNE - " + args.komut.upper() + "\n" + "=" * 70)
     if args.komut == "kaydet":
-        r = kaydet(ts.ufuklar())
+        u = ts.ufuklar()
+        if args.chronos_zorunlu and any(x.get("yedek") for x in u["ufuklar"]):
+            print("  HATA: Chronos kurulu degil; yedek modelle kayit yapilmadi (pip install -r requirements-chronos.txt).")
+            return 1
+        r = kaydet(u)
         print(f"  Eklenen satir: {r['eklenen']}" + (f" ({r['neden']})" if r["neden"] else "") + f" | {LOG}")
+        if args.gec_uyari and r["neden"].startswith("gec"):
+            print("  Not: guncel fiyat henuz yayimlanmamis olabilir (ya da tatil); kayit yapilmadi, hata sayilmadi.")
+            return 0
         return 0 if r["eklenen"] or r["neden"] in ("bu gunun kaydi zaten var", "hafta sonu") else 1
     c = karne(k.load_series())
     print(f"  Kayit: {c['kayit']} satir, baslangic {c['baslangic']}, ozeti tutmayan {c['bozuk']}")

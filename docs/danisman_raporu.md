@@ -245,7 +245,7 @@ Olumsuz sonuçları da raporluyorum, çünkü neyin işe yaramadığını bilmek
 | --- | --- |
 | Fiyatın yönünü tahmin etmek (doğrusal model, XGBoost, LSTM, gece bilgisi) | Yazı-turadan iyi değil (%51 – %53). |
 | Yarının tam fiyatı | Sınav döneminde hiçbir model "yarın = bugün"den belirgin biçimde iyi olmadı. |
-| Literatürdeki %99 başarı | Bazı çalışmalarda LSTM %99,9 başarılı görünüyor. Aynı kurulumu denedim: veri karıştırılarak bölününce gerçekten %99,9 çıkıyor, çünkü model geleceği "görüyor". Doğru kurulumda "yarın = bugün"den %73 kötü. |
+| Literatürdeki %99 başarı | Bazı çalışmalarda LSTM %99,9 başarılı görünüyor. Aynı kurulumu denedim: veri karıştırılarak bölününce gerçekten %99,9 çıkıyor, çünkü model geleceği "görüyor". Oysa gerçek hataya bakınca aynı model "yarın = bugün"den %73 daha kötü. Doğru kurulumda ise "yarın = bugün"den farksız. |
 | Makine öğrenmesiyle aralık (XGBoost) | Aralıkları fazla dar; "%80" dediği %74 – %76 tuttu. |
 | Dış piyasa verisi ve Fed günleri | Aralıkları iyileştirmedi (bölüm 9). |
 | Kronos (finans için hazır yapay zekâ modeli) | 1 günde hazırlık döneminde ARIMA-GARCH'tan %40 kötü, sınav döneminde yaklaşık eşit; 3 ve 5 günde aralıkları fazla dar. Kronos mum grafiğiyle (açılış, en yüksek, en düşük, kapanış) eğitilmiş; bizde yalnızca kapanış fiyatı var. |

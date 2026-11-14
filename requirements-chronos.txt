@@ -1,0 +1,11 @@
+# Chronos (onceden egitilmis zaman serisi modeli) ve bagimliliklari.
+# 3 ve 5 gunluk kazanan yontem (ARIMA-GARCH + Chronos) icin gereklidir; kurulu degilse sistem ARIMA-GARCH'a doner.
+# Kurulum: pip install -r requirements-chronos.txt
+# Surumler calisan ortamdan alinmistir (pip freeze, Kasim 2026). Bulut gorevi (sabah_bulut.yml) ayni surumleri kurar.
+# Linux'ta GPU'suz (CPU) torch paketi icin ek dizin:
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1
+chronos-forecasting==2.3.2
+transformers==5.20.2
+accelerate==1.15.0
+huggingface_hub==2.2.0

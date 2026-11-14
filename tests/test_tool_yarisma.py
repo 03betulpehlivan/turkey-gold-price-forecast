@@ -234,6 +234,19 @@ class TestLive(unittest.TestCase):
         c = y.canli(p.iloc[: i_last + 1], h, "ARIMA-GARCH", chronos_ok=False)
         np.testing.assert_allclose(c["aralik80"], np.exp(d["lp"][i_last] + q[[1, 3]]), rtol=1e-9)
 
+    def test_live_is_unchanged_without_old_archive(self):
+        """Bulut gorevi 2018 oncesi arsivi indirmez. Modeller son 750 islem gununu (Chronos son 512 gunu) kullandigi
+        icin eski gecmisin kesilmesi canli tahmini degistirmemelidir."""
+        p = world(end="2016-06-30")
+        kisa = p.iloc[-2000:]
+        self.assertLess(len(kisa), len(p))
+        for h, m in ((1, "ARIMA-GARCH"), (3, "Birlesim-2"), (5, "Birlesim-2")):
+            a = y.canli(p, h, m, chronos_pipeline=FakeChronos(), chronos_ok=False)
+            b = y.canli(kisa, h, m, chronos_pipeline=FakeChronos(), chronos_ok=False)
+            self.assertEqual((b["kullanilan"], b["yedek"]), (m, False))
+            np.testing.assert_allclose(b["aralik80"], a["aralik80"], rtol=1e-9)
+            np.testing.assert_allclose(b["aralik95"], a["aralik95"], rtol=1e-9)
+
     def test_daily_series(self):
         p = world(end="2016-06-30")
         g = y.gunluk_seri(p, 1, "ARIMA-GARCH", "2016-01-01", chronos_ok=False)

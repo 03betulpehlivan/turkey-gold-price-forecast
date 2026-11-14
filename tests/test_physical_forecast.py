@@ -183,6 +183,25 @@ class TestRefresh(unittest.TestCase):
         live = pd.read_csv(out, parse_dates=["Date"])
         self.assertEqual(set(live["kaynak"]), {"IAB_arsiv", "BIST_KMP"})
         self.assertEqual(r["last_date"], "2018-08-31")
+        self.assertTrue(r["arsiv"])
+
+    def test_refresh_without_archive_only_when_asked(self):
+        """Bulut gorevinde ana (arsiv) dosya yoktur: yalnizca --arsivsiz ile, guncel seriyle devam edilir."""
+        from tests.test_physical_gold import FakeEVDS
+        tmp = Path(tempfile.mkdtemp(prefix="lpa_"))
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        bp, out = tmp / "yok.csv", tmp / "live" / "physical_gold_daily.csv"
+        now = pd.Timestamp("2018-08-31", tz="UTC").to_pydatetime()
+        with mock.patch.object(evds, "OUT_ROOT", tmp / "evds"):
+            with self.assertRaises(FileNotFoundError):
+                lp.refresh(evds.Client("k", get=FakeEVDS()), bp, out, now=now)          # varsayilan: ana dosya zorunlu
+            self.assertFalse(out.exists())
+            r = lp.refresh(evds.Client("k", get=FakeEVDS()), bp, out, now=now, arsivsiz=True)
+        live = pd.read_csv(out, parse_dates=["Date"])
+        self.assertEqual(set(live["kaynak"]), {"BIST_KMP"})
+        self.assertEqual((r["last_date"], r["arsiv"]), ("2018-08-31", False))
+        self.assertTrue(live["Date"].is_monotonic_increasing)
+        self.assertFalse(bp.exists())
 
 
 _REAL = [PROJECT_ROOT / "research", PROJECT_ROOT / "data" / "processed"]
