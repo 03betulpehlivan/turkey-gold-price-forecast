@@ -9,7 +9,7 @@ Kullanim (proje kokunden):
 
 Durum kaydi: data/processed/health/status.json (Git'e girmez). Her gorev icin SON calisma tutulur.
 Kalp atisi: research/live/heartbeat.json (Git'e GIRER; yalnizca zaman, genel durum ve sorunlu denetim adlari).
-  GitHub'daki bekci (.github/workflows/watchdog.yml, src/watchdog.py) bunu okuyup gerekirse e-posta ile uyarir.
+  (Eski bekci kaldirildi: sistem bulutta calisir; bekci artik .github/workflows/sabah_bulut.yml icindedir.)
 Bir calismanin denetimleri:
   gorev        betigin cikis kodu (ilk push basarisiz ama esitleme gondermisse UYARI)
   gunluk       kayittaki "UYARI:" satirlari (LIVE_V2, veritabani, yedek ...)
@@ -146,7 +146,7 @@ def write(entry: dict, path: Path = None) -> Path:
 
 def write_heartbeat(entry: dict, path: Path = None) -> Path:
     """Kalp atisi: her gorev icin son calisma zamani, genel durum ve sorunlu denetim adlari.
-    Ayrinti ve gizli bilgi icermez. GitHub'daki bekci (src/watchdog.py) bunu okur."""
+    Ayrinti ve gizli bilgi icermez. Yalnizca bilgisayardan elle calistirmada yazilir."""
     path = Path(path or HEARTBEAT_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
     data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}

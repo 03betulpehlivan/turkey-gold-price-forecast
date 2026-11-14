@@ -279,10 +279,33 @@ def check_hygiene(root: Path) -> list:
     return out
 
 
+def check_closures(root: Path) -> list:
+    """Kapatilan canli deneyler (registry 'closed' olayi): kapanistan sonra o protokol icin baska olay yok ve kayit
+    dosyasi kapanistaki parmak iziyle ayni (tek satir eklense de, puanlansa da HATA)."""
+    out = []
+    rows = [json.loads(l) for l in (root / "research" / "registry.jsonl").read_text(encoding="utf-8").splitlines()
+            if l.strip()] if (root / "research" / "registry.jsonl").exists() else []
+    for i, e in enumerate(rows):
+        if e.get("event") != "closed":
+            continue
+        pid = e["protocol_id"]
+        sonra = [x.get("event") for x in rows[i + 1:] if x.get("protocol_id") == pid]
+        p = root / e.get("log", "")
+        if sonra:
+            out.append((FAIL, f"{pid} kapanis", f"kapanistan sonra yeni olay: {sonra}"))
+        elif not e.get("log") or not p.is_file():
+            out.append((FAIL, f"{pid} kapanis", f"kayit dosyasi yok: {e.get('log')}"))
+        elif e.get("log_md5") not in _md5_variants(p.read_bytes()):
+            out.append((FAIL, f"{pid} kapanis", f"{e['log']} kapanistan sonra DEGISMIS"))
+        else:
+            out.append((OK, f"{pid} kapanis", f"{e['at_utc'][:10]} kapatildi; {e.get('n_records')} kayit degismemis"))
+    return out
+
+
 def run_all(root: Path = None) -> list:
     root = Path(root or ROOT)
     res = []
-    for fn in (check_registry, check_locks, check_logs, check_history, check_hygiene):
+    for fn in (check_registry, check_locks, check_logs, check_history, check_closures, check_hygiene):
         try:
             res += fn(root)
         except Exception as e:  # denetimin kendisi coktuyse bu bir HATA'dir

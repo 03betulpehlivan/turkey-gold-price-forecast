@@ -5,6 +5,7 @@
 # - Yalnizca research/tool/canli_aralik_log.csv dosyasini commit eder.
 # Bu depoda gizli anahtar kullanan ve depoya yazan TEK gorev budur (tests/test_repo_hygiene.py denetler).
 # Yalnizca zamanlayici ve elle baslatma ile calisir; pull request ile tetiklenmez.
+# Son denemede (13:05) bekci: is gununde onceki islem gununun kaydi yoksa gorev basarisiz olur, GitHub e-posta atar.
 name: sabah-bulut
 
 on:
@@ -67,3 +68,8 @@ jobs:
           done
           echo "HATA: kayit gonderilemedi."
           exit 1
+      - name: Bekci (son deneme; is gununde kayit yoksa basarisiz ve e-posta)
+        if: github.event.schedule == '5 10 * * 1-5'
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -m src.tool.canli_karne denetle

@@ -160,6 +160,48 @@ class TestBulut(unittest.TestCase):
                     self.assertEqual(ck.main(argv), beklenen)
 
 
+class TestTatilVeBekci(unittest.TestCase):
+    """Kayit siniri ve bekci resmi tatil/arife takvimini (service.TATILLER) bilir."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="ck4_"))
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.p = self.tmp / "log.csv"
+
+    def test_deadline_skips_holiday_and_eve(self):
+        ist = lambda s: pd.Timestamp(s, tz="Europe/Istanbul")
+        self.assertEqual(ck.son_zaman("2026-10-27"), ist("2026-10-30 14:00"))       # 28 arife, 29 bayram atlanir
+        self.assertEqual(ck.son_zaman("2026-10-23"), ist("2026-10-26 14:00"))       # hafta sonu atlanir
+
+    def test_first_workday_after_holiday_is_recorded(self):
+        """Eski kural 27 Ekim kapanisi icin siniri 28 Ekim (arife) saniyordu; 30 Ekim kaydi hic alinamiyordu."""
+        cuma = datetime(2026, 10, 30, 9, 30, tzinfo=timezone.utc)                    # 12:30 Istanbul
+        self.assertEqual(ck.kaydet(ufuk("2026-10-27"), now=cuma, path=self.p)["eklenen"], 3)
+
+    def test_expected_info_day(self):
+        self.assertEqual(ck.beklenen_bilgi_gunu("2026-10-30"), "2026-10-27")
+        self.assertEqual(ck.beklenen_bilgi_gunu("2026-11-16"), "2026-11-13")         # pazartesi -> cuma
+        self.assertEqual(ck.beklenen_bilgi_gunu("2026-11-17"), "2026-11-16")
+
+    def test_watchdog(self):
+        saat = lambda g: datetime(2026, int(g[5:7]), int(g[8:10]), 10, 10, tzinfo=timezone.utc)   # 13:10 Istanbul
+        self.assertTrue(ck.denetle(saat("2026-11-14"), self.p)["ok"])               # cumartesi
+        self.assertTrue(ck.denetle(saat("2026-10-29"), self.p)["ok"])               # bayram
+        d = ck.denetle(saat("2026-11-16"), self.p)                                    # pazartesi, kayit yok
+        self.assertFalse(d["ok"])
+        self.assertIn("2026-11-13", d["neden"])
+        ck.kaydet(ufuk("2026-11-13"), now=datetime(2026, 11, 16, 7, 10, tzinfo=timezone.utc), path=self.p)
+        self.assertTrue(ck.denetle(saat("2026-11-16"), self.p)["ok"])
+        ck.kaydet(ufuk("2026-10-27"), now=datetime(2026, 10, 28, 7, 10, tzinfo=timezone.utc), path=self.p)   # arife sabahi
+        self.assertTrue(ck.denetle(saat("2026-10-30"), self.p)["ok"])               # bayram sonrasi: yeni kapanis yok
+
+    def test_watchdog_cli_exit_codes(self):
+        for ok, beklenen in ((True, 0), (False, 1)):
+            with mock.patch.object(ck, "denetle", return_value={"ok": ok, "neden": "x"}), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(ck.main(["denetle"]), beklenen)
+
+
 class TestIntegration(unittest.TestCase):
     def test_api(self):
         tmp = Path(tempfile.mkdtemp(prefix="ck3_"))

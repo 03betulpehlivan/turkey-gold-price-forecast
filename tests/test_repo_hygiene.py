@@ -98,6 +98,10 @@ class TestWorkflowSecurity(unittest.TestCase):
         self.assertNotRegex(text, r"git add (-A|\.|--all)")
         self.assertNotIn("--force", text)
         self.assertIn("timeout-minutes:", text)
+        bekci = text[text.index("- name: Bekci"):]
+        self.assertIn("if: github.event.schedule == '5 10 * * 1-5'", bekci)      # yalnizca son denemede
+        self.assertIn("python -m src.tool.canli_karne denetle", bekci)
+        self.assertFalse((ROOT / ".github" / "workflows" / "watchdog.yml").exists())  # eski bilgisayar bekcisi yok
         self.assertRegex(text, r"concurrency:\n  group: sabah-bulut\n  cancel-in-progress: false")
         others = [w.name for w in WORKFLOWS if w.name != BULUT and
                   ("contents: write" in w.read_text(encoding="utf-8") or "secrets." in w.read_text(encoding="utf-8"))]

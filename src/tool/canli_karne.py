@@ -55,7 +55,36 @@ def tekil(log: pd.DataFrame) -> pd.DataFrame:
 
 
 def son_zaman(bilgi_gunu: str) -> pd.Timestamp:
-    return (pd.Timestamp(bilgi_gunu) + pd.offsets.BDay(1)).tz_localize(TZ) + pd.Timedelta(hours=SON_SAAT)
+    """Kayit icin son an: bilgi gununden sonraki ISLEM gunu 14:00 (Istanbul). Hafta sonu, resmi tatil ve arife
+    atlanir (service.TATILLER); tatilden sonraki ilk is gununun kaydi da bu sayede alinabilir."""
+    from src.tool.service import hedef_gun
+    return pd.Timestamp(hedef_gun(bilgi_gunu, 1)).tz_localize(TZ) + pd.Timedelta(hours=SON_SAAT)
+
+
+def beklenen_bilgi_gunu(bugun) -> str:
+    """Bugun sabah kaydedilmesi gereken bilgi gunu: bugunden onceki son islem gunu (hafta sonu ve TATILLER atlanir)."""
+    from src.tool.service import TATILLER
+    t = pd.Timestamp(bugun).normalize()
+    while True:
+        t -= pd.Timedelta(days=1)
+        if t.weekday() < 5 and str(t.date()) not in TATILLER:
+            return str(t.date())
+
+
+def denetle(now: datetime = None, path: Path = None) -> dict:
+    """Bekci (bulut gorevinin son denemesi): bugun is gunuyse, onceki islem gununun kapanisina ait kayit olmali."""
+    from src.tool.service import TATILLER
+    now = pd.Timestamp(now or datetime.now(timezone.utc))
+    now = now if now.tzinfo else now.tz_localize("UTC")
+    bugun = now.tz_convert(TZ).normalize().tz_localize(None)
+    if bugun.weekday() >= 5 or str(bugun.date()) in TATILLER:
+        return {"ok": True, "neden": "bugun is gunu degil"}
+    e = beklenen_bilgi_gunu(bugun)
+    log = oku(path)
+    var = set(tekil(log[dogrula(log)])["bilgi_gunu"]) if len(log) else set()
+    if e in var:
+        return {"ok": True, "neden": f"{e} kapanisinin kaydi var"}
+    return {"ok": False, "neden": f"{e} kapanisinin kaydi YOK (TCMB verisi gecikmis ya da gorev calismamis olabilir)"}
 
 
 def kaydet(ufuk: dict, now: datetime = None, path: Path = None) -> dict:
@@ -127,7 +156,7 @@ def karne(prices: pd.Series, path: Path = None, son: int = 15) -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Ileriye donuk karne (1/3/5 gun araliklari).")
-    ap.add_argument("komut", choices=["kaydet", "karne"])
+    ap.add_argument("komut", choices=["kaydet", "karne", "denetle"])
     ap.add_argument("--chronos-zorunlu", action="store_true",
                     help="kaydet: Chronos kurulu degilse ya da yedek model devreye girdiyse kayit yapma (bulut gorevi).")
     ap.add_argument("--gec-uyari", action="store_true",
@@ -148,6 +177,10 @@ def main(argv=None) -> int:
             print("  Not: guncel fiyat henuz yayimlanmamis olabilir (ya da tatil); kayit yapilmadi, hata sayilmadi.")
             return 0
         return 0 if r["eklenen"] or r["neden"] in ("bu gunun kaydi zaten var", "hafta sonu") else 1
+    if args.komut == "denetle":
+        d = denetle()
+        print(("  Sorun yok: " if d["ok"] else "  SORUN: ") + d["neden"])
+        return 0 if d["ok"] else 1
     c = karne(k.load_series())
     print(f"  Kayit: {c['kayit']} satir, baslangic {c['baslangic']}, ozeti tutmayan {c['bozuk']}")
     for u in c["ufuklar"]:
