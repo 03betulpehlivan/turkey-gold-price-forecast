@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 import pandas as pd
 
@@ -142,6 +143,40 @@ class TestLocks(Repo):
         self.assertIn("LIVE_V1 kilit gecmisi", fails)                         # ama gecmiste degismis
         self.assertIn("LIVE_V2 kilit gecmisi", fails)                         # train.py V2'de de kilitli
         self.assertNotIn("LIVE_PHYS_V1 kilit gecmisi", fails)
+
+    def test_documented_exception_is_warning_only_for_listed_commit_and_protocol(self):
+        """Belgelenmis istisna: listede olan commit + protokol UYARI olur; baska commit ya da protokol HATA kalir."""
+        f = self.root / "src" / "live" / "physical_forecast.py"
+        orig = f.read_bytes()
+        f.write_bytes(orig + b"\n# yanlislikla\n")
+        commit(self.root, "kilitli dosya yanlislikla degisti")
+        h = git(self.root, "rev-parse", "HEAD").strip()
+        f.write_bytes(orig)
+        commit(self.root, "geri alindi")
+        self.assertIn("LIVE_PHYS_V1 kilit gecmisi", dict(self.fails()))           # istisna yokken hata
+        ist = {h: {"protokoller": ("LIVE_PHYS_V1", "LIVE_PHYS_INT_V1"), "neden": "test"}}
+        with mock.patch.object(audit, "KILIT_ISTISNALARI", ist):
+            res = {n: (s, d) for s, n, d in audit.run_all(self.root)}
+            self.assertEqual(self.fails(), [])
+            for pid in ("LIVE_PHYS_V1", "LIVE_PHYS_INT_V1"):
+                self.assertEqual(res[f"{pid} kilit gecmisi"][0], audit.WARN)
+                self.assertIn(h[:7], res[f"{pid} kilit gecmisi"][1])
+        with mock.patch.object(audit, "KILIT_ISTISNALARI", {h: {"protokoller": ("LIVE_PHYS_V1",), "neden": "test"}}):
+            self.assertEqual([n for n, _ in self.fails()], ["LIVE_PHYS_INT_V1 kilit gecmisi"])    # protokol eslesmeli
+        f.write_bytes(orig + b"\n# ikinci degisiklik\n")
+        commit(self.root, "listede olmayan degisiklik")
+        with mock.patch.object(audit, "KILIT_ISTISNALARI", ist):
+            fails = dict(self.fails())
+            self.assertIn("LIVE_PHYS_V1 kilit gecmisi", fails)                     # listede olmayan commit: hata
+            self.assertIn("LIVE_PHYS_V1 kod kilidi", fails)                        # bugunku kod da farkli: hata
+
+    def test_real_exception_list_is_narrow(self):
+        """Gercek listede yalnizca tam commit kimligi ve yalnizca fiziki protokoller olmali."""
+        self.assertEqual(len(audit.KILIT_ISTISNALARI), 1)
+        for h, v in audit.KILIT_ISTISNALARI.items():
+            self.assertRegex(h, r"^[0-9a-f]{40}$")
+            self.assertLessEqual(set(v["protokoller"]), {"LIVE_PHYS_V1", "LIVE_PHYS_INT_V1"})
+            self.assertTrue(v["neden"].strip())
 
     def test_line_endings_do_not_break_locks(self):
         f = self.root / "src" / "live" / "physical_forecast.py"

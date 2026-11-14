@@ -107,27 +107,20 @@ def row_hash(row) -> str:
 # ---------------------------------------------------------------------------
 # Veri
 # ---------------------------------------------------------------------------
-def refresh(client, base_path: Path = None, out_path: Path = None, now=None, arsivsiz: bool = False) -> dict:
-    """Guncel EVDS serisini (2018-07-02..bugun) indirir; arsiv kismini ana dosyadan alir; canli kopyaya yazar.
-    arsivsiz=True (bulut gorevi): ana dosya yoksa yalnizca guncel seriyle devam eder. Aralik modelleri son 750 islem
-    gununu kullandigi icin 2018 oncesi arsiv tahmini degistirmez. Ana dosya varsa her zaman kullanilir."""
+def refresh(client, base_path: Path = None, out_path: Path = None, now=None) -> dict:
+    """Guncel EVDS serisini (2018-07-02..bugun) indirir; arsiv kismini ana dosyadan alir; canli kopyaya yazar."""
     base_path, out_path = Path(base_path or BASE_PHYS), Path(out_path or PHYS_LIVE)
     current, _, snap = evds.run_download(client, list(pg.CURRENT), pg.CURRENT_START, "", now=now)
     empty = pd.DataFrame({"Date": pd.Series(dtype="datetime64[ns]"),
                           **{c: pd.Series(dtype=float) for c in pg.ARCHIVE}})   # sayisal tur: birlesimde metne donmesin
     new, _ = pg.build(empty, current)
-    if base_path.exists() or not arsivsiz:
-        base = pd.read_csv(base_path, parse_dates=["Date"])           # arsivsiz degilse ana dosya zorunlu (yoksa hata)
-        arsiv = base[base["kaynak"] == "IAB_arsiv"]
-    else:
-        arsiv = new.iloc[0:0]
-    out = pd.concat([arsiv, new], ignore_index=True).sort_values("Date")
+    base = pd.read_csv(base_path, parse_dates=["Date"])
+    out = pd.concat([base[base["kaynak"] == "IAB_arsiv"], new], ignore_index=True).sort_values("Date")
     if out["Date"].duplicated().any():
         raise pg.PhysicalError("Canli fiziki seride tekrar eden tarih.")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(out_path, index=False, date_format="%Y-%m-%d")
-    return {"last_date": str(out["Date"].max().date()), "rows": int(len(out)), "snapshot": snap.name,
-            "arsiv": bool(len(arsiv))}
+    return {"last_date": str(out["Date"].max().date()), "rows": int(len(out)), "snapshot": snap.name}
 
 
 def training_frame(phys: pd.DataFrame, panel: pd.DataFrame, before: pd.Timestamp) -> pd.DataFrame:
@@ -339,8 +332,6 @@ def _now() -> pd.Timestamp:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Canli sabah fiziki altin tahmini (LIVE_PHYS_V1).")
     ap.add_argument("command", choices=["prepare", "refresh", "score", "issue", "card", "evaluate"])
-    ap.add_argument("--arsivsiz", action="store_true",
-                    help="refresh: ana (arsiv) dosya yoksa yalnizca guncel EVDS serisiyle devam et (bulut gorevi).")
     args = ap.parse_args([] if argv is None else argv)
     sep = "=" * 76
     print(f"\n{sep}\nCANLI SABAH FIZIKI ALTIN TAHMINI - {PROTOCOL_ID} - {args.command.upper()}\n{sep}")
@@ -349,9 +340,8 @@ def main(argv=None) -> int:
             print(f"  On kayit: {prepare()} -> {PREREG_PATH}\n  SIMDI: git add {PREREG_PATH.relative_to(ROOT)}; git commit")
             return 0
         if args.command == "refresh":
-            r = refresh(evds.Client(os.environ.get("EVDS_API_KEY", "")), arsivsiz=args.arsivsiz)
-            print(f"  Canli fiziki seri: son tarih {r['last_date']} | {r['rows']} gun | EVDS goruntu {r['snapshot']}"
-                  + ("" if r["arsiv"] else " | arsivsiz (yalnizca 2018 sonrasi)"))
+            r = refresh(evds.Client(os.environ.get("EVDS_API_KEY", "")))
+            print(f"  Canli fiziki seri: son tarih {r['last_date']} | {r['rows']} gun | EVDS goruntu {r['snapshot']}")
             return 0
         phys = pd.read_csv(PHYS_LIVE, parse_dates=["Date"])
         if args.command == "score":

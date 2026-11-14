@@ -91,7 +91,7 @@ class TestWorkflowSecurity(unittest.TestCase):
             ist = (int(h) + 3) * 60 + int(m)                                              # UTC -> Istanbul
             self.assertTrue(8 * 60 <= ist <= 13 * 60 + 15, f"kayit penceresi disinda: {h}:{m} UTC")
         self.assertIn("pip install -r requirements-chronos.txt", text)
-        self.assertIn("src.live.physical_forecast refresh --arsivsiz", text)
+        self.assertIn("python -m src.tool.bulut_veri", text)
         self.assertIn("src.tool.canli_karne kaydet --chronos-zorunlu --gec-uyari", text)    # yedek modelle kayit yok
         self.assertIn("f=research/tool/canli_aralik_log.csv", text)
         self.assertIn('git add -- "$f"', text)
@@ -102,6 +102,15 @@ class TestWorkflowSecurity(unittest.TestCase):
         others = [w.name for w in WORKFLOWS if w.name != BULUT and
                   ("contents: write" in w.read_text(encoding="utf-8") or "secrets." in w.read_text(encoding="utf-8"))]
         self.assertEqual(others, [])
+
+    def test_locked_protocol_code_unchanged(self):
+        """On kayitli protokollerin kilitli kodu degismemeli (GitHub'daki integrity denetiminin ayni kontrolu).
+        Kilitli dosyada degisiklik gerekiyorsa yeni bir modul yazilir (ornek: src/tool/bulut_veri.py)."""
+        from src import audit
+        sonuc = audit.check_locks(ROOT)
+        self.assertTrue(sonuc)
+        for durum, ad, mesaj in sonuc:
+            self.assertEqual(durum, audit.OK, f"{ad}: {mesaj}")
 
     def test_chronos_requirements_pinned_and_log_merges_by_union(self):
         lines = [l.strip() for l in (ROOT / "requirements-chronos.txt").read_text(encoding="utf-8").splitlines()]

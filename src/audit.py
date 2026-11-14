@@ -49,6 +49,19 @@ LOCKS = {
     "LIVE_V2": v2.CODE_FILES,
 }
 MAX_FILE_MB = 5
+
+# Belgelenmis kilit istisnalari: kilitli koda dokunmus ve AYNI GUN geri alinmis commit'ler. Commit gecmisten
+# silinmez (gecmis yeniden yazilmaz); denetim onu gormeye devam eder ve TAMAM yerine UYARI verir. Kosullar
+# denetimde ayrica kontrol edilir: bugunku kod on kayitla ayni olmali (kod kilidi) ve o surumle uretilmis tahmin
+# kaydi olmamali (kayit code_md5 denetimi). Liste yalnizca tam commit kimligi ve protokol eslesmesiyle calisir.
+KILIT_ISTISNALARI = {
+    "1d2d4b96ce9fc62f069bc31f7ae22fb95a320294": {
+        "protokoller": ("LIVE_PHYS_V1", "LIVE_PHYS_INT_V1"),
+        "neden": "bulut gorevi hazirlanirken kilitli src/live/physical_forecast.py yanlislikla degistirildi; ayni gun "
+                 "(14.11.2026) birebir geri alindi, is ayri modulde (src/tool/bulut_veri.py) yapildi; o surumle tahmin "
+                 "uretilmedi",
+    },
+}
 SECRET_RE = re.compile(r"""(?i)(api[_-]?key|secret|password|parola|token)\s*[:=]\s*['"][A-Za-z0-9_\-]{12,}['"]""")
 
 
@@ -231,9 +244,14 @@ def check_history(root: Path) -> list:
             continue
         want = lock_expected(pid, d)
         later = _git(root, "log", "--format=%H", "--reverse", f"{added[-1]}..HEAD", "--", *files).stdout.decode().split()
-        diff = [h[:7] for h in later if lock_value(pid, lambda f, h=h: _show(root, h, f)) != want]
+        farkli = [h for h in later if lock_value(pid, lambda f, h=h: _show(root, h, f)) != want]
+        istisna = [h for h in farkli if pid in KILIT_ISTISNALARI.get(h, {}).get("protokoller", ())]
+        diff = [h[:7] for h in farkli if h not in istisna]
         if diff:
             out.append((FAIL, f"{pid} kilit gecmisi", f"on kayittan sonra kilitli kod farkli: {diff[:3]}"))
+        elif istisna:
+            out.append((WARN, f"{pid} kilit gecmisi", "belgelenmis istisna: " + "; ".join(
+                f"{h[:7]} ({KILIT_ISTISNALARI[h]['neden']})" for h in istisna)))
         else:
             note = f"; {len(later)} commit dosyalara dokundu, icerik on kayitla ayni" if later else ""
             out.append((OK, f"{pid} kilit gecmisi", "on kayittan beri degismemis" + note))
