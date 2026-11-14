@@ -296,34 +296,6 @@ class TestEvaluate(Base):
         self.assertEqual(ev, ["prepared", "evaluated"])
 
 
-class TestScripts(unittest.TestCase):
-    """PowerShell CALISTIRILMAZ; betik metni sinanir."""
-
-    def setUp(self):
-        self.v2s = (PROJECT_ROOT / "scripts" / "teorik_v2.ps1").read_text(encoding="utf-8")
-        self.wrap = (PROJECT_ROOT / "scripts" / "zamanli_calistir.ps1").read_text(encoding="utf-8")
-
-    def test_v2_script_touches_only_v2_log(self):
-        self.v2s.encode("ascii")
-        code = "\n".join(l for l in self.v2s.splitlines() if not l.lstrip().startswith("#"))
-        self.assertIn('$kayit = "research/live/forecast_v2_log.csv"', code)
-        gits = [l.strip() for l in code.splitlines() if l.strip().startswith("git ")]
-        self.assertTrue(gits and all("$kayit" in g for g in gits), gits)
-        self.assertNotIn("git push", code)
-        self.assertNotIn("forecast_log.csv", code.replace("forecast_v2_log.csv", ""))
-        steps = re.findall(r'"src\.live\.forecast_v2", "(\w+)"', code)
-        self.assertEqual(steps, ["fetch", "score", "issue"])
-        self.assertIn('"issue") @(0, 3, 4)', code)
-
-    def test_wrapper_runs_v2_only_in_evening_without_touching_exit_code(self):
-        start = self.wrap.index("teorik_v2.ps1")
-        self.assertLess(self.wrap.index("$kod = $LASTEXITCODE"), start)
-        block = self.wrap[self.wrap.rindex('if ($Gorev -eq "aksam")', 0, start):self.wrap.index("# Veri yedegi")]
-        self.assertNotIn("$kod", block)
-        self.assertNotIn("exit", block)
-        self.assertIn("catch {", block)
-
-
 _REAL = [PROJECT_ROOT / "research", PROJECT_ROOT / "data"]
 _BEFORE = {}
 

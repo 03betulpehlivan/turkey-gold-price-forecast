@@ -115,7 +115,7 @@ src/data/      veri indirme (TCMB EVDS, Yahoo Finance, Fed takvimi)
 src/models/    ilk aşamanın modelleri ve sınavları
 src/analysis/  ilk aşamanın araştırma çalışmaları
 research/      sonuç dosyaları, tahmin kayıtları
-scripts/       her gün kendiliğinden çalışan görevler (Windows)
+scripts/       bilgisayarda elle çalıştırılan araçlar (pano, yedek)
 .github/       GitHub Actions: testler, bütünlük denetimi, bekçi ve bulutta karne kaydı
 tests/         otomatik testler
 docs/          rapor ve grafikler
@@ -125,7 +125,7 @@ docs/          rapor ve grafikler
 
 - **Veri:** TCMB EVDS (fiziki gram altın, 1995'ten beri; çalışmada 2009 sonrası), Yahoo Finance (ons, kur, piyasa göstergeleri), Fed karar takvimi.
 - **Modeller:** GARCH ailesi, ARIMA-GARCH, HAR, Markov rejim modeli, XGBoost, Amazon Chronos, Kronos ve birleşimleri.
-- **Altyapı:** Python, Microsoft SQL Server, FastAPI, Windows Görev Zamanlayıcı, GitHub Actions.
+- **Altyapı:** Python, FastAPI, GitHub Actions (her iş günü veri, tahmin kaydı ve site), GitHub Pages; isteğe bağlı Microsoft SQL Server.
 - **Güvenilirlik:** her kod değişikliğinde otomatik testler; kayıtların değiştirilmediğini her gün kontrol eden bütünlük denetimi; görev çalışmazsa e-posta gönderen bekçi.
 
 ## Raporlar

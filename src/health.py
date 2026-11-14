@@ -3,7 +3,7 @@ Sistem Sagligi
 ==============
 Kullanim (proje kokunden):
   python -m src.health write --gorev sabah --kod 0 --log logs\\sabah_20261016_1230.log --durum <log>.durum
-      # scripts/zamanli_calistir.ps1 her calismanin SONUNDA cagirir; durum kaydini yazar
+      # (eski) bilgisayar zamanlayicisi her calismanin sonunda cagiriyordu; sistem artik bulutta calisir
   python -m src.health show
       # son durum + zaman cizelgesi kontrolu (beklenen calisma olmadiysa HATA)
 

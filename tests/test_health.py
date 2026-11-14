@@ -208,53 +208,6 @@ class TestHeartbeat(unittest.TestCase):
 
 
 class TestScripts(unittest.TestCase):
-    def setUp(self):
-        self.sync = (PROJECT_ROOT / "scripts" / "git_esitle.ps1").read_text(encoding="utf-8")
-        self.wrap = (PROJECT_ROOT / "scripts" / "zamanli_calistir.ps1").read_text(encoding="utf-8")
-
-    def code(self, text):
-        return "\n".join(l for l in text.splitlines() if not l.lstrip().startswith("#"))
-
-    def test_sync_merges_never_rebases_or_forces(self):
-        c = self.code(self.sync)
-        c.encode("ascii")
-        for bad in ("rebase", "--force", " -f ", "reset --hard", "push -f", "+HEAD"):
-            self.assertNotIn(bad, c.replace("pull.rebase=false", ""))
-        self.assertLess(c.index("git fetch"), c.index("merge --no-edit"))
-        self.assertLess(c.index("merge --no-edit"), c.index("git push"))
-        self.assertIn("git merge --abort", c)
-        self.assertRegex(c, r"git merge --abort\s*\n\s*Write-Host [^\n]*\n\s*exit 1")
-        self.assertIn("ESITLEME TAMAM", c)
-        self.assertTrue(c.rstrip().endswith("exit 0"))
-
-    def test_wrapper_order_and_exit_code(self):
-        w = self.code(self.wrap)
-        order = ['& ".\\$betik"', "teorik_v2.ps1", "src.db.store load", "yedekle.ps1", "git_esitle.ps1",
-                 "src.health write", 'Write-Host "Bitis']
-        yedek = w.index("yedekle.ps1")                                              # sondaki esitleme: yedekten sonra
-        pos = [w.index(s, yedek) if s == "git_esitle.ps1" else w.index(s) for s in order]
-        self.assertEqual(pos, sorted(pos))
-        self.assertLess(w.index("git_esitle.ps1"), w.index('& ".\\$betik"'))          # sabah: once GitHub'dan al (bulut kaydi)
-        self.assertEqual(w.count("git_esitle.ps1"), 3)                              # bas, son, kalp atisi
-        tail = w[w.index("$kod = $LASTEXITCODE") + 20:w.index('Write-Host "Bitis')]
-        self.assertNotRegex(tail, r"\$kod\s*=")
-        self.assertNotIn("*>&1", w)                                                 # PS 5.1 stderr tuzagi
-        self.assertIn("--kod $kod --log $log --durum $durum", w)
-        self.assertIn('Not "YEDEK TAMAM"', w)
-        self.assertIn('Not "ESITLEME TAMAM"', w)
-
-    def test_heartbeat_committed_alone_after_status(self):
-        w = self.code(self.wrap)
-        i = w.index('$kalp = "research/live/heartbeat.json"')
-        self.assertLess(w.index("src.health write"), i)
-        self.assertLess(i, w.index('Write-Host "Bitis'))
-        block = w[i:w.index('Write-Host "Bitis')]
-        self.assertIn('git commit -q -m "Kalp atisi ($Gorev)" -- $kalp', block)
-        self.assertIn("git_esitle.ps1", block)
-        self.assertNotRegex(block, r"git add (-A|\.|--all)")
-        self.assertNotRegex(block, r"\$kod\s*=")
-        self.assertIn("catch {", block)
-
     def test_dashboard_shows_system_status(self):
         html = (PROJECT_ROOT / "src" / "web" / "detay.html").read_text(encoding="utf-8")
         js = (PROJECT_ROOT / "src" / "web" / "app.js").read_text(encoding="utf-8")

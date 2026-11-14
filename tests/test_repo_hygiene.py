@@ -104,6 +104,9 @@ class TestWorkflowSecurity(unittest.TestCase):
         self.assertFalse((ROOT / ".github" / "workflows" / "watchdog.yml").exists())  # eski bilgisayar bekcisi yok
         self.assertLess(text.index("python -m src.tool.site"), text.index("- name: Bekci"))   # alarmda da site
         self.assertIn("path: _site", text)
+        self.assertIn("path: ~/.cache/huggingface", text)                               # Chronos onbellegi
+        self.assertEqual(text.count("HF_HUB_OFFLINE: ${{ steps.hf.outputs.cache-hit == 'true' && '1' || '0' }}"), 2)
+        self.assertLess(text.index("id: hf"), text.index("- name: Karne kaydi"))
         yayin = text[text.index("\n  yayin:"):]
         self.assertIn("if: always() && needs.karne.outputs.site == 'evet'", yayin)
         self.assertRegex(yayin, r"permissions:\n      pages: write\n      id-token: write\n    environment:")
@@ -114,6 +117,23 @@ class TestWorkflowSecurity(unittest.TestCase):
         others = [w.name for w in WORKFLOWS if w.name != BULUT and
                   ("contents: write" in w.read_text(encoding="utf-8") or "secrets." in w.read_text(encoding="utf-8"))]
         self.assertEqual(others, [])
+
+    def test_retired_pc_scheduler_is_gone(self):
+        """Sistem bulutta calisir; bilgisayar zamanlayicisi ve sabah/aksam betikleri kaldirildi. Kilitli (kapatilan
+        deneylerin) kodu gecmiste nasil calistiklarini anlatirken bu adlari anabilir; baska hicbir yer anmamali."""
+        eski = ("zamanli_calistir", "gorev_kur", "sabah_fiziki", "gunluk_tahmin", "teorik_v2.ps1", "git_esitle")
+        for ad in eski:
+            self.assertFalse(list((ROOT / "scripts").glob(f"{ad.split('.')[0]}*.ps1")), ad)
+        from src import audit
+        kilitli = {f for fs in audit.LOCKS.values() for f in fs}
+        for p in list((ROOT / "src").rglob("*.py")) + list((ROOT / "src").rglob("*.js")) + list((ROOT / "tests").rglob("*.py")) \
+                + list((ROOT / ".github").rglob("*.yml")) + list((ROOT / "scripts").glob("*.ps1")) + [ROOT / "README.md"]:
+            rel = p.relative_to(ROOT).as_posix()
+            if rel in kilitli or rel == "tests/test_repo_hygiene.py":
+                continue
+            t = p.read_text(encoding="utf-8")
+            for ad in eski:
+                self.assertNotIn(ad, t, f"{rel} hala {ad} anıyor")
 
     def test_locked_protocol_code_unchanged(self):
         """On kayitli protokollerin kilitli kodu degismemeli (GitHub'daki integrity denetiminin ayni kontrolu).

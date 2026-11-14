@@ -335,20 +335,6 @@ class TestHardening(unittest.TestCase):
         self.assertNotIn("0.0.0.0", ps)
 
 
-class TestScheduledLoad(unittest.TestCase):
-    """PowerShell CALISTIRILMAZ; betik metni sinanir."""
-
-    def test_wrapper_loads_db_without_touching_exit_code(self):
-        w = (PROJECT_ROOT / "scripts" / "zamanli_calistir.ps1").read_text(encoding="utf-8")
-        i = w.index("-m src.db.store load")
-        self.assertLess(w.index("$kod = $LASTEXITCODE"), i)
-        self.assertLess(i, w.index("yedekle.ps1"))                            # yedek, veritabanini da kapsar
-        block = w[w.rindex("try {", 0, i):w.index("# Veri yedegi")]
-        self.assertNotIn("$kod", block)
-        self.assertNotIn("exit", block)
-        self.assertIn("catch {", block)
-
-
 _REAL = [PROJECT_ROOT / "research", PROJECT_ROOT / "data"]
 _BEFORE = {}
 

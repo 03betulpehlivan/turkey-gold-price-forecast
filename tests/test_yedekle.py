@@ -1,5 +1,5 @@
 """
-Veri yedegi yapisal testleri: scripts/yedekle.ps1 ve scripts/zamanli_calistir.ps1 icindeki cagri
+Veri yedegi yapisal testleri: scripts/yedekle.ps1 (elle calistirilir)
 Calistirma: python -m unittest tests.test_yedekle -v
 PowerShell CALISTIRILMAZ; betik metni sinanir.
 """
@@ -10,7 +10,6 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKUP = (ROOT / "scripts" / "yedekle.ps1").read_text(encoding="utf-8")
-WRAP = (ROOT / "scripts" / "zamanli_calistir.ps1").read_text(encoding="utf-8")
 
 
 def code_lines(text):
@@ -45,24 +44,6 @@ class TestBackupScript(unittest.TestCase):
         self.assertLess(BACKUP.index("if (-not $Hedef)"), BACKUP.index("    robocopy $k"))
         self.assertLess(BACKUP.index("StartsWith($kokTam"), BACKUP.index("    robocopy $k"))
         self.assertIn("OrdinalIgnoreCase", BACKUP)
-
-
-class TestWrapperCall(unittest.TestCase):
-
-    def test_exit_code_captured_before_backup(self):
-        self.assertLess(WRAP.index("$kod = $LASTEXITCODE"), WRAP.index("yedekle.ps1"))
-
-    def test_backup_cannot_change_exit_code(self):
-        start = WRAP.index("yedekle.ps1")
-        end = WRAP.index("Write-Host \"Bitis")
-        block = WRAP[start:end]
-        self.assertNotRegex(block, r"\$kod\s*=")             # okunabilir (sistem durumu), atanamaz
-        self.assertNotIn("exit", block)
-        self.assertIn("catch {", block)                       # yedek istisnasi dis catch'e ulasmaz
-
-    def test_backup_optional_with_warning(self):
-        self.assertIn("if ($env:ALTIN_YEDEK)", WRAP)
-        self.assertIn("ALTIN_YEDEK tanimli degil", WRAP)
 
 
 if __name__ == "__main__":

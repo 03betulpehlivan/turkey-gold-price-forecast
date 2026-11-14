@@ -217,13 +217,9 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(r.json()["kayit"], 3)
 
     def test_morning_task_and_page(self):
-        w = (PROJECT_ROOT / "scripts" / "zamanli_calistir.ps1").read_text(encoding="utf-8")
-        i = w.index("src.tool.canli_karne kaydet")
-        self.assertLess(i, w.index("src.db.store load"))
-        blok = w[w.rindex('if ($Gorev -eq "sabah")', 0, i): w.index("src.db.store load")]
-        self.assertIn('git commit -q -m "Ileriye donuk karne: 1/3/5 gun araliklari" -- $ck', blok)
-        self.assertIn("catch {", blok)
-        self.assertNotRegex(blok, r"git add (-A|\.|--all)")
+        w = (PROJECT_ROOT / ".github" / "workflows" / "sabah_bulut.yml").read_text(encoding="utf-8")
+        self.assertIn("src.tool.canli_karne kaydet", w)                              # kayit bulutta alinir
+        self.assertNotRegex(w, r"git add (-A|\.|--all)")
         js = (PROJECT_ROOT / "src" / "web" / "ana.js").read_text(encoding="utf-8")
         self.assertIn("/api/tahmin/canli-karne", js)
         self.assertNotIn("innerHTML", js)
