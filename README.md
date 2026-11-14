@@ -9,6 +9,8 @@ Gram altının **1, 3 ve 5 işlem günü sonra hangi fiyat aralığında olacağ
 
 ---
 
+**Canlı site:** https://03betulpehlivan.github.io/turkey-gold-price-forecast/ (her iş günü sabah kendiliğinden güncellenir)
+
 ## Ne yapıyor?
 
 Gerçek bir örnek:

@@ -102,6 +102,14 @@ class TestWorkflowSecurity(unittest.TestCase):
         self.assertIn("if: github.event.schedule == '5 10 * * 1-5'", bekci)      # yalnizca son denemede
         self.assertIn("python -m src.tool.canli_karne denetle", bekci)
         self.assertFalse((ROOT / ".github" / "workflows" / "watchdog.yml").exists())  # eski bilgisayar bekcisi yok
+        self.assertLess(text.index("python -m src.tool.site"), text.index("- name: Bekci"))   # alarmda da site
+        self.assertIn("path: _site", text)
+        yayin = text[text.index("\n  yayin:"):]
+        self.assertIn("if: always() && needs.karne.outputs.site == 'evet'", yayin)
+        self.assertRegex(yayin, r"permissions:\n      pages: write\n      id-token: write\n    environment:")
+        self.assertNotIn("secrets.", yayin)
+        self.assertNotIn("contents:", yayin)
+        self.assertIn("_site/", (ROOT / ".gitignore").read_text(encoding="utf-8"))
         self.assertRegex(text, r"concurrency:\n  group: sabah-bulut\n  cancel-in-progress: false")
         others = [w.name for w in WORKFLOWS if w.name != BULUT and
                   ("contents: write" in w.read_text(encoding="utf-8") or "secrets." in w.read_text(encoding="utf-8"))]
