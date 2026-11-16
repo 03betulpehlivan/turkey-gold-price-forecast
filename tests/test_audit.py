@@ -237,6 +237,48 @@ class TestLogsAndRegistry(Repo):
         self.assertIn("LIVE_V2 on kayit (prepared)", dict(self.fails()))
 
 
+class TestKarne(Repo):
+    """Ileriye donuk karne: satir ozetleri ve yalnizca sona ekleme (src/audit.check_karne)."""
+
+    def kaydet(self, bilgi, gun):
+        """bilgi gununun kaydi, ertesi gun (gun) sabah 10:00 Istanbul'da."""
+        from datetime import datetime, timezone
+        from src.tool import canli_karne as ck
+        from tests.test_tool_canli_karne import ufuk
+        ck.kaydet(ufuk(bilgi), now=datetime(2026, 11, gun, 7, 0, tzinfo=timezone.utc), path=self.root / audit.KARNE)
+
+    def durum(self):
+        return {n: (s, d) for s, n, d in audit.check_karne(self.root)}
+
+    def test_append_only_is_ok(self):
+        self.kaydet("2026-11-16", 17)
+        commit(self.root, "karne 1")
+        self.kaydet("2026-11-17", 18)
+        commit(self.root, "karne 2")
+        self.assertEqual({s for s, _ in self.durum().values()}, {audit.OK})
+
+    def test_changed_past_row_is_detected(self):
+        self.kaydet("2026-11-16", 17)
+        commit(self.root, "karne 1")
+        p = self.root / audit.KARNE
+        satirlar = p.read_bytes().split(b"\n")
+        satirlar[1] = satirlar[1].replace(b"6625.6", b"6635.6", 1)                      # gecmis araligi genislet
+        self.assertIn(b"6635.6", satirlar[1])
+        p.write_bytes(b"\n".join(satirlar))
+        commit(self.root, "sessizce degistir")
+        d = self.durum()
+        self.assertEqual(d["karne satir ozetleri"][0], audit.FAIL)                      # ozet tutmaz
+        self.assertEqual(d["karne gecmisi"][0], audit.FAIL)                             # gecmis bozulmus
+
+    def test_uncommitted_edit_detected(self):
+        self.kaydet("2026-11-16", 17)
+        commit(self.root, "karne 1")
+        p = self.root / audit.KARNE
+        satirlar = p.read_bytes().split(b"\n")
+        p.write_bytes(b"\n".join([satirlar[0]] + satirlar[2:]))                         # ilk kaydi sil
+        self.assertEqual(self.durum()["karne gecmisi"][0], audit.FAIL)
+
+
 class TestHygiene(Repo):
     def test_tracked_data_env_db_and_secrets(self):
         (self.root / "data").mkdir()

@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   karne:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     outputs:
       site: ${{ steps.site_hazir.outputs.hazir }}
@@ -112,7 +112,7 @@ jobs:
     # Yalnizca Pages yetkisi vardir; depoya yazamaz, gizli anahtar kullanmaz.
     needs: karne
     if: always() && needs.karne.outputs.site == 'evet'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       pages: write

@@ -120,6 +120,13 @@ class TestWorkflowSecurity(unittest.TestCase):
                   ("contents: write" in w.read_text(encoding="utf-8") or "secrets." in w.read_text(encoding="utf-8"))]
         self.assertEqual(others, [])
 
+    def test_runner_image_pinned(self):
+        """Sunucu surumu sabit (ubuntu-latest kendiliginden yeni surume gecer; sonuclar degisebilir)."""
+        for wf in WORKFLOWS:
+            t = wf.read_text(encoding="utf-8")
+            self.assertNotIn("ubuntu-latest", t, wf.name)
+            self.assertTrue(re.findall(r"runs-on: ubuntu-\d\d\.\d\d", t), wf.name)
+
     def test_retired_pc_scheduler_is_gone(self):
         """Sistem bulutta calisir; bilgisayar zamanlayicisi ve sabah/aksam betikleri kaldirildi. Kilitli (kapatilan
         deneylerin) kodu gecmiste nasil calistiklarini anlatirken bu adlari anabilir; baska hicbir yer anmamali."""

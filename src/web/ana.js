@@ -193,7 +193,7 @@ function heroCiz() {
   document.getElementById("olgular").replaceChildren(
     ...satir("Aralığın genişliği", `${sayi(hi - lo)} TL`, `alt ve üst sınır arası`),
     ...satir("Merkez tahmin", `${sayi(merkezTahmin(f))} TL`, m ? `tek fiyat; ortalama sapma ±${sayi(m.hata_tl)} TL` : "aralığın tam ortası"),
-    ...(fin != null ? satir("Geçmişte ne kadar tuttu?", yuzde(fin), `hiç görmediği 2023–2026’da, ${sayi(f.final.gun)} gün`) : []),
+    ...(fin != null ? satir("Geçmişte ne kadar tuttu?", yuzde(fin), `model seçiminde kullanılmayan 2023–2026’da, ${sayi(f.final.gun)} gün`) : []),
     ...satir("Model", ad(f.kullanilan), f.yedek ? `asıl model ${ad(f.model)}; Chronos bu bilgisayarda yok, yedek kullanıldı` : "yarışmanın kazananı"));
   document.querySelectorAll("#ufuk-sec button").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.ufuk) === H.ufuk)));
   document.querySelectorAll("#duzey-sec button").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.duzey) === H.duzey)));
@@ -337,7 +337,7 @@ function darGenis() {
   kutu.replaceChildren(...satirlar);
   const u1 = VERI.y.ufuklar[0];
   if (u1.sabit && u1.sabit.final) document.getElementById("dar-genis-not").textContent =
-    `%80 aralığın ortalama genişliği, hiç görülmemiş 2023–2026 döneminde, bugünkü ${sayi(P)} TL fiyata çevrilmiş hâli. ` +
+    `%80 aralığın ortalama genişliği, model seçiminde kullanılmayan 2023–2026 döneminde, bugünkü ${sayi(P)} TL fiyata çevrilmiş hâli. ` +
     `Bir sonraki gün için sistemin %80 aralığı ${yuzde(u1.final.tutma80)} tuttu; sabit aralık ise ${yuzde(u1.sabit.final.tutma80)} tuttu. ` +
     "Sabit aralık %80 dediği hâlde daha sık tutuyor, çünkü gereğinden geniş. " +
     (() => {
@@ -354,7 +354,7 @@ function darGenis() {
 function sinav() {
   const d = VERI.y;
   document.getElementById("guven-ozet").textContent =
-    "Modeller hazırlık döneminde (2012–2022) denendi ve en iyisi seçildi. Sonra sınav döneminde (2023–2026), bu yılları hiç görmeden, her gün yalnızca o güne kadarki fiyatlarla sınandılar. " +
+    "Modeller hazırlık döneminde (2012–2022) denendi ve en iyisi seçildi. Sonra sınav döneminde (2023–2026), seçimde bu yılları kullanmadan, her gün yalnızca o güne kadarki fiyatlarla sınandılar. " +
     "Hedef: %80 aralığın yaklaşık %80, %95 aralığın yaklaşık %95 tutması.";
   document.getElementById("guven").replaceChildren(...d.ufuklar.filter(u => u.final).map(u => {
     const a = (u.anlamlilik || {}).final;
@@ -595,7 +595,7 @@ function krizGrafik(rows, sabit, W) {
 function krizCiz() {
   const u1 = VERI.y.ufuklar[0];
   document.getElementById("yillar").replaceChildren(krizGrafik(u1.yillar, u1.sabit ? u1.sabit.yillar : null, genislik("yillar")),
-    lejant(["lgr", "hazırlık dönemi 2012–2022"], ["lf", "sınav dönemi 2023–2026 (hiç görülmemiş)"], ["ls", "sabit aralık"], ["lk", "kriz yılı"]));
+    lejant(["lgr", "hazırlık dönemi 2012–2022"], ["lf", "sınav dönemi 2023–2026 (seçimde kullanılmadı)"], ["ls", "sabit aralık"], ["lk", "kriz yılı"]));
   document.getElementById("yillar-ozet").textContent =
     `Bir sonraki gün için, ${ad(u1.kazanan)} modeli. Üstte: aralık her yıl fiyatın yüzde kaçı kadar genişti (çubuk: bu sistem, çizgi: sabit aralık). ` +
     "Altta: %80 aralık o yıl günlerin yüzde kaçında tuttu (kesikli çizgi hedef %80).";

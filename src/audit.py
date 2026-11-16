@@ -279,6 +279,35 @@ def check_hygiene(root: Path) -> list:
     return out
 
 
+KARNE = "research/tool/canli_aralik_log.csv"
+
+
+def check_karne(root: Path) -> list:
+    """Ileriye donuk karne (src/tool/canli_karne): her satirin ozeti dogru olmali ve dosya git gecmisinde yalnizca
+    sona eklenerek buyumeli (onceki her surum sonraki surumun basi). Kayit sonradan degistirilirse HATA."""
+    p = root / KARNE
+    if not p.is_file():
+        return [(WARN, "karne", "kayit dosyasi yok")]
+    from src.tool import canli_karne as ck
+    log = ck.oku(p)
+    bozuk = int((~ck.dogrula(log)).sum()) if len(log) else 0
+    out = [(FAIL if bozuk else OK, "karne satir ozetleri",
+            f"{bozuk} satirin ozeti tutmuyor" if bozuk else f"{len(log)} satirin ozeti dogru")]
+    onceki, ihlal = b"", []
+    for h in _versions(root, KARNE):
+        v = _show(root, h, KARNE)
+        v = b"" if v is None else v.replace(b"\r\n", b"\n")
+        if not v.startswith(onceki):
+            ihlal.append(h[:7])
+        onceki = v
+    simdi = p.read_bytes().replace(b"\r\n", b"\n")
+    if not simdi.startswith(onceki):
+        ihlal.append("calisma kopyasi")
+    out.append((FAIL if ihlal else OK, "karne gecmisi",
+                f"gecmis satir degismis: {ihlal[:3]}" if ihlal else "yalnizca sona eklenmis"))
+    return out
+
+
 def check_closures(root: Path) -> list:
     """Kapatilan canli deneyler (registry 'closed' olayi): kapanistan sonra o protokol icin baska olay yok ve kayit
     dosyasi kapanistaki parmak iziyle ayni (tek satir eklense de, puanlansa da HATA)."""
@@ -305,7 +334,7 @@ def check_closures(root: Path) -> list:
 def run_all(root: Path = None) -> list:
     root = Path(root or ROOT)
     res = []
-    for fn in (check_registry, check_locks, check_logs, check_history, check_closures, check_hygiene):
+    for fn in (check_registry, check_locks, check_logs, check_history, check_closures, check_karne, check_hygiene):
         try:
             res += fn(root)
         except Exception as e:  # denetimin kendisi coktuyse bu bir HATA'dir
