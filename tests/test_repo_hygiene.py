@@ -85,7 +85,8 @@ class TestWorkflowSecurity(unittest.TestCase):
         self.assertEqual(set(re.findall(r"secrets\.(\w+)", text)), {"EVDS_API_KEY"})
         self.assertRegex(text, r"\npermissions:\n  contents: write\n\n")                 # baska yetki yok
         crons = re.findall(r'cron: "(\d+) (\d+) \* \* 1-5"', text)
-        self.assertGreaterEqual(len(crons), 2)
+        self.assertGreaterEqual(len(crons), 8)                                              # gecikmeye karsi cok deneme
+        self.assertFalse([m for m, _ in crons if int(m) % 30 == 0 or int(m) == 5], "yogun dakika (:00, :05, :30)")
         self.assertEqual(len(crons), text.count("cron:"))                                 # hepsi hafta ici
         for m, h in crons:
             ist = (int(h) + 3) * 60 + int(m)                                              # UTC -> Istanbul
@@ -99,7 +100,8 @@ class TestWorkflowSecurity(unittest.TestCase):
         self.assertNotIn("--force", text)
         self.assertIn("timeout-minutes:", text)
         bekci = text[text.index("- name: Bekci"):]
-        self.assertIn("if: github.event.schedule == '5 10 * * 1-5'", bekci)      # yalnizca son denemede
+        son = max(crons, key=lambda mh: (int(mh[1]), int(mh[0])))                         # gunun son denemesi
+        self.assertIn(f"if: github.event.schedule == '{son[0]} {son[1]} * * 1-5'", bekci)  # yalnizca son denemede
         self.assertIn("python -m src.tool.canli_karne denetle", bekci)
         self.assertFalse((ROOT / ".github" / "workflows" / "watchdog.yml").exists())  # eski bilgisayar bekcisi yok
         self.assertLess(text.index("python -m src.tool.site"), text.index("- name: Bekci"))   # alarmda da site
